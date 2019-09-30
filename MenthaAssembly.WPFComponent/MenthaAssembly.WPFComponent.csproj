@@ -49,9 +49,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\AnimationHelper.cs" />
+    <Compile Include="Helpers\User32.cs" />
+    <Compile Include="Helpers\WindowBlur.cs" />
     <Compile Include="Helpers\WindowHelper.cs" />
     <Compile Include="Views\Controls\ArcRing.cs" />
+    <Compile Include="Views\Controls\ArcRingProgress.cs" />
+    <Compile Include="Views\Controls\SwitchView.cs" />
     <Compile Include="Views\Controls\TextBoxs\PasswordBox.cs" />
+    <Compile Include="Views\Controls\TextBoxs\SearchBox.cs" />
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -79,6 +84,12 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MenthaAssembly\MenthaAssembly\MenthaAssembly.csproj">
+      <Project>{0ef7d25d-50c7-4b09-bd7f-df44fc2f03da}</Project>
+      <Name>MenthaAssembly</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

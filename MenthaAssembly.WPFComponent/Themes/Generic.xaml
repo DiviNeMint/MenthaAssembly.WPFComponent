@@ -1,6 +1,8 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:Core="clr-namespace:MenthaAssembly;assembly=MenthaAssembly"
+    xmlns:Helpers="clr-namespace:MenthaAssembly"
     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
     <Style TargetType="{x:Type local:PasswordBox}">
@@ -18,26 +20,27 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Background="{TemplateBinding Background}" 
                             SnapsToDevicePixels="True">
-                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden">
-                            <ScrollViewer.Template>
-                                <ControlTemplate TargetType="{x:Type ScrollViewer}">
-                                    <Grid Background="{TemplateBinding Background}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden">
+                                <ScrollViewer.Template>
+                                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                                        <Grid Background="{TemplateBinding Background}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
                                                                 CanContentScroll="{TemplateBinding CanContentScroll}" 
                                                                 CanHorizontallyScroll="False" 
                                                                 CanVerticallyScroll="False" 
                                                                 ContentTemplate="{TemplateBinding ContentTemplate}" 
                                                                 Content="{TemplateBinding Content}"
                                                                 Margin="{TemplateBinding Padding}"/>
-                                        <ScrollBar x:Name="PART_HorizontalScrollBar"
+                                            <ScrollBar x:Name="PART_HorizontalScrollBar"
                                                    AutomationProperties.AutomationId="HorizontalScrollBar" 
                                                    Cursor="Arrow" 
                                                    Maximum="{TemplateBinding ScrollableWidth}" 
@@ -47,36 +50,40 @@
                                                    Value="{Binding HorizontalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" 
                                                    ViewportSize="{TemplateBinding ViewportWidth}"
                                                    Grid.Row="1"/>
-                                        <ToggleButton IsChecked="{Binding IsPasswordShown, Mode=TwoWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PasswordBox}}}"
-                                                      Focusable="False"
-                                                      Grid.Column="1">
-                                            <ToggleButton.Template>
-                                                <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                    <Border Background="Transparent"
-                                                            Padding="3,2,3,3">
-                                                        <Path x:Name="PATH"
-                                                              Data="M0,8 a9.65,9.65 0 0 1 19,0 l-3.5,0 a6.2,6.2 0 0 0 -12,0z M9.5,5.5 a3.5,3.5 0 1 0 .01,0z"
-                                                              Fill="#FF969696"
-                                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsChecked" Value="True">
-                                                            <Setter TargetName="PATH" Property="Fill" Value="Black"/>
-                                                        </Trigger>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="PATH" Property="Fill" Value="#FF569DE5"/>
-                                                        </Trigger>
-                                                        <Trigger Property="IsPressed" Value="True">
-                                                            <Setter TargetName="PATH" Property="Fill" Value="#FF007ACC"/>
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </ToggleButton.Template>
-                                        </ToggleButton>
-                                    </Grid>
-                                </ControlTemplate>
-                            </ScrollViewer.Template>
-                        </ScrollViewer>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ScrollViewer.Template>
+                            </ScrollViewer>
+                            <ToggleButton x:Name="PART_Toggle" 
+                                          IsChecked="{Binding IsPasswordShown, Mode=TwoWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PasswordBox}}}"
+                                          Focusable="False"
+                                          ToolTip="{Binding Data.Show, FallbackValue=Show, Source={x:Static Core:LanguageManager.Current}}"
+                                          Grid.Column="1">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border Background="Transparent"
+                                                Padding="3">
+                                            <Path x:Name="PATH"
+                                                  Data="M0,8 a9.65,9.65 0 0 1 19,0 l-3.5,0 a6.2,6.2 0 0 0 -12,0z M9.5,5.5 a3.5,3.5 0 1 0 .01,0z"
+                                                  Stretch="Uniform"
+                                                  Fill="#FF969696"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="PATH" Property="Fill" Value="Black"/>
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="PATH" Property="Fill" Value="#FF569DE5"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="PATH" Property="Fill" Value="#FF007ACC"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
@@ -88,7 +95,199 @@
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter Property="BorderBrush" TargetName="border" Value="#FF569DE5"/>
                         </Trigger>
+                        <DataTrigger Binding="{Binding IsChecked, ElementName=PART_Toggle}" Value="True">
+                            <Setter TargetName="PART_Toggle" Property="ToolTip" Value="{Binding Data.Hide, FallbackValue=Hide, Source={x:Static Core:LanguageManager.Current}}"/>
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type local:SearchBox}">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#FFABADB3"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:SearchBox}">
+                    <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden">
+                                <ScrollViewer.Template>
+                                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                                        <Grid x:Name="Grid" Background="{TemplateBinding Background}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" 
+                                                            CanContentScroll="{TemplateBinding CanContentScroll}" 
+                                                            CanHorizontallyScroll="False" 
+                                                            CanVerticallyScroll="False" 
+                                                            ContentTemplate="{TemplateBinding ContentTemplate}" 
+                                                            Content="{TemplateBinding Content}" 
+                                                            Margin="{TemplateBinding Padding}"/>
+                                            <ScrollBar x:Name="PART_HorizontalScrollBar" 
+                                               AutomationProperties.AutomationId="HorizontalScrollBar" 
+                                               Cursor="Arrow" 
+                                               Maximum="{TemplateBinding ScrollableWidth}" Minimum="0" 
+                                               Orientation="Horizontal" 
+                                               Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}" 
+                                               Value="{Binding HorizontalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                               ViewportSize="{TemplateBinding ViewportWidth}"
+                                               Grid.Row="1"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ScrollViewer.Template>
+                            </ScrollViewer>
+                            <Button x:Name="PART_Button"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent" BorderThickness="1,0,0,0"
+                                    Width="{TemplateBinding ActualHeight}"
+                                    Padding="2,2,3,2"
+                                    Focusable="False"
+                                    ToolTip="{Binding Data.Search, FallbackValue=Search, Source={x:Static Core:LanguageManager.Current}}"
+                                    Grid.Column="1">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="{x:Type ButtonBase}">
+                                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                            <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" ContentStringFormat="{TemplateBinding ContentStringFormat}" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Path x:Name="PART_Path" 
+                                      Data="M9,2.5C7.619,2.5 6.5,3.619 6.5,5 6.5,6.381 7.619,7.5 9,7.5 10.381,7.5 11.5,6.381 11.5,5 11.5,3.619 10.381,2.5 9,2.5z M9,0.5C11.485,0.5 13.5,2.515 13.5,5 13.5,7.485 11.485,9.5 9,9.5 8.146,9.5 7.347,9.262 6.667,8.849L6.604,8.81 1.914,13.5 0.5,12.086 5.19,7.396 5.152,7.333C4.738,6.653 4.5,5.855 4.5,5 4.5,2.515 6.515,0.5 9,0.5z"
+                                      Fill="Black"
+                                      Stretch="Fill"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#FF7EB4EA"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#FF569DE5"/>
+                        </Trigger>
+                        <Trigger Property="IsSearched" Value="True">
+                            <Setter TargetName="PART_Button" Property="ToolTip" Value="{Binding Data.Clear, FallbackValue=Clear, Source={x:Static Core:LanguageManager.Current}}"/>
+                            <Setter TargetName="PART_Path" Property="Margin" Value="3"/>
+                            <Setter TargetName="PART_Path" Property="Data" Value="M1.414,0L5.657,4.243 9.9,0 11.314,1.414 7.07,5.657 11.314,9.9 9.9,11.314 5.657,7.07 1.414,11.314 0,9.9 4.243,5.657 0,1.414z"/>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding IsMouseOver, ElementName=PART_Button}" Value="True">
+                            <Setter TargetName="PART_Button" Property="Background" Value="#FFBEE6FD"/>
+                            <Setter TargetName="PART_Button" Property="BorderBrush" Value="{Binding BorderBrush, ElementName=border}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsPressed, ElementName=PART_Button}" Value="True">
+                            <Setter TargetName="PART_Button" Property="Background" Value="{Binding BorderBrush, ElementName=border}"/>
+                            <Setter TargetName="PART_Button" Property="BorderBrush" Value="{Binding BorderBrush, ElementName=border}"/>
+                            <Setter TargetName="PART_Path" Property="Fill" Value="White"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type local:SwitchView}">
+        <Setter Property="Background" Value="LightGray"/>
+        <Setter Property="BorderBrush" Value="#FF969696"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Width" Value="44"/>
+        <Setter Property="Height" Value="22"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:SwitchView}">
+                    <Border x:Name="BORDER"
+                            Helpers:AnimationHelper.IsEnabled="{TemplateBinding IsToggled}"
+                            Helpers:AnimationHelper.Targe="Background"
+                            Helpers:AnimationHelper.From="{TemplateBinding Background}"
+                            Helpers:AnimationHelper.To="{TemplateBinding ToggledBackground}"
+                            Helpers:AnimationHelper.Interval="150"
+                            Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                            CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <Border x:Name="PART_Toggle"
+                                Helpers:AnimationHelper.IsEnabled="{TemplateBinding IsToggled}"
+                                Helpers:AnimationHelper.Interval="300"
+                                CornerRadius="{TemplateBinding ToggleCornerRadius}"
+                                Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
+                                Background="{TemplateBinding Foreground}"
+                                HorizontalAlignment="Left">
+                            <Helpers:AnimationHelper.Parameters>
+                                <MultiBinding Converter="{x:Static Helpers:AnimationHelper.ParametersConverter}">
+                                    <Binding Path="Padding" RelativeSource="{RelativeSource TemplatedParent}"/>
+                                    <Binding Path="ActualWidth" RelativeSource="{RelativeSource TemplatedParent}"/>
+                                    <Binding Path="ActualHeight" RelativeSource="{RelativeSource TemplatedParent}"/>
+                                </MultiBinding>
+                            </Helpers:AnimationHelper.Parameters>
+                            <Border.Effect>
+                                <DropShadowEffect Direction="315" BlurRadius="3" ShadowDepth="2" Opacity="0.3"/>
+                            </Border.Effect>
+                        </Border>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsAnimationEnabled" Value="False">
+                            <Setter TargetName="BORDER" Property="Helpers:AnimationHelper.Interval" Value="0"/>
+                            <Setter TargetName="PART_Toggle" Property="Helpers:AnimationHelper.Interval" Value="0"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#FFC3C3C3"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" Value="#FFB4B4B4"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="#FFF4F4F4"/>
+                            <Setter Property="BorderBrush" Value="#FFADB2B5"/>
+                            <Setter Property="Foreground" Value="#FF838383"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type local:ArcRingProgress}">
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="BorderBrush" Value="#FFB4B4B4"/>
+        <Setter Property="Width" Value="100"/>
+        <Setter Property="Height" Value="100"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:ArcRingProgress}">
+                    <Canvas Background="{TemplateBinding Background}">
+                        <local:ArcRing BorderThickness="{TemplateBinding BorderThickness}"
+                                       BorderBrush="{TemplateBinding BorderBrush}"
+                                       ArcRingThickness="{TemplateBinding ArcRingThickness}" 
+                                       Fill="{TemplateBinding ArcRingBackground}"
+                                       StartAngle="{TemplateBinding StartAngle}"
+                                       Angle="{TemplateBinding DisplayMaxAngle}"
+                                       Width="{TemplateBinding ActualWidth}"
+                                       Height="{TemplateBinding ActualHeight}"/>
+                        <local:ArcRing BorderThickness="{TemplateBinding BorderThickness}"
+                                       BorderBrush="{x:Null}"
+                                       ArcRingThickness="{TemplateBinding ArcRingThickness}" 
+                                       Fill="{TemplateBinding ArcRingForeground}"
+                                       StartAngle="{TemplateBinding StartAngle}"
+                                       Angle="{TemplateBinding DisplayAngle}"
+                                       Width="{TemplateBinding ActualWidth}"
+                                       Height="{TemplateBinding ActualHeight}"/>
+                    </Canvas>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

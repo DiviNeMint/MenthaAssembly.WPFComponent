@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 namespace MenthaAssembly
 {
-
     public class AnimationHelper
     {
         public static readonly RoutedEvent UpdateEvent =
@@ -30,25 +33,17 @@ namespace MenthaAssembly
                 {
                     if (d is UIElement This &&
                         GetBegin(This) is double Begin &&
-                        GetEnd(This) is double End)
+                        GetEnd(This) is double End &&
+                        e.NewValue is bool IsEnabled)
                     {
-                        int Interval = GetInterval(d);
-                        bool IsEnabled = e.NewValue is true;
-                        if (Interval > 0)
+                        DoubleAnimation DA = new DoubleAnimation
                         {
-                            DoubleAnimation DA = new DoubleAnimation
-                            {
-                                From = IsEnabled ? Begin : End,
-                                To = IsEnabled ? End : Begin,
-                                Duration = new Duration(TimeSpan.FromMilliseconds(Interval))
-                            };
-                            DA.Freeze();
-                            This.ApplyAnimationClock(PercentageProperty, DA.CreateClock());
-                        }
-                        else
-                        {
-                            OnAnimationUpdated(This, null, IsEnabled ? End : Begin);
-                        }
+                            From = IsEnabled ? Begin : End,
+                            To = IsEnabled ? End : Begin,
+                            Duration = new Duration(TimeSpan.FromMilliseconds(GetInterval(d)))
+                        };
+                        DA.Freeze();
+                        This.ApplyAnimationClock(PercentageProperty, DA.CreateClock());
                     }
                 }));
         public static bool GetIsEnabled(DependencyObject obj)
@@ -100,17 +95,18 @@ namespace MenthaAssembly
             => obj.SetValue(ToProperty, value);
 
 
-        public static readonly DependencyProperty ParameterProperty =
-            DependencyProperty.RegisterAttached("Parameter", typeof(object), typeof(AnimationHelper), new PropertyMetadata(null,
-                (d, e) => OnAnimationUpdated(d, null, GetPercentage(d))));
-        public static object GetParameter(DependencyObject obj)
-            => obj.GetValue(ParameterProperty);
-        public static void SetParameter(DependencyObject obj, object value)
-            => obj.SetValue(ParameterProperty, value);
+        public static IMultiValueConverter ParametersConverter { get; } = new _ParametersConverter();
 
+        public static readonly DependencyProperty ParametersProperty =
+            DependencyProperty.RegisterAttached("Parameters", typeof(object), typeof(AnimationHelper), new PropertyMetadata(null,
+                (d, e) => OnAnimationUpdated(d, null, GetPercentage(d))));
+        public static object GetParameters(DependencyObject obj)
+            => obj.GetValue(ParametersProperty);
+        public static void SetParameters(DependencyObject obj, object value)
+            => obj.SetValue(ParametersProperty, value);
 
         public static readonly DependencyProperty IntervalProperty =
-            DependencyProperty.RegisterAttached("Interval", typeof(int), typeof(AnimationHelper), new PropertyMetadata(300));
+            DependencyProperty.RegisterAttached("Interval", typeof(int), typeof(AnimationHelper), new PropertyMetadata(0));
         public static int GetInterval(DependencyObject obj)
             => (int)obj.GetValue(IntervalProperty);
         public static void SetInterval(DependencyObject obj, int value)
@@ -120,82 +116,66 @@ namespace MenthaAssembly
         protected static readonly DependencyProperty PercentageProperty =
             DependencyProperty.RegisterAttached("Percentage", typeof(double), typeof(AnimationHelper), new PropertyMetadata(0d,
                 (d, e) => OnAnimationUpdated(d, (double)e.OldValue, (double)e.NewValue)));
-
         protected static double GetPercentage(DependencyObject obj)
             => (double)obj.GetValue(PercentageProperty);
         protected static void SetPercentage(DependencyObject obj, double value)
             => obj.SetValue(PercentageProperty, value);
 
-
-        public static Dictionary<string, Action<DependencyObject, double?, double>> AnimationFunction { get; } = new Dictionary<string, Action<DependencyObject, double?, double>>
+        protected static void OnAnimationUpdated(DependencyObject d, double? OldValue, double NewValue)
         {
-            { "Width", (d, o, n) =>
-                {
-                    if (GetTo(d) is double To && d.GetType().GetProperty("Width") is PropertyInfo WidthProperty)
-                    {
-                        object From = GetFrom(d);
-                        WidthProperty.SetValue(d, n <= 0d ? (From is null ? double.NaN : Convert.ToDouble(From)) : To * n);
-                    }
-                }},
-            { "Height", (d, o, n) =>
-                {
-                    if (GetTo(d) is double To && d.GetType().GetProperty("Height") is PropertyInfo HeightProperty)
-                    {
-                        object From = GetFrom(d);
-                        HeightProperty.SetValue(d, n <= 0d ? (From is null ? double.NaN : Convert.ToDouble(From)) : To * n);
-                    }
-                }},
-            { "Margin.Left", (d, o, n) =>
-                {
-                    if (GetTo(d) is double To && d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
-                    {
-                        Thickness Margin = (Thickness)MarginProperty.GetValue(d);
-                        Margin.Left = Convert.ToDouble(To) * (1d - n);
-                        MarginProperty.SetValue(d, Margin);
-                    }
-                }},
-            { "Margin.Right", (d, o, n) =>
-                {
-                    if (GetTo(d) is double To && d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
-                    {
-                        Thickness Margin = (Thickness)MarginProperty.GetValue(d);
-                        Margin.Right = Convert.ToDouble(To) * n;
-                        MarginProperty.SetValue(d, Margin);
-                    }
-                }},
-            { "Margin.Top", (d, o, n) =>
-                {
-                    if (GetTo(d) is double To && d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
-                    {
-                        Thickness Margin = (Thickness)MarginProperty.GetValue(d);
-                        Margin.Top = Convert.ToDouble(To) * (1d - n);
-                        MarginProperty.SetValue(d, Margin);
-                    }
-                }},
-            { "Margin.Bottom", (d, o, n) =>
-                {
-                    if (GetTo(d) is double To && d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
-                    {
-                        Thickness Margin = (Thickness)MarginProperty.GetValue(d);
-                        Margin.Bottom = Convert.ToDouble(To) * n;
-                        MarginProperty.SetValue(d, Margin);
-                    }
-                }},
-            { "Background", (d, o, n) =>
-                {
-                    object To = GetTo(d);
-                    if (To != null && d.GetType().GetProperty("Background") is PropertyInfo BackgroundPorperty)
-                    {
-                        object From = GetFrom(d);
-                        if (To is SolidColorBrush ToBrush)
-                        {
+            string Targe = GetTarge(d);
+            switch (GetTarge(d))
+            {
+                case "Width":
+                case "Height":
 
+                    if (GetTo(d) is double SizeTo &&
+                        d.GetType().GetProperty(Targe) is PropertyInfo SizeProperty)
+                    {
+                        object From = GetFrom(d);
+                        SizeProperty.SetValue(d, NewValue <= 0d ? (From is null ? double.NaN : Convert.ToDouble(From)) : SizeTo * NewValue);
+                    }
+                    break;
+                case "Margin.Left":
+                case "Margin.Right":
+                case "Margin.Top":
+                case "Margin.Bottom":
+                    if (GetTo(d) is double MarginTo &&
+                        d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
+                    {
+                        Thickness Margin = (Thickness)MarginProperty.GetValue(d);
+                        switch (Targe)
+                        {
+                            case "Margin.Left":
+                                Margin.Left = MarginTo * (1d - NewValue);
+                                break;
+                            case "Margin.Right":
+                                Margin.Right = MarginTo * NewValue;
+                                break;
+                            case "Margin.Top":
+                                Margin.Top = MarginTo * (1d - NewValue);
+                                break;
+                            case "Margin.Bottom":
+                                Margin.Bottom = MarginTo * NewValue;
+                                break;
+                        }
+                        MarginProperty.SetValue(d, Margin);
+                    }
+                    break;
+                case "Background":
+                    if (GetTo(d) is Brush BrushTo &&
+                        d.GetType().GetProperty(Targe) is PropertyInfo BrushPorperty)
+                    {
+                        object From = GetFrom(d);
+                        if (BrushTo is SolidColorBrush ToBrush)
+                        {
                             Color FromColor = From is null ? Colors.White : (From as SolidColorBrush).Color;
-                            BackgroundPorperty.SetValue(d, new SolidColorBrush(Color.FromArgb(
-                                (byte)(FromColor.A + (ToBrush.Color.A - FromColor.A) * n),
-                                (byte)(FromColor.R + (ToBrush.Color.R - FromColor.R) * n),
-                                (byte)(FromColor.G + (ToBrush.Color.G - FromColor.G) * n),
-                                (byte)(FromColor.B + (ToBrush.Color.B - FromColor.B) * n))));
+                            BrushPorperty.SetValue(d, new SolidColorBrush(Color.FromArgb(
+                                (byte)(FromColor.A + (ToBrush.Color.A - FromColor.A) * NewValue),
+                                (byte)(FromColor.R + (ToBrush.Color.R - FromColor.R) * NewValue),
+                                (byte)(FromColor.G + (ToBrush.Color.G - FromColor.G) * NewValue),
+                                (byte)(FromColor.B + (ToBrush.Color.B - FromColor.B) * NewValue))));
+
                         }
                         //if (To is LinearGradientBrush ToLinearBrush)
                         //{
@@ -206,21 +186,22 @@ namespace MenthaAssembly
 
                         //}
                     }
-                }},
-        };
-
-        protected static void OnAnimationUpdated(DependencyObject d, double? OldValue, double NewValue)
-        {
-            if (AnimationFunction.TryGetValue(GetTarge(d).ToString(), out Action<DependencyObject, double?, double> Function))
-            {
-                Function.Invoke(d, OldValue, NewValue);
-            }
-            else
-            {
-                if (d is UIElement UI)
-                    UI.RaiseEvent(new RoutedPropertyChangedEventArgs<double>(OldValue ?? 0d, NewValue, UpdateEvent));
+                    break;
+                default:
+                    if (d is UIElement UI)
+                        UI.RaiseEvent(new RoutedPropertyChangedEventArgs<double>(OldValue ?? 0d, NewValue, UpdateEvent));
+                    break;
             }
         }
 
+        protected class _ParametersConverter : IMultiValueConverter
+        {
+            public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+                => string.Join(",", values);
+
+            public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+               => Array.Empty<object>();
+        }
     }
+
 }
