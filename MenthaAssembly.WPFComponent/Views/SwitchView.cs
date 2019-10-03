@@ -9,19 +9,12 @@ namespace MenthaAssembly.Views
     public class SwitchView : Control
     {
         public static readonly RoutedEvent ToggleChangedEvent =
-            EventManager.RegisterRoutedEvent("ToggleChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<bool>), typeof(AnimationHelper));
-
-        public static void AddToggleChangedHandler(DependencyObject d, RoutedPropertyChangedEventHandler<bool> handler)
+            EventManager.RegisterRoutedEvent("ToggleChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<bool>), typeof(SwitchView));
+        public event RoutedPropertyChangedEventHandler<bool> ToggleChanged
         {
-            if (d is UIElement This)
-                This.AddHandler(ToggleChangedEvent, handler);
+            add { AddHandler(ToggleChangedEvent, value); }
+            remove { RemoveHandler(ToggleChangedEvent, value); }
         }
-        public static void RemoveToggleChangedHandler(DependencyObject d, RoutedPropertyChangedEventHandler<bool> handler)
-        {
-            if (d is UIElement This)
-                This.RemoveHandler(ToggleChangedEvent, handler);
-        }
-
 
         public static new readonly DependencyProperty PaddingProperty =
             DependencyProperty.Register("Padding", typeof(Thickness), typeof(SwitchView), new PropertyMetadata(new Thickness(2)));

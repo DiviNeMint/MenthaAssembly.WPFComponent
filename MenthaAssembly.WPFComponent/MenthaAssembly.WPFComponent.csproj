@@ -33,6 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -52,11 +53,17 @@
     <Compile Include="Helpers\User32.cs" />
     <Compile Include="Helpers\WindowBlur.cs" />
     <Compile Include="Helpers\WindowHelper.cs" />
-    <Compile Include="Views\Controls\ArcRing.cs" />
-    <Compile Include="Views\Controls\ArcRingProgress.cs" />
-    <Compile Include="Views\Controls\SwitchView.cs" />
-    <Compile Include="Views\Controls\TextBoxs\PasswordBox.cs" />
-    <Compile Include="Views\Controls\TextBoxs\SearchBox.cs" />
+    <Compile Include="Models\IconSource.cs" />
+    <Compile Include="Views\ArcRing.cs" />
+    <Compile Include="Views\ArcRingProgress.cs" />
+    <Compile Include="Views\Editors\Attributes\EditorDisplayAttribute.cs" />
+    <Compile Include="Views\Editors\Attributes\EditorOptionAttribute.cs" />
+    <Compile Include="Views\Editors\Comparers\PropertyEditorComparer.cs" />
+    <Compile Include="Views\Editors\PropertyEditor.cs" />
+    <Compile Include="Views\Editors\PropertyEditorItem.cs" />
+    <Compile Include="Views\SwitchView.cs" />
+    <Compile Include="Views\TextBoxs\PasswordBox.cs" />
+    <Compile Include="Views\TextBoxs\SearchBox.cs" />
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -91,5 +98,6 @@
       <Name>MenthaAssembly</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
