@@ -105,6 +105,7 @@
     </Style>
 
     <Style TargetType="{x:Type local:SearchBox}">
+        <Setter Property="Height" Value="20"/>
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderBrush" Value="#FFABADB3"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -297,6 +298,7 @@
     <Style TargetType="{x:Type local:PropertyEditorItem}">
         <Setter Property="MinWidth" Value="150"/>
         <Setter Property="MinHeight" Value="20"/>
+        <Setter Property="Focusable" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:PropertyEditorItem}">
@@ -310,10 +312,10 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="PART_TextBlock"
                                        Foreground="{TemplateBinding Foreground}"
-                                       Margin="10,2,0,2"
+                                       Margin="10,2,5,2"
                                        HorizontalAlignment="Left" VerticalAlignment="Center" 
                                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-                            <ContentPresenter Margin="5,0"  
+                            <ContentPresenter Margin="5,2"
                                               Content="{TemplateBinding Content}" 
                                               ContentTemplate="{TemplateBinding ContentTemplate}" 
                                               ContentStringFormat="{TemplateBinding ContentStringFormat}" 
@@ -332,6 +334,16 @@
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+        <Setter Property="Title" Value="{Binding Data.Property, FallbackValue=屬性, Source={x:Static Core:LanguageManager.Current}}"/>
+        <Setter Property="TitleTemplate">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border Background="#FF2D2D30" MinHeight="22">
+                        <ContentPresenter Margin="5,0" TextBlock.Foreground="#FFF1F1F1" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:PropertyEditor}">
@@ -345,18 +357,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
-                            <Thumb x:Name="PART_TitleThumb" Background="{TemplateBinding TitleBackground}" Foreground="{TemplateBinding TitleForeground}" Height="22">
-                                <Thumb.Template>
-                                    <ControlTemplate TargetType="{x:Type Thumb}">
-                                        <Border Background="{TemplateBinding Background}">
-                                            <TextBlock Text="{Binding Data.Property, FallbackValue=屬性, Source={x:Static Core:LanguageManager.Current}}" 
-                                                       Margin="5,0" 
-                                                       Foreground="{TemplateBinding Foreground}" 
-                                                       VerticalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Thumb.Template>
-                            </Thumb>
+                            <ContentControl Content="{TemplateBinding Title}"
+                                            Template="{TemplateBinding TitleTemplate}"/>
                             <Grid x:Name="Header" 
                                   MinHeight="46"
                                   MaxHeight="50"

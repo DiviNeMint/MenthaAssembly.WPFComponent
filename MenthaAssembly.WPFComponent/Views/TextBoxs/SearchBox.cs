@@ -16,8 +16,10 @@ namespace MenthaAssembly.Views
                 {
                     if (d is SearchBox This)
                     {
+                        This.Clear();
                         if (This.CurrentCollectionView is ICollectionView OCView)
                             OCView.Filter = null;
+
                         if (CollectionViewSource.GetDefaultView(e.NewValue) is ICollectionView NCView)
                         {
                             NCView.Filter = (o) => This.Predicate(o, This.Text);

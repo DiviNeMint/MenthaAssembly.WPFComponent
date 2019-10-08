@@ -1,18 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MenthaAssembly.Views
 {
@@ -49,8 +39,10 @@ namespace MenthaAssembly.Views
                         #endregion
 
                         #region PropertyValue
-                        string PropertyTypeName = Info.PropertyType.Name.Equals(nameof(Boolean)) ? nameof(Boolean) : Info.PropertyType.BaseType?.Name;
-                        switch (PropertyTypeName)
+                        Type PropertyType = typeof(ValueType).Equals(Info.PropertyType.BaseType) ? Info.PropertyType :
+                                                  typeof(object).Equals(Info.PropertyType.BaseType) ? Info.PropertyType :
+                                                  Info.PropertyType.BaseType ?? Info.PropertyType;
+                        switch (PropertyType.Name)
                         {
                             case nameof(Boolean):
                                 CheckBox PART_CheckBox = new CheckBox();
@@ -77,7 +69,40 @@ namespace MenthaAssembly.Views
                                     });
                                 This.Content = PART_ComboBox;
                                 break;
-                            default:
+                            case nameof(SByte):
+                            case nameof(Int16):
+                            case nameof(Int32):
+                            case nameof(Int64):
+                            case nameof(Byte):
+                            case nameof(UInt16):
+                            case nameof(UInt32):
+                            case nameof(UInt64):
+                            case nameof(Decimal):
+                            case nameof(Single):
+                            case nameof(Double):
+                                TextBox PART_ValueTextBox = new TextBox();
+                                PART_ValueTextBox.SetBinding(TextBox.TextProperty,
+                                    new Binding()
+                                    {
+                                        Path = new PropertyPath(Info.Name),
+                                        Source = Targe
+                                    });
+                                TextBoxHelper.SetValueType(PART_ValueTextBox, PropertyType);
+                                if (Info.GetCustomAttribute<EditorValueAttribute>() is EditorValueAttribute ValueDatas)
+                                {
+                                    if (ValueDatas.Delta != null)
+                                        TextBoxHelper.SetDelta(PART_ValueTextBox, ValueDatas.Delta);
+                                    if (ValueDatas.CombineDelta != null)
+                                        TextBoxHelper.SetCombineDelta(PART_ValueTextBox, ValueDatas.CombineDelta);
+                                    if (ValueDatas.Minimum != null)
+                                        TextBoxHelper.SetMinimum(PART_ValueTextBox, ValueDatas.Minimum);
+                                    if (ValueDatas.Maximum != null)
+                                        TextBoxHelper.SetMaximum(PART_ValueTextBox, ValueDatas.Maximum);
+                                }
+                                This.Content = PART_ValueTextBox;
+                                break;
+                            case nameof(Object):
+                            case nameof(String):
                                 TextBox PART_TextBox = new TextBox();
                                 PART_TextBox.SetBinding(TextBox.TextProperty,
                                     new Binding()
@@ -86,19 +111,19 @@ namespace MenthaAssembly.Views
                                         Source = Targe
                                     });
                                 This.Content = PART_TextBox;
-
-                                //if (TextBox is ValueTextBox ValueTextBox)
-                                //{
-                                //    EditorOptionAttribute PropertyOption = Info.GetCustomAttribute<EditorOptionAttribute>() ?? new EditorOptionAttribute();
-                                //    ValueTextBox.Delta = PropertyOption.ValueDelta;
-                                //    ValueTextBox.CtrlDelta = PropertyOption.ValueCtrlDelta;
-                                //    ValueTextBox.Maximum = PropertyOption.ValueMaximum;
-                                //    ValueTextBox.Minimum = PropertyOption.ValueMinimum;
-                                //}
+                                break;
+                            default:
+                                This.Content = new TextBox
+                                {
+                                    Text = PropertyType.FullName,
+                                    IsReadOnly = true,
+                                    IsReadOnlyCaretVisible = false,
+                                };
                                 break;
                         }
 
                         #endregion
+
                     }
                 }));
         public object TargeObject

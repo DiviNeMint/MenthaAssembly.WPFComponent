@@ -45,15 +45,17 @@ namespace MenthaAssembly.Views
                       if (d is PropertyEditor This)
                       {
                           This.ItemsSource.Clear();
+                          if (This.GetTemplateChild("PART_SearchBox") is SearchBox PART_SearchBox)
+                              PART_SearchBox.Clear();
+
                           if (e.NewValue?.GetType() is Type ObjectType)
                           {
                               EditorOptionAttribute EditorOption = ObjectType.GetCustomAttribute<EditorOptionAttribute>();
                               // Icon
                               if (This.GetTemplateChild("PART_IconImage") is Image PART_IconImage)
                               {
-                                  IconSource IconSource = string.IsNullOrEmpty(EditorOption.IconPath) ? DefaultIcon : (This.TryFindResource(EditorOption.IconPath) as IconSource ?? DefaultIcon);
-                                  PART_IconImage.Source = (ImageSource)IconSource.ImageSource ??
-                                                          new DrawingImage(new GeometryDrawing(IconSource.Fill, new Pen(IconSource.Stroke, IconSource.StrokeThickness), IconSource.Geometry));
+                                  IconSource IconSource = string.IsNullOrEmpty(EditorOption?.IconPath) ? DefaultIcon : (This.TryFindResource(EditorOption.IconPath) as IconSource ?? DefaultIcon);
+                                  PART_IconImage.Source = IconSource.GetIcon();
                                   PART_IconImage.Margin = IconSource.Padding;
 
                                   if (IconSource.Size.Equals(default))
@@ -84,7 +86,7 @@ namespace MenthaAssembly.Views
 
                               // Type
                               if (This.GetTemplateChild("PART_TypeTextBlock") is TextBlock PART_TypeTextBlock)
-                                  PART_TypeTextBlock.Text = EditorOption?.TypeName ?? ObjectType.Name;
+                                  PART_TypeTextBlock.Text = EditorOption?.TypeDisplay ?? ObjectType.Name;
 
                               // Property
                               foreach (PropertyInfo item in ObjectType.GetProperties()
@@ -118,20 +120,20 @@ namespace MenthaAssembly.Views
             set => SetValue(ContentProperty, value);
         }
 
-        public static readonly DependencyProperty TitleBackgroundProperty =
-              DependencyProperty.Register("TitleBackground", typeof(Brush), typeof(PropertyEditor), new PropertyMetadata(new SolidColorBrush(Color.FromArgb(0xFF, 0x2D, 0x2D, 0x30))));
-        public Brush TitleBackground
+        public static readonly DependencyProperty TitleProperty =
+            DependencyProperty.Register("Title", typeof(object), typeof(PropertyEditor), new PropertyMetadata(default));
+        public object Title
         {
-            get => (Brush)GetValue(TitleBackgroundProperty);
-            set => SetValue(TitleBackgroundProperty, value);
+            get => GetValue(TitleProperty);
+            set => SetValue(TitleProperty, value);
         }
 
-        public static readonly DependencyProperty TitleForegroundProperty =
-              DependencyProperty.Register("TitleForeground", typeof(Brush), typeof(PropertyEditor), new PropertyMetadata(new SolidColorBrush(Color.FromArgb(0xFF, 0xF1, 0xF1, 0xF1))));
-        public Brush TitleForeground
+        public static readonly DependencyProperty TitleTemplateProperty =
+            DependencyProperty.Register("TitleTemplate", typeof(ControlTemplate), typeof(PropertyEditor), new PropertyMetadata(default));
+        public ControlTemplate TitleTemplate
         {
-            get => (Brush)GetValue(TitleForegroundProperty);
-            set => SetValue(TitleForegroundProperty, value);
+            get => (ControlTemplate)GetValue(TitleTemplateProperty);
+            set => SetValue(TitleTemplateProperty, value);
         }
 
         static PropertyEditor()

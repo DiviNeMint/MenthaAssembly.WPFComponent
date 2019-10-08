@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace MenthaAssembly
 {
@@ -8,20 +7,11 @@ namespace MenthaAssembly
     {
         public string NamePath { set; get; }
 
-        public string TypeName { set; get; }
+        public string TypeDisplay { set; get; }
 
         public string IconPath { set; get; }
 
         public bool EnableContentPropertyChangedEvent { set; get; }
-
-
-        //public double ValueDelta { get; set; }
-
-        //public double ValueCtrlDelta { get; set; }
-
-        //public double ValueMaximum { set; get; } = double.MaxValue;
-
-        //public double ValueMinimum { get; set; } = double.MinValue;
 
     }
 }

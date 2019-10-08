@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Composition;
 using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly
@@ -32,5 +27,9 @@ namespace MenthaAssembly
 
         public double StrokeThickness { set; get; }
 
+
+        public ImageSource GetIcon()
+            => (ImageSource)ImageSource ?? new DrawingImage(new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry));
+        
     }
 }
