@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -51,11 +52,13 @@
   <ItemGroup>
     <Compile Include="Enums\KeyboardInputMode.cs" />
     <Compile Include="Helpers\AnimationHelper.cs" />
+    <Compile Include="Helpers\ImageHelper.cs" />
     <Compile Include="Helpers\TextBoxHelper.cs" />
     <Compile Include="Helpers\User32.cs" />
     <Compile Include="Helpers\WindowBlur.cs" />
     <Compile Include="Helpers\WindowHelper.cs" />
     <Compile Include="Models\IconSource.cs" />
+    <Compile Include="Models\BitmapContext.cs" />
     <Compile Include="Views\ArcRing.cs" />
     <Compile Include="Views\ArcRingProgress.cs" />
     <Compile Include="Views\Editors\Attributes\EditorDisplayAttribute.cs" />
@@ -67,6 +70,8 @@
     <Compile Include="Views\SwitchView.cs" />
     <Compile Include="Views\TextBoxs\PasswordBox.cs" />
     <Compile Include="Views\TextBoxs\SearchBox.cs" />
+    <Compile Include="Views\Viewers\ImageViewer.cs" />
+    <Compile Include="Views\Viewers\ImageViewerMapper.cs" />
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
