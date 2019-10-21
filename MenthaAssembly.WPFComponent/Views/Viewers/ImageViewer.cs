@@ -140,26 +140,28 @@ namespace MenthaAssembly.Views
                     Factor = Math.Max(MinFactor, Factor / ZoomScale);
             }
         }
-        public void Zoom(bool ZoomIn, Int32Point CenterPoint)
+        public void Zoom(bool ZoomIn, Point MousePoint, Vector MouseVector)
         {
             if (ZoomIn)
             {
                 if (Factor < 1)
                 {
-                    IsZoomWithCenterPoint = true;
-                    this.CenterPoint = CenterPoint;
+                    IsZoomWithMouse = true;
+                    this.MousePoint = MousePoint;
+                    this.MouseVector = MouseVector;
                     Factor = Math.Min(1, Factor * ZoomScale);
-                    IsZoomWithCenterPoint = false;
+                    IsZoomWithMouse = false;
                 }
             }
             else
             {
                 if (Factor > MinFactor)
                 {
-                    IsZoomWithCenterPoint = true;
-                    this.CenterPoint = CenterPoint;
+                    IsZoomWithMouse = true;
+                    this.MousePoint = MousePoint;
+                    this.MouseVector = MouseVector;
                     Factor = Math.Max(MinFactor, Factor / ZoomScale);
-                    IsZoomWithCenterPoint = false;
+                    IsZoomWithMouse = false;
                 }
             }
         }
@@ -253,12 +255,14 @@ namespace MenthaAssembly.Views
             return Math.Max(MinFactor, Factor);
         }
 
-        protected bool IsZoomWithCenterPoint { set; get; }
-        protected Int32Point CenterPoint { set; get; }
+        protected bool IsZoomWithMouse { set; get; }
+        protected Point MousePoint { set; get; }
+        protected Vector MouseVector { set; get; }
         protected Int32Rect CalculateViewport()
         {
             Int32Size ViewportHalfSize = ViewBox * (MinFactor / Factor / 2);
-            Int32Point C0 = IsZoomWithCenterPoint ? CenterPoint : new Int32Point(Viewport.X + Viewport.Width / 2, Viewport.Y + Viewport.Height / 2);
+            Int32Point C0 = IsZoomWithMouse ? new Int32Point(MousePoint.X - MouseVector.X / Factor, MousePoint.Y - MouseVector.Y / Factor) :
+                                              new Int32Point(Viewport.X + Viewport.Width / 2, Viewport.Y + Viewport.Height / 2);
 
             Int32Rect Result = new Int32Rect(C0.X - ViewportHalfSize.Width,
                                              C0.Y - ViewportHalfSize.Height,
@@ -384,8 +388,9 @@ namespace MenthaAssembly.Views
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
             Point Position = e.GetPosition(this);
-            double FactorStep = 1 / Factor;
-            Zoom(e.Delta > 0, new Int32Point(Viewport.X + Position.X * FactorStep, Viewport.Y + Position.Y * FactorStep));
+            Zoom(e.Delta > 0,
+                 new Point(Viewport.X + Position.X / Factor, Viewport.Y + Position.Y / Factor),
+                 new Vector(Position.X - this.ActualWidth / 2, Position.Y - this.ActualHeight / 2));
         }
 
         protected bool IsLeftMouseDown { set; get; } = false;

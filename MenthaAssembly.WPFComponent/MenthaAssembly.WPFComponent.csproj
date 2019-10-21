@@ -57,7 +57,7 @@
     <Compile Include="Helpers\User32.cs" />
     <Compile Include="Helpers\WindowBlur.cs" />
     <Compile Include="Helpers\WindowHelper.cs" />
-    <Compile Include="Models\IconSource.cs" />
+    <Compile Include="Models\IconContext.cs" />
     <Compile Include="Models\BitmapContext.cs" />
     <Compile Include="Views\ArcRing.cs" />
     <Compile Include="Views\ArcRingProgress.cs" />

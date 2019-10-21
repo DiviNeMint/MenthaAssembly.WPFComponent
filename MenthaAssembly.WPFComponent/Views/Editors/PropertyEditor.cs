@@ -15,7 +15,7 @@ namespace MenthaAssembly.Views
 
     public class PropertyEditor : Control
     {
-        public static IconSource DefaultIcon { get; } = new IconSource
+        public static IconContext DefaultIcon { get; } = new IconContext
         {
             Geometry = Geometry.Parse("M12.5,12.5L16.5,12.5 16.5,16.5 12.5,16.5z M6.5,12.5L10.5,12.5 10.5,16.5 6.5,16.5z M0.5,12.5L4.5,12.5 4.5,16.5 0.5,16.5z M6.5,6.5L10.5,6.5 10.5,10.5 6.5,10.5z M0.5,6.5L4.5,6.5 4.5,10.5 0.5,10.5z M0.5,0.5L4.5,0.5 4.5,4.5 0.5,4.5z"),
             Fill = Brushes.Black,
@@ -45,33 +45,34 @@ namespace MenthaAssembly.Views
                       if (d is PropertyEditor This)
                       {
                           This.ItemsSource.Clear();
-                          if (This.GetTemplateChild("PART_SearchBox") is SearchBox PART_SearchBox)
-                              PART_SearchBox.Clear();
+                          This.PART_SearchBox?.Clear();
 
                           if (e.NewValue?.GetType() is Type ObjectType)
                           {
                               EditorOptionAttribute EditorOption = ObjectType.GetCustomAttribute<EditorOptionAttribute>();
                               // Icon
-                              if (This.GetTemplateChild("PART_IconImage") is Image PART_IconImage)
+                              if (This.PART_IconImage != null)
                               {
-                                  IconSource IconSource = string.IsNullOrEmpty(EditorOption?.IconPath) ? DefaultIcon : (This.TryFindResource(EditorOption.IconPath) as IconSource ?? DefaultIcon);
-                                  PART_IconImage.Source = IconSource.GetIcon();
-                                  PART_IconImage.Margin = IconSource.Padding;
+                                  IconContext Icon = string.IsNullOrEmpty(EditorOption?.IconPath) ? DefaultIcon :
+                                                     This.TryFindResource(EditorOption.IconPath) as IconContext ??
+                                                     Application.Current.TryFindResource(EditorOption.IconPath) as IconContext ?? DefaultIcon;
+                                  This.PART_IconImage.Source = Icon.GetIcon();
+                                  This.PART_IconImage.Margin = Icon.Padding;
 
-                                  if (IconSource.Size.Equals(default))
-                                      IconSource.Size = new Size(30d, 30d);
-                                  PART_IconImage.Width = IconSource.Size.Width;
-                                  PART_IconImage.Height = IconSource.Size.Height;
+                                  if (Icon.Size.Equals(default))
+                                      Icon.Size = new Size(30d, 30d);
+                                  This.PART_IconImage.Width = Icon.Size.Width;
+                                  This.PART_IconImage.Height = Icon.Size.Height;
                               }
 
                               // Name
-                              if (This.GetTemplateChild("PART_NameTextBox") is TextBox PART_NameTextBox)
+                              if (This.PART_NameTextBox != null)
                               {
                                   if (!string.IsNullOrEmpty(EditorOption?.NamePath) &&
                                       ObjectType.GetProperty(EditorOption.NamePath) != null)
                                   {
-                                      PART_NameTextBox.Visibility = Visibility.Visible;
-                                      PART_NameTextBox.SetBinding(TextBox.TextProperty,
+                                      This.PART_NameTextBox.Visibility = Visibility.Visible;
+                                      This.PART_NameTextBox.SetBinding(TextBox.TextProperty,
                                          new Binding()
                                          {
                                              Path = new PropertyPath(EditorOption.NamePath),
@@ -80,13 +81,13 @@ namespace MenthaAssembly.Views
                                   }
                                   else
                                   {
-                                      PART_NameTextBox.Visibility = Visibility.Hidden;
+                                      This.PART_NameTextBox.Visibility = Visibility.Hidden;
                                   }
                               }
 
                               // Type
-                              if (This.GetTemplateChild("PART_TypeTextBlock") is TextBlock PART_TypeTextBlock)
-                                  PART_TypeTextBlock.Text = EditorOption?.TypeDisplay ?? ObjectType.Name;
+                              if (This.PART_TypeTextBlock != null)
+                                  This.PART_TypeTextBlock.Text = EditorOption?.TypeDisplay ?? ObjectType.Name;
 
                               // Property
                               foreach (PropertyInfo item in ObjectType.GetProperties()
@@ -136,6 +137,11 @@ namespace MenthaAssembly.Views
             set => SetValue(TitleTemplateProperty, value);
         }
 
+        protected Image PART_IconImage;
+        protected TextBox PART_NameTextBox;
+        protected TextBlock PART_TypeTextBlock;
+        protected SearchBox PART_SearchBox;
+
         static PropertyEditor()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PropertyEditor), new FrameworkPropertyMetadata(typeof(PropertyEditor)));
@@ -144,13 +150,26 @@ namespace MenthaAssembly.Views
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
+
+            if (GetTemplateChild("PART_IconImage") is Image PART_IconImage)
+                this.PART_IconImage = PART_IconImage;
+
+            if (GetTemplateChild("PART_NameTextBox") is TextBox PART_NameTextBox)
+                this.PART_NameTextBox = PART_NameTextBox;
+
+            if (GetTemplateChild("PART_TypeTextBlock") is TextBlock PART_TypeTextBlock)
+                this.PART_TypeTextBlock = PART_TypeTextBlock;
+
             if (GetTemplateChild("PART_SearchBox") is SearchBox PART_SearchBox)
+            {
+                this.PART_SearchBox = PART_SearchBox;
                 PART_SearchBox.Predicate = (o, s) =>
                 {
                     if (o is PropertyInfo Info)
                         return string.IsNullOrEmpty(s) ? true : Info.Name.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0;
                     return false;
                 };
+            }
 
             if (CollectionViewSource.GetDefaultView(ItemsSource) is ListCollectionView View)
                 View.CustomSort = new PropertyEditorComparer();

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly
 {
-    public class IconSource
+    [ContentProperty("Children")]
+    public class IconContext
     {
         public BitmapImage ImageSource { set; get; }
 
@@ -17,6 +19,8 @@ namespace MenthaAssembly
 
         public Geometry Geometry { get; set; }
 
+        public DrawingCollection Children { get; } = new DrawingCollection();
+
         public Size Size { set; get; }
 
         public Thickness Padding { get; set; }
@@ -27,9 +31,9 @@ namespace MenthaAssembly
 
         public double StrokeThickness { set; get; }
 
-
         public ImageSource GetIcon()
-            => (ImageSource)ImageSource ?? new DrawingImage(new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry));
-        
+            => (ImageSource)ImageSource ?? new DrawingImage(Children.Count <= 0 ?
+                                           new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry) :
+                                           (Drawing)new DrawingGroup() { Children = Children });
     }
 }
