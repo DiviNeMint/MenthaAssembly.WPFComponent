@@ -28,8 +28,8 @@ namespace MenthaAssembly.Views
         [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
         private static extern void SetMemory(IntPtr dst, int Color, int Length);
 
-        public static readonly DependencyProperty TargeViewerProperty =
-              DependencyProperty.Register("TargeViewer", typeof(ImageViewer), typeof(ImageViewerMapper), new PropertyMetadata(default,
+        public static readonly DependencyProperty TargetViewerProperty =
+              DependencyProperty.Register("TargetViewer", typeof(ImageViewer), typeof(ImageViewerMapper), new PropertyMetadata(default,
                   (d, e) =>
                   {
                       if (d is ImageViewerMapper This)
@@ -54,10 +54,10 @@ namespace MenthaAssembly.Views
                           }
                       }
                   }));
-        public ImageViewer TargeViewer
+        public ImageViewer TargetViewer
         {
-            get => (ImageViewer)GetValue(TargeViewerProperty);
-            set => SetValue(TargeViewerProperty, value);
+            get => (ImageViewer)GetValue(TargetViewerProperty);
+            set => SetValue(TargetViewerProperty, value);
         }
 
         public static readonly DependencyProperty DisplayImageProperty =
@@ -129,16 +129,16 @@ namespace MenthaAssembly.Views
             base.OnRenderSizeChanged(sizeInfo);
 
             if (sizeInfo.NewSize.IsEmpty || !(sizeInfo.WidthChanged || sizeInfo.HeightChanged) ||
-                PART_Container is null || TargeViewer is null ||
+                PART_Container is null || TargetViewer is null ||
                 ActualWidth <= 0d || ActualHeight <= 0d)
                 return;
 
-            double ScaleWidth = ActualWidth / TargeViewer.ActualWidth;
-            double ScaleHeight = (ActualHeight - PART_Title?.ActualHeight ?? 0d) / TargeViewer.ActualHeight;
+            double ScaleWidth = ActualWidth / TargetViewer.ActualWidth;
+            double ScaleHeight = (ActualHeight - PART_Title?.ActualHeight ?? 0d) / TargetViewer.ActualHeight;
             double Scale = ScaleWidth <= 0 ? ScaleHeight : ScaleHeight <= 0 ? ScaleWidth : Math.Min(ScaleWidth, ScaleHeight);
 
-            PART_Container.Width = TargeViewer.ActualWidth * Scale;
-            PART_Container.Height = TargeViewer.ActualHeight * Scale;
+            PART_Container.Width = TargetViewer.ActualWidth * Scale;
+            PART_Container.Height = TargetViewer.ActualHeight * Scale;
 
             ScaleStep = ViewBox.Width / PART_Container.ActualWidth;
             OnViewportChanged(null, new ChangedEventArgs<Int32Rect>(Int32Rect.Empty, Viewport));
@@ -157,9 +157,9 @@ namespace MenthaAssembly.Views
                 this.PART_Container.SetBinding(BackgroundProperty, new Binding
                 {
                     Path = new PropertyPath(BackgroundProperty),
-                    Source = TargeViewer
+                    Source = TargetViewer
                 });
-                PART_Container.PreviewMouseWheel += (s, e) => TargeViewer?.Zoom(e.Delta > 0);
+                PART_Container.PreviewMouseWheel += (s, e) => TargetViewer?.Zoom(e.Delta > 0);
                 PART_Container.PreviewMouseDown += OnContainerPreviewMouseDown;
                 PART_Container.PreviewMouseMove += OnContainerPreviewMouseMove;
                 PART_Container.PreviewMouseUp += OnContainerPreviewMouseUp;
@@ -169,11 +169,11 @@ namespace MenthaAssembly.Views
 
         //private void OnContainerPreviewMouseWheel(object sender, MouseWheelEventArgs e)
         //{
-        //    if (TargeViewer is null)
+        //    if (TargetViewer is null)
         //        return;
 
         //    Point TempPosition = e.GetPosition(PART_Container);
-        //    TargeViewer.Zoom(e.Delta > 0, new Int32Point(TempPosition.X * ScaleStep, TempPosition.Y * ScaleStep));
+        //    TargetViewer.Zoom(e.Delta > 0, new Int32Point(TempPosition.X * ScaleStep, TempPosition.Y * ScaleStep));
         //}
 
         protected bool IsLeftMouseDown { set; get; } = false;
@@ -185,7 +185,7 @@ namespace MenthaAssembly.Views
                 PART_Container.CaptureMouse();
                 IsLeftMouseDown = true;
                 Position = e.GetPosition(PART_Container);
-                TargeViewer.Viewport = CalculateViewportLocation(new Int32Point(
+                TargetViewer.Viewport = CalculateViewportLocation(new Int32Point(
                     Math.Min(Math.Max(0, Position.X), PART_Container.ActualWidth) * ScaleStep,
                     Math.Min(Math.Max(0, Position.Y), PART_Container.ActualHeight) * ScaleStep));
             }
@@ -199,7 +199,7 @@ namespace MenthaAssembly.Views
                     return;
 
                 Position = TempPosition;
-                TargeViewer.Viewport = CalculateViewportLocation(new Int32Point(
+                TargetViewer.Viewport = CalculateViewportLocation(new Int32Point(
                     Math.Min(Math.Max(0, Position.X), PART_Container.ActualWidth) * ScaleStep,
                     Math.Min(Math.Max(0, Position.Y), PART_Container.ActualHeight) * ScaleStep));
             }
@@ -215,10 +215,10 @@ namespace MenthaAssembly.Views
 
         protected Int32Rect CalculateViewportLocation(Int32Point Position)
         {
-            Int32Rect TempViewport = new Int32Rect(Position.X - TargeViewer.Viewport.Width / 2,
-                                                   Position.Y - TargeViewer.Viewport.Height / 2,
-                                                   TargeViewer.Viewport.Width,
-                                                   TargeViewer.Viewport.Height);
+            Int32Rect TempViewport = new Int32Rect(Position.X - TargetViewer.Viewport.Width / 2,
+                                                   Position.Y - TargetViewer.Viewport.Height / 2,
+                                                   TargetViewer.Viewport.Width,
+                                                   TargetViewer.Viewport.Height);
 
             TempViewport.X = Math.Min(Math.Max(0, TempViewport.X), ViewBox.Width - TempViewport.Width);
             TempViewport.Y = Math.Min(Math.Max(0, TempViewport.Y), ViewBox.Height - TempViewport.Height);
@@ -234,15 +234,15 @@ namespace MenthaAssembly.Views
 
         protected virtual void OnViewBoxChanged(object sender, ChangedEventArgs<Int32Size> e)
         {
-            if (PART_Container is null || TargeViewer is null || ActualWidth <= 0d || ActualHeight <= 0d)
+            if (PART_Container is null || TargetViewer is null || ActualWidth <= 0d || ActualHeight <= 0d)
                 return;
 
-            double ScaleWidth = ActualWidth / TargeViewer.ActualWidth;
-            double ScaleHeight = (ActualHeight - PART_Title?.ActualHeight ?? 0d) / TargeViewer.ActualHeight;
+            double ScaleWidth = ActualWidth / TargetViewer.ActualWidth;
+            double ScaleHeight = (ActualHeight - PART_Title?.ActualHeight ?? 0d) / TargetViewer.ActualHeight;
             double Scale = ScaleWidth <= 0 ? ScaleHeight : ScaleHeight <= 0 ? ScaleWidth : Math.Min(ScaleWidth, ScaleHeight);
 
-            PART_Container.Width = TargeViewer.ActualWidth * Scale;
-            PART_Container.Height = TargeViewer.ActualHeight * Scale;
+            PART_Container.Width = TargetViewer.ActualWidth * Scale;
+            PART_Container.Height = TargetViewer.ActualHeight * Scale;
 
             ViewBox = e.NewValue;
             ScaleStep = ViewBox.Width / PART_Container.ActualWidth;
@@ -299,71 +299,136 @@ namespace MenthaAssembly.Views
                                                                    (ViewBox.Height - SourceContext.Height) / 2);
                         Int32Point SourceEndPoint = SourceLocation + new Int32Vector(SourceContext.Width, SourceContext.Height);
 
-                        byte* DisplayContextScan0 = (byte*)DisplayContext.Scan0;
-                        byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
-
-                        Parallel.For(0, DisplayContext.Height, (j) =>
+                        switch (SourceContext.Channel)
                         {
-                            byte* Data = DisplayContextScan0 + j * DisplayContext.Stride;
-
-                            double Y = j * ScaleStep;
-                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
-                            {
-                                double X = 0;
-                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                            case 1:
                                 {
-                                    if (Token.IsCancellationRequested)
-                                        return;
+                                    byte* DisplayContextScan0 = (byte*)DisplayContext.Scan0;
+                                    byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
 
-                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                    Parallel.For(0, DisplayContext.Height, (j) =>
                                     {
-                                        byte* SourceContextBuffer = SourceContextScan0 +
-                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                    ((int)X - SourceLocation.X) * SourceContext.PixelBytes;
-                                        //Draw SourceContext
-                                        for (int k = 0; k < DisplayContext.PixelBytes; k++)
+                                        byte* Data = DisplayContextScan0 + j * DisplayContext.Stride;
+
+                                        double Y = j * ScaleStep;
+                                        try
                                         {
-                                            *Data = *SourceContextBuffer;
-                                            Data++;
-                                            SourceContextBuffer++;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Clear
-                                        SetMemory((IntPtr)Data, 0, DisplayContext.PixelBytes);
-                                        Data += DisplayContext.PixelBytes;
-                                    }
-                                    X += ScaleStep;
-                                }
-                            }
-                            else
-                            {
-                                Data += DisplayContext.PixelBytes - 1;
-                                try
-                                {
-                                    for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
-                                    {
-                                        *Data = 0;
-                                        Data += DisplayContext.PixelBytes;
-                                    }
-                                }
-                                catch
-                                {
-                                    return;
-                                }
+                                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
+                                            {
+                                                double X = 0;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    if (Token.IsCancellationRequested)
+                                                        return;
 
-                                //try
-                                //{
-                                //    // Clear
-                                //    SetMemory((IntPtr)Data, 0, DisplayContext.Stride);
-                                //}
-                                //catch
-                                //{
-                                //    return;
-                                //}
-                            }
-                        });
+                                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                                    {
+                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                    ((int)X - SourceLocation.X) * SourceContext.PixelBytes;
+                                                        //Draw SourceContext
+                                                        for (int k = 0; k < DisplayContext.PixelBytes; k++)
+                                                        {
+                                                            *Data = *SourceContextBuffer;
+                                                            Data++;
+                                                            SourceContextBuffer++;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // Clear
+                                                        SetMemory((IntPtr)Data, 0, DisplayContext.PixelBytes);
+                                                        Data += DisplayContext.PixelBytes;
+                                                    }
+                                                    X += ScaleStep;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Data += DisplayContext.PixelBytes - 1;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    *Data = 0;
+                                                    Data += DisplayContext.PixelBytes;
+                                                }
+                                                //    // Clear
+                                                //    SetMemory((IntPtr)Data, 0, DisplayContext.Stride);
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            return;
+                                        }
+                                    });
+                                }
+                                break;
+                            case 3:
+                                {
+                                    byte* DisplayContextScan0 = (byte*)DisplayContext.Scan0;
+                                    byte* SourceContextScanR = (byte*)SourceContext.ScanR;
+                                    byte* SourceContextScanG = (byte*)SourceContext.ScanG;
+                                    byte* SourceContextScanB = (byte*)SourceContext.ScanB;
+
+                                    Parallel.For(0, DisplayContext.Height, (j) =>
+                                    {
+                                        byte* Data = DisplayContextScan0 + j * DisplayContext.Stride;
+
+                                        double Y = j * ScaleStep;
+                                        try
+                                        {
+                                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
+                                            {
+                                                double X = 0;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    if (Token.IsCancellationRequested)
+                                                        return;
+
+                                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                                    {
+                                                        int Index = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
+                                                        // B
+                                                        *Data = *(SourceContextScanB + Index);
+                                                        Data++;
+                                                        // G
+                                                        *Data = *(SourceContextScanG + Index);
+                                                        Data++;
+                                                        // R
+                                                        *Data = *(SourceContextScanR + Index);
+                                                        Data++;
+                                                        // A
+                                                        *Data = 255;
+                                                        Data++;
+                                                    }
+                                                    else
+                                                    {
+                                                        // Clear
+                                                        SetMemory((IntPtr)Data, 0, DisplayContext.PixelBytes);
+                                                        Data += DisplayContext.PixelBytes;
+                                                    }
+                                                    X += ScaleStep;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Data += DisplayContext.PixelBytes - 1;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    *Data = 0;
+                                                    Data += DisplayContext.PixelBytes;
+                                                }
+                                                //    // Clear
+                                                //    SetMemory((IntPtr)Data, 0, DisplayContext.Stride);
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            return;
+                                        }
+                                    });
+                                }
+                                break;
+                        }
                     }
                     else
                     {
@@ -372,6 +437,7 @@ namespace MenthaAssembly.Views
                     }
                 }
             });
+
 
     }
 }

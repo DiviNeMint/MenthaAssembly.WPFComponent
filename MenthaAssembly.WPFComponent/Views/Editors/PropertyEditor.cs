@@ -8,11 +8,12 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Markup;
 using System.Windows.Media;
 
 namespace MenthaAssembly.Views
 {
-
+    [ContentProperty("Content")]
     public class PropertyEditor : Control
     {
         public static IconContext DefaultIcon { get; } = new IconContext
@@ -25,7 +26,7 @@ namespace MenthaAssembly.Views
         };
 
         public static readonly RoutedEvent ContentChangedEvent =
-            EventManager.RegisterRoutedEvent("ContentChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(SwitchView));
+            EventManager.RegisterRoutedEvent("ContentChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(PropertyEditor));
         public event RoutedEventHandler ContentChanged
         {
             add { AddHandler(ContentChangedEvent, value); }
@@ -108,7 +109,7 @@ namespace MenthaAssembly.Views
                                   if (This.ContentPropertyChanged != null)
                                       foreach (PropertyInfo item in This.ItemsSource.ToArray())
                                           if (This.ItemsSource.Contains(item))
-                                              This.ContentPropertyChanged.Invoke(Content, new PropertyChangedEventArgs(item.Name));
+                                              This.ContentPropertyChanged.Invoke(This, new PropertyChangedEventArgs(item.Name));
                               }
                           }
                           This.OnContentChanged();
@@ -178,7 +179,7 @@ namespace MenthaAssembly.Views
         protected virtual void OnContentChanged()
             => RaiseEvent(new RoutedEventArgs(ContentChangedEvent, this));
         protected virtual void OnContentPropertyChanged(object sender, PropertyChangedEventArgs e)
-            => ContentPropertyChanged?.Invoke(sender, e);
+            => ContentPropertyChanged?.Invoke(this, e);
 
         public void AddProperty(PropertyInfo Info)
         {

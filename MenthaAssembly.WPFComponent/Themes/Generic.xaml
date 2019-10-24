@@ -213,7 +213,7 @@
                 <ControlTemplate TargetType="{x:Type local:SwitchView}">
                     <Border x:Name="BORDER"
                             Helpers:AnimationHelper.IsEnabled="{TemplateBinding IsToggled}"
-                            Helpers:AnimationHelper.Targe="Background"
+                            Helpers:AnimationHelper.Target="Background"
                             Helpers:AnimationHelper.From="{TemplateBinding Background}"
                             Helpers:AnimationHelper.To="{TemplateBinding ToggledBackground}"
                             Helpers:AnimationHelper.Interval="150"
@@ -293,40 +293,6 @@
         </Setter>
     </Style>
 
-    
-    <Style TargetType="{x:Type local:PropertyEditorItem}">
-        <Setter Property="MinWidth" Value="150"/>
-        <Setter Property="MinHeight" Value="20"/>
-        <Setter Property="Focusable" Value="False"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:PropertyEditorItem}">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="3*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="PART_TextBlock"
-                                       Foreground="{TemplateBinding Foreground}"
-                                       Margin="10,2,5,2"
-                                       HorizontalAlignment="Left" VerticalAlignment="Center" 
-                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-                            <ContentPresenter Margin="5,2"
-                                              Content="{TemplateBinding Content}" 
-                                              ContentTemplate="{TemplateBinding ContentTemplate}" 
-                                              ContentStringFormat="{TemplateBinding ContentStringFormat}" 
-                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                                              VerticalAlignment="Center"
-                                              Grid.Column="1"/>
-                        </Grid>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
 
     <Style TargetType="{x:Type local:PropertyEditor}">
         <Setter Property="MinWidth" Value="200"/>
@@ -403,7 +369,7 @@
                                 <ItemsControl ItemsSource="{TemplateBinding ItemsSource}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <local:PropertyEditorItem TargeObject="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"/>
+                                            <local:PropertyEditorItem TargetObject="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -429,6 +395,115 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style TargetType="{x:Type local:PropertyEditorItem}">
+        <Setter Property="MinWidth" Value="200"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="MenuTemplate">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border Background="#FF1B1B1C"
+                            BorderBrush="#FF333337" BorderThickness="1" CornerRadius="1"
+                            TextBlock.Foreground="White"
+                            SnapsToDevicePixels="True">
+                        <DockPanel>
+                            <TextBlock Text="{TemplateBinding Tag}" 
+                                       Padding="10,5" 
+                                       DockPanel.Dock="Top"/>
+                            <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Content="{TemplateBinding Content}" 
+                                              ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                              DockPanel.Dock="Bottom"/>
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:PropertyEditorItem}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="3*"/>
+                                <ColumnDefinition Width="20"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="PART_TextBlock"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Margin="10,2,5,2"
+                                       HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                            <ContentPresenter Margin="5,2,0,2"
+                                              Content="{TemplateBinding Content}" 
+                                              ContentTemplate="{TemplateBinding ContentTemplate}" 
+                                              ContentStringFormat="{TemplateBinding ContentStringFormat}" 
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="Center"
+                                              Grid.Column="1"/>
+                            <ToggleButton x:Name="PART_MenuToggleButton" Grid.Column="2">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border Background="Transparent" Padding="5,2">
+                                            <Rectangle x:Name="Rect"
+                                                       Stroke="#FF8B8B8B"
+                                                       Width="8" Height="8"
+                                                       SnapsToDevicePixels="True"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Rect" Property="Fill" Value="#FFBEE6FD"/>
+                                                <Setter TargetName="Rect" Property="Stroke" Value="#FF3C7FB1"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="Rect" Property="Fill" Value="#FFC4E5F6"/>
+                                                <Setter TargetName="Rect" Property="Stroke" Value="#FF2C628B"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="Rect" Property="Fill" Value="#FFBCDDEE"/>
+                                                <Setter TargetName="Rect" Property="Stroke" Value="#FF245A83"/>
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter TargetName="Rect" Property="Fill" Value="#7F8B8B8B"/>
+                                                <Setter TargetName="Rect" Property="Stroke" Value="#FF8B8B8B"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <Popup x:Name="PART_MenuPopup"
+                                   IsOpen="{Binding IsChecked, Mode=TwoWay, ElementName=PART_MenuToggleButton}"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   PopupAnimation="Fade"
+                                   PlacementTarget="{Binding ElementName=PART_MenuToggleButton}"
+                                   Placement="Left"
+                                   VerticalOffset="{Binding ActualHeight, ElementName=PART_MenuToggleButton}"
+                                   HorizontalOffset="{Binding ActualWidth, ElementName=PART_MenuToggleButton}">
+                                <ContentControl Margin="0,0,5,5"
+                                                Padding="0,0,5,5"
+                                                Tag="{Binding Text, ElementName=PART_TextBlock}"
+                                                Template="{TemplateBinding MenuTemplate}"
+                                                MinWidth="120">
+                                    <ContentControl.Effect>
+                                        <DropShadowEffect Opacity="0.5" ShadowDepth="3"/>
+                                    </ContentControl.Effect>
+                                    <ItemsControl x:Name="PART_MenuItemsControl" VerticalContentAlignment="Center" HorizontalContentAlignment="Stretch"/>
+                                </ContentControl>
+                            </Popup>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsOpen, ElementName=PART_MenuPopup}" Value="True">
+                            <Setter TargetName="PART_MenuToggleButton" Property="IsHitTestVisible" Value="False"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     
     <Style TargetType="{x:Type local:ImageViewer}">
         <Setter Property="Background" Value="Black"/>
@@ -448,7 +523,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-
     <Style TargetType="{x:Type local:ImageViewerMapper}">
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="#FF3F3F46"/>

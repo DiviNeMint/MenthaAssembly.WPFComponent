@@ -52,13 +52,13 @@ namespace MenthaAssembly
             => obj.SetValue(IsEnabledProperty, value);
 
 
-        public static readonly DependencyProperty TargeProperty =
-            DependencyProperty.RegisterAttached("Targe", typeof(string), typeof(AnimationHelper), new PropertyMetadata(string.Empty,
+        public static readonly DependencyProperty TargetProperty =
+            DependencyProperty.RegisterAttached("Target", typeof(string), typeof(AnimationHelper), new PropertyMetadata(string.Empty,
                 (d, e) => OnAnimationUpdated(d, null, GetPercentage(d))));
-        public static string GetTarge(DependencyObject obj)
-            => (string)obj.GetValue(TargeProperty);
-        public static void SetTarge(DependencyObject obj, string value)
-            => obj.SetValue(TargeProperty, value);
+        public static string GetTarget(DependencyObject obj)
+            => (string)obj.GetValue(TargetProperty);
+        public static void SetTarget(DependencyObject obj, string value)
+            => obj.SetValue(TargetProperty, value);
 
 
         public static readonly DependencyProperty BeginProperty =
@@ -123,14 +123,14 @@ namespace MenthaAssembly
 
         protected static void OnAnimationUpdated(DependencyObject d, double? OldValue, double NewValue)
         {
-            string Targe = GetTarge(d);
-            switch (GetTarge(d))
+            string Target = GetTarget(d);
+            switch (GetTarget(d))
             {
                 case "Width":
                 case "Height":
 
                     if (GetTo(d) is double SizeTo &&
-                        d.GetType().GetProperty(Targe) is PropertyInfo SizeProperty)
+                        d.GetType().GetProperty(Target) is PropertyInfo SizeProperty)
                     {
                         object From = GetFrom(d);
                         SizeProperty.SetValue(d, NewValue <= 0d ? (From is null ? double.NaN : Convert.ToDouble(From)) : SizeTo * NewValue);
@@ -144,7 +144,7 @@ namespace MenthaAssembly
                         d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
                     {
                         Thickness Margin = (Thickness)MarginProperty.GetValue(d);
-                        switch (Targe)
+                        switch (Target)
                         {
                             case "Margin.Left":
                                 Margin.Left = MarginTo * (1d - NewValue);
@@ -164,7 +164,7 @@ namespace MenthaAssembly
                     break;
                 case "Background":
                     if (GetTo(d) is Brush BrushTo &&
-                        d.GetType().GetProperty(Targe) is PropertyInfo BrushPorperty)
+                        d.GetType().GetProperty(Target) is PropertyInfo BrushPorperty)
                     {
                         object From = GetFrom(d);
                         if (BrushTo is SolidColorBrush ToBrush)

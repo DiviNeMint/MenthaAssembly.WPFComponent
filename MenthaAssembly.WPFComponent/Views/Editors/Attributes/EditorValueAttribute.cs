@@ -5,6 +5,8 @@ namespace MenthaAssembly
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class EditorValueAttribute : Attribute
     {
+        public object Default { set; get; }
+
         /// <summary>
         /// MouseWheel、KeyUp、KeyDown
         /// </summary>

@@ -8,7 +8,7 @@ namespace MenthaAssembly
     public static class TextBoxHelper
     {
         public static readonly DependencyProperty InputModeProperty =
-            DependencyProperty.RegisterAttached("InputMode", typeof(KeyboardInputMode), typeof(TextBox), new PropertyMetadata(KeyboardInputMode.All,
+            DependencyProperty.RegisterAttached("InputMode", typeof(KeyboardInputMode), typeof(TextBoxHelper), new PropertyMetadata(KeyboardInputMode.All,
                 (d, e) =>
                 {
                     if (d is TextBox This)
@@ -80,35 +80,35 @@ namespace MenthaAssembly
             => obj.SetValue(InputModeProperty, value);
 
         public static readonly DependencyProperty MinimumProperty =
-            DependencyProperty.RegisterAttached("Minimum", typeof(object), typeof(TextBox), new PropertyMetadata(default));
+            DependencyProperty.RegisterAttached("Minimum", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetMinimum(DependencyObject obj)
             => obj.GetValue(MinimumProperty);
         public static void SetMinimum(DependencyObject obj, object value)
             => obj.SetValue(MinimumProperty, value);
 
         public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.RegisterAttached("Maximum", typeof(object), typeof(TextBox), new PropertyMetadata(default));
+            DependencyProperty.RegisterAttached("Maximum", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetMaximum(DependencyObject obj)
             => obj.GetValue(MaximumProperty);
         public static void SetMaximum(DependencyObject obj, object value)
             => obj.SetValue(MaximumProperty, value);
 
         public static readonly DependencyProperty DeltaProperty =
-            DependencyProperty.RegisterAttached("Delta", typeof(object), typeof(TextBox), new PropertyMetadata(default));
+            DependencyProperty.RegisterAttached("Delta", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetDelta(DependencyObject obj)
             => obj.GetValue(DeltaProperty);
         public static void SetDelta(DependencyObject obj, object value)
             => obj.SetValue(DeltaProperty, value);
 
         public static readonly DependencyProperty CombineDeltaProperty =
-            DependencyProperty.RegisterAttached("CombineDelta", typeof(object), typeof(TextBox), new PropertyMetadata(default));
+            DependencyProperty.RegisterAttached("CombineDelta", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetCombineDelta(DependencyObject obj)
             => obj.GetValue(CombineDeltaProperty);
         public static void SetCombineDelta(DependencyObject obj, object value)
             => obj.SetValue(CombineDeltaProperty, value);
 
         public static readonly DependencyProperty ValueTypeProperty =
-            DependencyProperty.RegisterAttached("ValueType", typeof(Type), typeof(TextBox), new PropertyMetadata(default,
+            DependencyProperty.RegisterAttached("ValueType", typeof(Type), typeof(TextBoxHelper), new PropertyMetadata(default,
                 (d, e) =>
                 {
                     if (d is TextBox This &&
@@ -127,6 +127,7 @@ namespace MenthaAssembly
                                 SetInputMode(d, KeyboardInputMode.NegativeNumber);
                                 This.PreviewMouseWheel += OnPreviewMouseWheel;
                                 This.PreviewKeyDown += OnPreviewKeyDown;
+                                This.GotKeyboardFocus += OnGotKeyboardFocus;
                                 break;
                             case nameof(Byte):
                             case nameof(UInt16):
@@ -139,6 +140,7 @@ namespace MenthaAssembly
                                 SetInputMode(d, KeyboardInputMode.Number);
                                 This.PreviewMouseWheel += OnPreviewMouseWheel;
                                 This.PreviewKeyDown += OnPreviewKeyDown;
+                                This.GotKeyboardFocus += OnGotKeyboardFocus;
                                 break;
                             case nameof(Decimal):
                             case nameof(Single):
@@ -150,25 +152,33 @@ namespace MenthaAssembly
                                 SetInputMode(d, KeyboardInputMode.NegativeNumberAndDot);
                                 This.PreviewMouseWheel += OnPreviewMouseWheel;
                                 This.PreviewKeyDown += OnPreviewKeyDown;
+                                This.GotKeyboardFocus += OnGotKeyboardFocus;
                                 break;
                             default:
                                 SetInputMode(d, KeyboardInputMode.All);
                                 This.PreviewMouseWheel -= OnPreviewMouseWheel;
                                 This.PreviewKeyDown -= OnPreviewKeyDown;
+                                This.GotKeyboardFocus -= OnGotKeyboardFocus;
                                 break;
                         }
                     }
                 }));
+
+        private static void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (sender is TextBox This)
+                This.SelectAll();
+        }
 
         private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (sender is TextBox This &&
                 This.IsKeyboardFocusWithin)
             {
-                dynamic Max = GetMaximum(This);
-                dynamic Min = GetMinimum(This);
                 Type ValueType = GetValueType(This);
-                dynamic Value = Convert.ChangeType(This.Text, GetValueType(This));
+                dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
+                dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
+                dynamic Value = Convert.ChangeType(This.Text, ValueType);
                 dynamic Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) : GetDelta(This), ValueType);
 
                 This.Text = e.Delta > 0 ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
@@ -181,11 +191,16 @@ namespace MenthaAssembly
         {
             if (sender is TextBox This)
             {
+                if (e.Key == Key.Enter)
+                {
+                    This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                    return;
+                }
                 if (e.Key is Key.Up || e.Key is Key.Down)
                 {
-                    dynamic Max = GetMaximum(This);
-                    dynamic Min = GetMinimum(This);
                     Type ValueType = GetValueType(This);
+                    dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
+                    dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
                     dynamic Value = Convert.ChangeType(This.Text, ValueType);
                     dynamic Delta = Convert.ChangeType(GetDelta(This), ValueType);
 
@@ -195,10 +210,10 @@ namespace MenthaAssembly
                 }
                 if (e.Key is Key.PageUp || e.Key is Key.PageDown)
                 {
-                    dynamic Max = GetMaximum(This);
-                    dynamic Min = GetMinimum(This);
                     Type ValueType = GetValueType(This);
-                    dynamic Value = Convert.ChangeType(This.Text, GetValueType(This));
+                    dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
+                    dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
+                    dynamic Value = Convert.ChangeType(This.Text, ValueType);
                     dynamic Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
 
                     This.Text = e.Key is Key.PageUp ? (Max - Delta < Value ? Max : Value + Delta).ToString() :

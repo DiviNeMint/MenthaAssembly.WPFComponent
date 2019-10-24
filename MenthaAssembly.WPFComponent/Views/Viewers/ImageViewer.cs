@@ -170,8 +170,8 @@ namespace MenthaAssembly.Views
             => SourceContext = Source;
         public void SetSourceContext(int Width, int Height, IntPtr Scan0, int Stride, int PixelBytes)
             => SourceContext = new ImageContext(Width, Height, Scan0, Stride, PixelBytes);
-        public void SetSourceContext(int Width, int Height, IntPtr ScanR, IntPtr ScanG, IntPtr ScanB, int Stride)
-            => SourceContext = new ImageContext(Width, Height, ScanR, ScanG, ScanB, Stride);
+        public void SetSourceContext(int Width, int Height, IntPtr ScanR, IntPtr ScanG, IntPtr ScanB)
+            => SourceContext = new ImageContext(Width, Height, ScanR, ScanG, ScanB);
 
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
@@ -310,72 +310,138 @@ namespace MenthaAssembly.Views
                                                                    (ViewBox.Height - SourceContext.Height) / 2);
                         Int32Point SourceEndPoint = SourceLocation + new Int32Vector(SourceContext.Width, SourceContext.Height);
 
-                        byte* DisplayContextScan0 = (byte*)DisplayContext.Scan0;
-                        byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
-                        double FactorStep = 1 / Factor;
-
-                        Parallel.For(0, DisplayContext.Height, (j) =>
+                        switch (SourceContext.Channel)
                         {
-                            byte* Data = DisplayContextScan0 + j * DisplayContext.Stride;
-
-                            double Y = Viewport.Y + j * FactorStep;
-                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
-                            {
-                                double X = Viewport.X;
-                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                            case 1:
                                 {
-                                    if (Token.IsCancellationRequested)
-                                        return;
+                                    byte* DisplayContextScan0 = (byte*)DisplayContext.Scan0;
+                                    byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
+                                    double FactorStep = 1 / Factor;
 
-                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                    Parallel.For(0, DisplayContext.Height, (j) =>
                                     {
-                                        byte* SourceContextBuffer = SourceContextScan0 +
-                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                    ((int)X - SourceLocation.X) * SourceContext.PixelBytes;
-                                        //Draw SourceContext
-                                        for (int k = 0; k < DisplayContext.PixelBytes; k++)
+                                        byte* Data = DisplayContextScan0 + j * DisplayContext.Stride;
+
+                                        double Y = Viewport.Y + j * FactorStep;
+                                        try
                                         {
-                                            *Data = *SourceContextBuffer;
-                                            Data++;
-                                            SourceContextBuffer++;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Clear
-                                        SetMemory((IntPtr)Data, 0, DisplayContext.PixelBytes);
-                                        Data += DisplayContext.PixelBytes;
-                                    }
-                                    X += FactorStep;
-                                }
-                            }
-                            else
-                            {
-                                Data += DisplayContext.PixelBytes - 1;
-                                try
-                                {
-                                    for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
-                                    {
-                                        *Data = 0;
-                                        Data += DisplayContext.PixelBytes;
-                                    }
-                                }
-                                catch
-                                {
-                                    return;
-                                }
+                                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
+                                            {
+                                                double X = Viewport.X;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    if (Token.IsCancellationRequested)
+                                                        return;
 
-                                //try
-                                //{
-                                //    // Clear
-                                //    SetMemory((IntPtr)Data, 0, DisplayContext.Stride);
-                                //}
-                                //catch
-                                //{
-                                //    return;
-                                //}
-                            }
-                        });
+                                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                                    {
+                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                    ((int)X - SourceLocation.X) * SourceContext.PixelBytes;
+                                                        //Draw SourceContext
+                                                        for (int k = 0; k < DisplayContext.PixelBytes; k++)
+                                                        {
+                                                            *Data = *SourceContextBuffer;
+                                                            Data++;
+                                                            SourceContextBuffer++;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // Clear
+                                                        SetMemory((IntPtr)Data, 0, DisplayContext.PixelBytes);
+                                                        Data += DisplayContext.PixelBytes;
+                                                    }
+                                                    X += FactorStep;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Data += DisplayContext.PixelBytes - 1;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    *Data = 0;
+                                                    Data += DisplayContext.PixelBytes;
+                                                }
+                                                //    // Clear
+                                                //    SetMemory((IntPtr)Data, 0, DisplayContext.Stride);
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            return;
+                                        }
+                                    });
+                                }
+                                break;
+                            case 3:
+                                {
+                                    byte* DisplayContextScan0 = (byte*)DisplayContext.Scan0;
+                                    byte* SourceContextScanR = (byte*)SourceContext.ScanR;
+                                    byte* SourceContextScanG = (byte*)SourceContext.ScanG;
+                                    byte* SourceContextScanB = (byte*)SourceContext.ScanB;
+                                    double FactorStep = 1 / Factor;
+
+                                    Parallel.For(0, DisplayContext.Height, (j) =>
+                                    {
+                                        byte* Data = DisplayContextScan0 + j * DisplayContext.Stride;
+
+                                        double Y = Viewport.Y + j * FactorStep;
+                                        try
+                                        {
+                                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
+                                            {
+                                                double X = Viewport.X;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    if (Token.IsCancellationRequested)
+                                                        return;
+
+                                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                                    {
+                                                        int Step = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
+                                                        // B
+                                                        *Data = *(SourceContextScanB + Step);
+                                                        Data++;
+                                                        // G
+                                                        *Data = *(SourceContextScanG + Step);
+                                                        Data++;
+                                                        // R
+                                                        *Data = *(SourceContextScanR + Step);
+                                                        Data++;
+                                                        // A
+                                                        *Data = 255;
+                                                        Data++;
+                                                    }
+                                                    else
+                                                    {
+                                                        // Clear
+                                                        SetMemory((IntPtr)Data, 0, DisplayContext.PixelBytes);
+                                                        Data += DisplayContext.PixelBytes;
+                                                    }
+                                                    X += FactorStep;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Data += DisplayContext.PixelBytes - 1;
+                                                for (int i = 0; i < DisplayContext.Stride; i += DisplayContext.PixelBytes)
+                                                {
+                                                    *Data = 0;
+                                                    Data += DisplayContext.PixelBytes;
+                                                }
+                                                //    // Clear
+                                                //    SetMemory((IntPtr)Data, 0, DisplayContext.Stride);
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            return;
+                                        }
+                                    });
+                                }
+                                break;
+                        }
                     }
                     else
                     {
