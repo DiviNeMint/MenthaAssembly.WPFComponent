@@ -36,6 +36,7 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -50,7 +51,6 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enums\KeyboardInputMode.cs" />
     <Compile Include="Helpers\AnimationHelper.cs" />
     <Compile Include="Helpers\ImageHelper.cs" />
     <Compile Include="Helpers\TextBoxHelper.cs" />
@@ -67,6 +67,8 @@
     <Compile Include="Views\Editors\Comparers\PropertyEditorComparer.cs" />
     <Compile Include="Views\Editors\PropertyEditor.cs" />
     <Compile Include="Views\Editors\PropertyEditorItem.cs" />
+    <Compile Include="Views\Popups\PopupMenu.cs" />
+    <Compile Include="Views\Popups\PopupMenuItem.cs" />
     <Compile Include="Views\SwitchView.cs" />
     <Compile Include="Views\TextBoxs\PasswordBox.cs" />
     <Compile Include="Views\TextBoxs\SearchBox.cs" />

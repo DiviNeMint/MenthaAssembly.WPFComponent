@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -9,17 +10,28 @@ namespace MenthaAssembly
     [ContentProperty("Children")]
     public class IconContext
     {
-        public BitmapImage ImageSource { set; get; }
+        private ImageSource _ImageSource;
+        public ImageSource ImageSource
+        {
+            get => _ImageSource ?? new DrawingImage(Children.Count <= 0 ?
+                                   new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry) :
+                                   (Drawing)Drawings);
+            set
+            {
+                _ImageSource = value;
+            }
+        }
 
         public Uri UriSource
         {
-            get => ImageSource?.UriSource;
-            set => ImageSource = new BitmapImage(value);
+            get => (_ImageSource as BitmapImage)?.UriSource;
+            set => _ImageSource = new BitmapImage(value);
         }
 
         public Geometry Geometry { get; set; }
 
-        public DrawingCollection Children { get; } = new DrawingCollection();
+        protected DrawingGroup Drawings { set; get; } = new DrawingGroup();
+        public DrawingCollection Children => Drawings.Children;
 
         public Size Size { set; get; }
 
@@ -31,9 +43,20 @@ namespace MenthaAssembly
 
         public double StrokeThickness { set; get; }
 
-        public ImageSource GetIcon()
-            => (ImageSource)ImageSource ?? new DrawingImage(Children.Count <= 0 ?
-                                           new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry) :
-                                           (Drawing)new DrawingGroup() { Children = Children });
+        public IconContext()
+        {
+        }
+
+        public IconContext(IEnumerable<Drawing> Drawings)
+        {
+            foreach (Drawing item in Drawings)
+                Children.Add(item);
+        }
+
+        public IconContext(IEnumerable<Geometry> Geometries, Brush Fill, Brush Stroke, double StrokeThickness)
+        {
+            foreach (Geometry item in Geometries)
+                Children.Add(new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry));
+        }
     }
 }

@@ -13,6 +13,7 @@ using System.Windows.Media;
 
 namespace MenthaAssembly.Views
 {
+    [DefaultEvent("ContentChanged")]
     [ContentProperty("Content")]
     public class PropertyEditor : Control
     {
@@ -57,7 +58,7 @@ namespace MenthaAssembly.Views
                                   IconContext Icon = string.IsNullOrEmpty(EditorOption?.IconPath) ? DefaultIcon :
                                                      This.TryFindResource(EditorOption.IconPath) as IconContext ??
                                                      Application.Current.TryFindResource(EditorOption.IconPath) as IconContext ?? DefaultIcon;
-                                  This.PART_IconImage.Source = Icon.GetIcon();
+                                  This.PART_IconImage.Source = Icon.ImageSource;
                                   This.PART_IconImage.Margin = Icon.Padding;
 
                                   if (Icon.Size.Equals(default))
@@ -138,6 +139,14 @@ namespace MenthaAssembly.Views
             set => SetValue(TitleTemplateProperty, value);
         }
 
+        public static readonly DependencyProperty PropertyMenuStyleProperty =
+            DependencyProperty.Register("PropertyMenuStyle", typeof(Style), typeof(PropertyEditor), new PropertyMetadata(default));
+        public Style PropertyMenuStyle
+        {
+            get => (Style)GetValue(PropertyMenuStyleProperty);
+            set => SetValue(PropertyMenuStyleProperty, value);
+        }
+
         protected Image PART_IconImage;
         protected TextBox PART_NameTextBox;
         protected TextBlock PART_TypeTextBlock;
@@ -188,6 +197,5 @@ namespace MenthaAssembly.Views
         }
         public void RemoveProperty(PropertyInfo Info)
             => ItemsSource.Remove(Info);
-
     }
 }
