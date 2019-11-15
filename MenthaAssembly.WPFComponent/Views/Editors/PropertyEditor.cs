@@ -46,74 +46,87 @@ namespace MenthaAssembly.Views
                   {
                       if (d is PropertyEditor This)
                       {
-                          This.ItemsSource.Clear();
-                          This.PART_SearchBox?.Clear();
-
-                          if (e.NewValue?.GetType() is Type ObjectType)
+                          Type ObjectType = e.NewValue?.GetType();
+                          bool IsSameType = ObjectType?.Equals(e.OldValue?.GetType()) ?? false;
+                          if (!IsSameType)
                           {
-                              EditorOptionAttribute EditorOption = ObjectType.GetCustomAttribute<EditorOptionAttribute>();
-                              // Icon
-                              if (This.PART_IconImage != null)
-                              {
-                                  IconContext Icon = string.IsNullOrEmpty(EditorOption?.IconPath) ? DefaultIcon :
-                                                     This.TryFindResource(EditorOption.IconPath) as IconContext ??
-                                                     Application.Current.TryFindResource(EditorOption.IconPath) as IconContext ?? DefaultIcon;
-                                  This.PART_IconImage.Source = Icon.ImageSource;
-                                  This.PART_IconImage.Margin = Icon.Padding;
-
-                                  if (Icon.Size.Equals(default))
-                                      Icon.Size = new Size(30d, 30d);
-                                  This.PART_IconImage.Width = Icon.Size.Width;
-                                  This.PART_IconImage.Height = Icon.Size.Height;
-                              }
-
-                              // Name
-                              if (This.PART_NameTextBox != null)
-                              {
-                                  if (!string.IsNullOrEmpty(EditorOption?.NamePath) &&
-                                      ObjectType.GetProperty(EditorOption.NamePath) != null)
-                                  {
-                                      This.PART_NameTextBox.Visibility = Visibility.Visible;
-                                      This.PART_NameTextBox.SetBinding(TextBox.TextProperty,
-                                         new Binding()
-                                         {
-                                             Path = new PropertyPath(EditorOption.NamePath),
-                                             Source = e.NewValue
-                                         });
-                                  }
-                                  else
-                                  {
-                                      This.PART_NameTextBox.Visibility = Visibility.Hidden;
-                                  }
-                              }
-
-                              // Type
-                              if (This.PART_TypeTextBlock != null)
-                                  This.PART_TypeTextBlock.Text = EditorOption?.TypeDisplay ?? ObjectType.Name;
-
-                              // Property
-                              foreach (PropertyInfo item in ObjectType.GetProperties()
-                                  .Where(i => i.Name != EditorOption?.NamePath &&
-                                              ObjectType.GetMember($"set_{i.Name}").Length > 0 &&
-                                              (i.GetCustomAttribute<EditorDisplayAttribute>()?.Visible ?? true)))
-                                  This.AddProperty(item);
-
-
-                              // Event
-                              if (e.OldValue is INotifyPropertyChanged OldContent)
-                                  OldContent.PropertyChanged -= This.OnContentPropertyChanged;
-
-                              if ((EditorOption?.EnableContentPropertyChangedEvent ?? false) &&
-                                  e.NewValue is INotifyPropertyChanged Content)
-                              {
-                                  Content.PropertyChanged += This.OnContentPropertyChanged;
-                                  if (This.ContentPropertyChanged != null)
-                                      foreach (PropertyInfo item in This.ItemsSource.ToArray())
-                                          if (This.ItemsSource.Contains(item))
-                                              This.ContentPropertyChanged.Invoke(This, new PropertyChangedEventArgs(item.Name));
-                              }
+                              This.ItemsSource.Clear();
+                              This.PART_SearchBox?.Clear();
                           }
-                          This.OnContentChanged();
+
+                          This.Dispatcher.BeginInvoke(new Action(() =>
+                          {
+                              if (ObjectType != null)
+                              {
+                                  EditorOptionAttribute EditorOption = ObjectType.GetCustomAttribute<EditorOptionAttribute>();
+                                  if (!IsSameType)
+                                  {
+                                      //Icon
+                                      if (This.PART_IconImage != null)
+                                      {
+                                          IconContext Icon = string.IsNullOrEmpty(EditorOption?.IconPath) ? DefaultIcon :
+                                                             This.TryFindResource(EditorOption.IconPath) as IconContext ??
+                                                             Application.Current.TryFindResource(EditorOption.IconPath) as IconContext ?? DefaultIcon;
+                                          This.PART_IconImage.Source = Icon.ImageSource;
+                                          This.PART_IconImage.Margin = Icon.Padding;
+
+                                          if (Icon.Size.Equals(default))
+                                              Icon.Size = new Size(30d, 30d);
+                                          This.PART_IconImage.Width = Icon.Size.Width;
+                                          This.PART_IconImage.Height = Icon.Size.Height;
+                                      }
+
+                                      //Name
+                                      if (This.PART_NameTextBox != null)
+                                      {
+                                          if (!string.IsNullOrEmpty(EditorOption?.NamePath) &&
+                                              ObjectType.GetProperty(EditorOption.NamePath) != null)
+                                          {
+                                              This.PART_NameTextBox.Visibility = Visibility.Visible;
+                                              This.PART_NameTextBox.SetBinding(TextBox.TextProperty,
+                                                 new Binding()
+                                                 {
+                                                     Path = new PropertyPath($"{nameof(This.Content)}.{EditorOption.NamePath}"),
+                                                     Source = This
+                                                 });
+                                          }
+                                          else
+                                          {
+                                              This.PART_NameTextBox.Visibility = Visibility.Hidden;
+                                          }
+                                      }
+
+                                      //Type
+                                      if (This.PART_TypeTextBlock != null)
+                                          This.PART_TypeTextBlock.Text = EditorOption?.TypeDisplay ?? ObjectType.Name;
+
+                                      //Property
+                                      foreach (PropertyInfo item in ObjectType.GetProperties()
+                                          .Where(i => i.Name != EditorOption?.NamePath &&
+                                                      ObjectType.GetMember($"set_{i.Name}").Length > 0 &&
+                                                      (i.GetCustomAttribute<EditorDisplayAttribute>()?.Visible ?? true)))
+                                          This.AddProperty(item);
+                                  }
+
+                                  //Event
+                                  if (e.OldValue is INotifyPropertyChanged OldContent)
+                                      OldContent.PropertyChanged -= This.OnContentPropertyChanged;
+
+                                  if ((EditorOption?.EnableContentPropertyChangedEvent ?? false) &&
+                                      e.NewValue is INotifyPropertyChanged Content)
+                                  {
+                                      Content.PropertyChanged += This.OnContentPropertyChanged;
+                                      if (This.ContentPropertyChanged != null)
+                                          foreach (PropertyInfo item in This.ItemsSource.ToArray())
+                                              if (This.ItemsSource.Contains(item))
+                                                  This.ContentPropertyChanged.Invoke(This, new PropertyChangedEventArgs(item.Name));
+                                  }
+                              }
+                              This.OnContentChanged();
+
+                              if (e.OldValue != null)
+                                  GC.Collect();
+                          }));
                       }
                   }));
 
@@ -137,6 +150,14 @@ namespace MenthaAssembly.Views
         {
             get => (ControlTemplate)GetValue(TitleTemplateProperty);
             set => SetValue(TitleTemplateProperty, value);
+        }
+
+        public static readonly DependencyProperty ItemContainerStyleProperty =
+            DependencyProperty.Register("ItemContainerStyle", typeof(Style), typeof(PropertyEditor), new PropertyMetadata(default));
+        public Style ItemContainerStyle
+        {
+            get => (Style)GetValue(ItemContainerStyleProperty);
+            set => SetValue(ItemContainerStyleProperty, value);
         }
 
         public static readonly DependencyProperty PropertyMenuStyleProperty =

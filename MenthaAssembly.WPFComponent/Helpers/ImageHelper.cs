@@ -9,7 +9,7 @@ namespace MenthaAssembly
 {
     public static class ImageHelper
     {
-        public static ImageContext GetImageContext(this BitmapSource This)
+        public static ImageContext ToImageContext(this BitmapSource This)
         {
             int PixelBytes = (This.Format.BitsPerPixel + 7) >> 3;
             int Stride = (((This.PixelWidth + 1) >> 1) << 1) * PixelBytes;
@@ -20,10 +20,10 @@ namespace MenthaAssembly
             return new ImageContext(This.PixelWidth, This.PixelHeight, Datas, Stride, PixelBytes);
         }
 
-        public static BitmapContext GetBitmapContext(this BitmapSource This)
+        public static BitmapContext ToBitmapContext(this BitmapSource This)
            => new BitmapContext(new WriteableBitmap(This));
 
-        public static BitmapContext GetBitmapContext(this WriteableBitmap This)
+        public static BitmapContext ToBitmapContext(this WriteableBitmap This)
             => new BitmapContext(This);
     }
 }

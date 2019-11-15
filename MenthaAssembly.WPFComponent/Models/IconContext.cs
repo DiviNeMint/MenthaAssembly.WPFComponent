@@ -16,10 +16,7 @@ namespace MenthaAssembly
             get => _ImageSource ?? new DrawingImage(Children.Count <= 0 ?
                                    new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry) :
                                    (Drawing)Drawings);
-            set
-            {
-                _ImageSource = value;
-            }
+            set => _ImageSource = value;
         }
 
         public Uri UriSource

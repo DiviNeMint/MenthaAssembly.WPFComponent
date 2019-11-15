@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace MenthaAssembly
@@ -29,6 +30,9 @@ namespace MenthaAssembly
 
         private static void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key is Key.Tab)
+                return;
+
             if (sender is TextBox This)
             {
                 switch (GetInputMode(This))
@@ -128,6 +132,7 @@ namespace MenthaAssembly
                                 This.PreviewMouseWheel += OnPreviewMouseWheel;
                                 This.PreviewKeyDown += OnPreviewKeyDown;
                                 This.GotKeyboardFocus += OnGotKeyboardFocus;
+                                This.PreviewMouseLeftButtonDown += OnMouseLeftButtonDown;
                                 break;
                             case nameof(Byte):
                             case nameof(UInt16):
@@ -141,6 +146,7 @@ namespace MenthaAssembly
                                 This.PreviewMouseWheel += OnPreviewMouseWheel;
                                 This.PreviewKeyDown += OnPreviewKeyDown;
                                 This.GotKeyboardFocus += OnGotKeyboardFocus;
+                                This.PreviewMouseLeftButtonDown += OnMouseLeftButtonDown;
                                 break;
                             case nameof(Decimal):
                             case nameof(Single):
@@ -153,21 +159,33 @@ namespace MenthaAssembly
                                 This.PreviewMouseWheel += OnPreviewMouseWheel;
                                 This.PreviewKeyDown += OnPreviewKeyDown;
                                 This.GotKeyboardFocus += OnGotKeyboardFocus;
+                                This.PreviewMouseLeftButtonDown += OnMouseLeftButtonDown;
                                 break;
                             default:
                                 SetInputMode(d, KeyboardInputMode.All);
                                 This.PreviewMouseWheel -= OnPreviewMouseWheel;
                                 This.PreviewKeyDown -= OnPreviewKeyDown;
                                 This.GotKeyboardFocus -= OnGotKeyboardFocus;
+                                This.PreviewMouseLeftButtonDown -= OnMouseLeftButtonDown;
                                 break;
                         }
                     }
                 }));
 
-        private static void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+
+        public static void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             if (sender is TextBox This)
                 This.SelectAll();
+        }
+        public static void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TextBoxBase Base &&
+                !Base.IsKeyboardFocusWithin)
+            {
+                e.Handled = true;
+                Base.Focus();
+            }
         }
 
         private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -178,7 +196,8 @@ namespace MenthaAssembly
                 Type ValueType = GetValueType(This);
                 dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
                 dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
-                dynamic Value = Convert.ChangeType(This.Text, ValueType);
+                dynamic Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
+                                                                  This.Text.ToValueType(ValueType);
                 dynamic Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) : GetDelta(This), ValueType);
 
                 This.Text = e.Delta > 0 ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
@@ -189,6 +208,9 @@ namespace MenthaAssembly
 
         private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key is Key.Tab)
+                return;
+
             if (sender is TextBox This)
             {
                 if (e.Key == Key.Enter)
@@ -201,11 +223,13 @@ namespace MenthaAssembly
                     Type ValueType = GetValueType(This);
                     dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
                     dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
-                    dynamic Value = Convert.ChangeType(This.Text, ValueType);
+                    dynamic Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
+                                                                      This.Text.ToValueType(ValueType);
                     dynamic Delta = Convert.ChangeType(GetDelta(This), ValueType);
 
                     This.Text = e.Key is Key.Up ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
                                                   (Min + Delta > Value ? Min : Value - Delta).ToString();
+                    e.Handled = true;
                     return;
                 }
                 if (e.Key is Key.PageUp || e.Key is Key.PageDown)
@@ -213,11 +237,13 @@ namespace MenthaAssembly
                     Type ValueType = GetValueType(This);
                     dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
                     dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
-                    dynamic Value = Convert.ChangeType(This.Text, ValueType);
+                    dynamic Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
+                                                                      This.Text.ToValueType(ValueType);
                     dynamic Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
 
                     This.Text = e.Key is Key.PageUp ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
                                                       (Min + Delta > Value ? Min : Value - Delta).ToString();
+                    e.Handled = true;
                     return;
                 }
             }
@@ -228,7 +254,18 @@ namespace MenthaAssembly
         public static void SetValueType(DependencyObject obj, Type value)
             => obj.SetValue(ValueTypeProperty, value);
 
+        public static object ToValueType(this string This, Type ValueType)
+        {
+            try
+            {
+                Convert.ChangeType(This, ValueType);
+            }
+            catch
+            {
 
+            }
+            return Activator.CreateInstance(ValueType);
+        }
 
     }
 }

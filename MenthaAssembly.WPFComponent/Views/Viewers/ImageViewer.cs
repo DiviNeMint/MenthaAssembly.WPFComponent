@@ -38,7 +38,7 @@ namespace MenthaAssembly.Views
                   {
                       if (d is ImageViewer This &&
                           e.NewValue is BitmapSource Image)
-                          This.SourceContext = Image.GetImageContext();
+                          This.SourceContext = Image.ToImageContext();
                   }));
         public BitmapSource Source
         {

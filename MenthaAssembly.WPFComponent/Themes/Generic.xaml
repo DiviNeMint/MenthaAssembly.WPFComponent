@@ -5,6 +5,28 @@
     xmlns:Helpers="clr-namespace:MenthaAssembly"
     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
+    <DrawingImage x:Key="Icon_Explore">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="#FFF6F6F6" Geometry="M6.5,16A1.501,1.501,0,0,1,5.439,13.44L5.879,13 2,13 2,11 0,11 0,0 14,0 14,2 16,2 16,9.051 16,9.05A4.006,4.006,0,0,1,12,13A3.95,3.95,0,0,1,10.441,12.68L7.56,15.561A1.49,1.49,0,0,1,6.5,16z"/>
+                <GeometryDrawing Brush="#FFF0EFF1" Geometry="M12,11C10.897,11 10,10.103 10,9 10,7.897 10.897,7 12,7 13.103,7 14,7.897 14,9 14,10.103 13.103,11 12,11z M12,2L2,2 2,9 3,9 3,3 12,3 12,2z M8.32,10.559A3.95,3.95,0,0,1,8,9C8,6.794 9.794,5 12,5 12.732,5 13.409,5.212 14,5.556L14,4 4,4 4,11 7.879,11 8.32,10.559z"/>
+                <GeometryDrawing Brush="#FF424242" Geometry="M13,3L13,1 1,1 1,10 3,10 3,12 6.879,12 7.879,11 4,11 4,4 14,4 14,5.556C14.378,5.777,14.714,6.054,15,6.382L15,3 13,3z M3,3L3,9 2,9 2,2 12,2 12,3 3,3z M12,6C10.346,6 9,7.346 9,9 9,9.647 9.21,10.243 9.56,10.733L6.147,14.146A0.5,0.5,0,0,0,6.854,14.854L10.267,11.441C10.757,11.79 11.353,12 12,12 13.654,12 15,10.654 15,9 15,7.346 13.654,6 12,6z M12,11C10.897,11 10,10.103 10,9 10,7.897 10.897,7 12,7 13.103,7 14,7.897 14,9 14,10.103 13.103,11 12,11z"/>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <DrawingImage x:Key="Icon_Eraser">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.Children>
+                    <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+                    <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M16,6.4818L9.534,-0.000200000000000422 0.576000000000001,8.9318C0.276,9.2428,0.0879999999999992,9.6118,0,9.9978L0,10.9788C0.093,11.3798,0.294,11.7668,0.615,12.0988L3.676,15.0508 13,15.0508 13,12.0508 11.458,12.0508 16,7.3958z" />
+                    <GeometryDrawing Brush="#FFEFEFF0" Geometry="F1M4.4829,13.0508L2.0159,10.6728C1.9109,10.5638,1.9109,10.4288,2.0089,10.3268L4.0419,8.2998 8.2339,12.4918 7.6879,13.0508z M13.6419,6.9488L8.9319,11.7758 4.7499,7.5938 9.5299,2.8278z" />
+                    <GeometryDrawing Brush="#FF424242" Geometry="F1M4.4829,13.0508L2.0159,10.6728C1.9109,10.5638,1.9109,10.4288,2.0089,10.3268L4.0419,8.2998 8.2339,12.4918 7.6879,13.0508z M13.6419,6.9488L8.9319,11.7758 4.7499,7.5938 9.5299,2.8278z M15.0459,6.9418L9.5319,1.4138 1.2969,9.6258C0.8179,10.1218,0.8179,10.8698,1.3089,11.3798L4.0799,14.0508 11.9999,14.0508 11.9999,13.0508 9.0849,13.0508z" />
+                </DrawingGroup.Children>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
     <Style TargetType="{x:Type local:PasswordBox}">
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderBrush" Value="#FFABADB3"/>
@@ -403,7 +425,8 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <local:PropertyEditorItem TargetObject="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"
-                                                                      MenuStyle="{Binding PropertyMenuStyle, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"/>
+                                                                      PropertyMenuStyle="{Binding PropertyMenuStyle, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"
+                                                                      Style="{Binding ItemContainerStyle, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -497,13 +520,15 @@
                                              VerticalOffset="{Binding ActualHeight, ElementName=MenuToggleButton}"
                                              HorizontalOffset="{Binding ActualWidth, ElementName=MenuToggleButton}"
                                              Tag="{Binding Text, ElementName=PART_TextBlock}"
-                                             Style="{TemplateBinding MenuStyle}"
+                                             Style="{TemplateBinding PropertyMenuStyle}"
                                              Grid.Column="2">
                                 <Separator Background="{Binding BorderBrush, ElementName=PART_PopupMenu}"/>
                                 <local:PopupMenuItem x:Name="PART_BrowseMenuItem"
+                                                     Icon="{StaticResource Icon_Explore}"
                                                      Header="{Binding Data.Browse, FallbackValue=瀏覽, Source={x:Static Core:LanguageManager.Current}}" 
                                                      IsEnabled="False"/>
-                                <local:PopupMenuItem x:Name="PART_ResetMenuItem" 
+                                <local:PopupMenuItem x:Name="PART_ResetMenuItem"
+                                                     Icon="{StaticResource Icon_Eraser}"
                                                      Header="{Binding Data.Reset, FallbackValue=重設, Source={x:Static Core:LanguageManager.Current}}"/>
                             </local:PopupMenu>
                         </Grid>
@@ -623,7 +648,8 @@
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup"/>
                                 <ColumnDefinition Width="20"/>
                             </Grid.ColumnDefinitions>
-                            <Image Source="{TemplateBinding Icon}" 
+                            <Image x:Name="IconImage"
+                                   Source="{TemplateBinding Icon}" 
                                    Margin="13,3" Height="16" Width="16"
                                    VerticalAlignment="Center" HorizontalAlignment="Center"
                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
@@ -664,6 +690,7 @@
                             <Setter TargetName="templateRoot" Property="Background" Value="#FF333334"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="IconImage"  Property="Opacity" Value="0.5"/>
                             <Setter TargetName="templateRoot"  Property="TextElement.Foreground" Value="#FF707070"/>
                             <Setter TargetName="Glyph" Property="Fill" Value="#FF707070"/>
                         </Trigger>
