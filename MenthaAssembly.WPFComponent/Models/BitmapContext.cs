@@ -1,8 +1,4 @@
-﻿using MenthaAssembly.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
+﻿using System;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
