@@ -27,6 +27,35 @@
         </DrawingImage.Drawing>
     </DrawingImage>
 
+    <Style TargetType="{x:Type local:TitleContainer}">
+        <Setter Property="Padding" Value="5,0"/>
+        <Setter Property="Foreground" Value="#FFF1F1F1"/>
+        <Setter Property="Background" Value="#FF2D2D30"/>
+        <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="MinHeight" Value="22"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:TitleContainer}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <DockPanel>
+                            <Border Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}"
+                                    MinHeight="{TemplateBinding MinHeight}"
+                                    DockPanel.Dock="Top">
+                                <ContentPresenter ContentSource="Title"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ContentPresenter TextBlock.Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}"/>
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
     <Style TargetType="{x:Type local:PasswordBox}">
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderBrush" Value="#FFABADB3"/>
@@ -220,6 +249,43 @@
         </Setter>
     </Style>
 
+    <Style TargetType="{x:Type local:ConsoleBox}">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#FFABADB3"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="AcceptsTab" Value="True"/>
+        <Setter Property="AcceptsReturn" Value="True"/>
+        <Setter Property="VerticalScrollBarVisibility" Value="Visible"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBoxBase}">
+                    <Border x:Name="border" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            Background="{TemplateBinding Background}" 
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" 
+                                      Focusable="False" 
+                                      HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}" 
+                                      VerticalScrollBarVisibility="Visible"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#FF7EB4EA"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#FF569DE5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
     <Style TargetType="{x:Type local:SwitchView}">
         <Setter Property="Background" Value="LightGray"/>
         <Setter Property="BorderBrush" Value="#FF969696"/>
@@ -320,16 +386,6 @@
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-        <Setter Property="Title" Value="{Binding Data.Property, FallbackValue=屬性, Source={x:Static Core:LanguageManager.Current}}"/>
-        <Setter Property="TitleTemplate">
-            <Setter.Value>
-                <ControlTemplate TargetType="ContentControl">
-                    <Border Background="#FF2D2D30" MinHeight="22">
-                        <ContentPresenter Margin="5,0" TextBlock.Foreground="#FFF1F1F1" VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
         <Setter Property="PropertyMenuStyle">
             <Setter.Value>
                 <Style TargetType="local:PopupMenu">
@@ -372,15 +428,11 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
-                            <ContentControl Content="{TemplateBinding Title}"
-                                            Template="{TemplateBinding TitleTemplate}"/>
                             <Grid x:Name="Header" 
                                   MinHeight="46"
-                                  MaxHeight="50"
-                                  Grid.Row="1">
+                                  MaxHeight="50">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="{Binding ActualHeight, ElementName=Header}"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -417,10 +469,10 @@
                             <local:SearchBox x:Name="PART_SearchBox" 
                                              ItemsSource="{TemplateBinding ItemsSource}" 
                                              Margin="3,2" Height="{Binding ActualHeight ,ElementName=PART_NameTextBox}"
-                                             Grid.Row="2"/>
+                                             Grid.Row="1"/>
                             <ScrollViewer x:Name="ScrollViewer"
                                           Grid.IsSharedSizeScope="True"
-                                          Grid.Row="3">
+                                          Grid.Row="2">
                                 <ItemsControl ItemsSource="{TemplateBinding ItemsSource}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -561,40 +613,24 @@
         <Setter Property="BorderBrush" Value="#FF3F3F46"/>
         <Setter Property="RectFill" Value="#4C087ECE"/>
         <Setter Property="RectStroke" Value="#FF087ECE"/>
-        <Setter Property="Title" Value="{Binding Data.ImageViewerMapper, FallbackValue=檢視, Source={x:Static Core:LanguageManager.Current}}"/>
-        <Setter Property="TitleTemplate">
-            <Setter.Value>
-                <ControlTemplate TargetType="ContentControl">
-                    <Border Background="#FF2D2D30" MinHeight="22">
-                        <ContentPresenter Margin="5,0" TextBlock.Foreground="#FFF1F1F1" VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ImageViewerMapper}">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <DockPanel>
-                            <ContentControl x:Name="PART_Title"
-                                            Content="{TemplateBinding Title}"
-                                            Template="{TemplateBinding TitleTemplate}"
-                                            DockPanel.Dock="Top"/>
-                            <Grid x:Name="PART_Container"
-                                  HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Image Source="{TemplateBinding local:ImageViewerMapper.DisplayImage}"
-                                       RenderOptions.BitmapScalingMode="LowQuality"
-                                       SnapsToDevicePixels="True"/>
-                                <Rectangle x:Name="PART_Rect"
-                                           Fill="{TemplateBinding RectFill}" 
-                                           Stroke="{TemplateBinding RectStroke}" StrokeThickness="1"
-                                           Width="0" Height="0"
-                                           SnapsToDevicePixels="True"
-                                           HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                            </Grid>
-                        </DockPanel>
+                        <Grid x:Name="PART_Container"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Source="{TemplateBinding local:ImageViewerMapper.DisplayImage}"
+                                   RenderOptions.BitmapScalingMode="LowQuality"
+                                   SnapsToDevicePixels="True"/>
+                            <Rectangle x:Name="PART_Rect"
+                                       Fill="{TemplateBinding RectFill}" 
+                                       Stroke="{TemplateBinding RectStroke}" StrokeThickness="1"
+                                       Width="0" Height="0"
+                                       SnapsToDevicePixels="True"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -707,41 +743,5 @@
         </Setter>
     </Style>
     
-    <Style TargetType="{x:Type local:ConsoleBox}">
-        <Setter Property="Background" Value="White"/>
-        <Setter Property="BorderBrush" Value="#FFABADB3"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="IsReadOnly" Value="True"/>
-        <Setter Property="AcceptsTab" Value="True"/>
-        <Setter Property="AcceptsReturn" Value="True"/>
-        <Setter Property="VerticalScrollBarVisibility" Value="Visible"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type TextBoxBase}">
-                    <Border x:Name="border" 
-                            BorderBrush="{TemplateBinding BorderBrush}" 
-                            BorderThickness="{TemplateBinding BorderThickness}" 
-                            Background="{TemplateBinding Background}" 
-                            SnapsToDevicePixels="True">
-                        <ScrollViewer x:Name="PART_ContentHost" 
-                                      Focusable="False" 
-                                      HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}" 
-                                      VerticalScrollBarVisibility="Visible"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" TargetName="border" Value="0.56"/>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="BorderBrush" TargetName="border" Value="#FF7EB4EA"/>
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter Property="BorderBrush" TargetName="border" Value="#FF569DE5"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
     
 </ResourceDictionary>

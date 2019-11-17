@@ -136,22 +136,6 @@ namespace MenthaAssembly.Views
             set => SetValue(ContentProperty, value);
         }
 
-        public static readonly DependencyProperty TitleProperty =
-            DependencyProperty.Register("Title", typeof(object), typeof(PropertyEditor), new PropertyMetadata(default));
-        public object Title
-        {
-            get => GetValue(TitleProperty);
-            set => SetValue(TitleProperty, value);
-        }
-
-        public static readonly DependencyProperty TitleTemplateProperty =
-            DependencyProperty.Register("TitleTemplate", typeof(ControlTemplate), typeof(PropertyEditor), new PropertyMetadata(default));
-        public ControlTemplate TitleTemplate
-        {
-            get => (ControlTemplate)GetValue(TitleTemplateProperty);
-            set => SetValue(TitleTemplateProperty, value);
-        }
-
         public static readonly DependencyProperty ItemContainerStyleProperty =
             DependencyProperty.Register("ItemContainerStyle", typeof(Style), typeof(PropertyEditor), new PropertyMetadata(default));
         public Style ItemContainerStyle

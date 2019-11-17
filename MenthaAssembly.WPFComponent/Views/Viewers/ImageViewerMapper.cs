@@ -73,22 +73,6 @@ namespace MenthaAssembly.Views
         public static WriteableBitmap GetDisplayImage(DependencyObject obj)
             => (WriteableBitmap)obj.GetValue(DisplayImageProperty);
 
-        public static readonly DependencyProperty TitleProperty =
-            DependencyProperty.Register("Title", typeof(object), typeof(ImageViewerMapper), new PropertyMetadata(default));
-        public object Title
-        {
-            get => GetValue(TitleProperty);
-            set => SetValue(TitleProperty, value);
-        }
-
-        public static readonly DependencyProperty TitleTemplateProperty =
-            DependencyProperty.Register("TitleTemplate", typeof(ControlTemplate), typeof(ImageViewerMapper), new PropertyMetadata(default));
-        public ControlTemplate TitleTemplate
-        {
-            get => (ControlTemplate)GetValue(TitleTemplateProperty);
-            set => SetValue(TitleTemplateProperty, value);
-        }
-
         public static readonly DependencyProperty RectStrokeProperty =
               DependencyProperty.Register("RectStroke", typeof(SolidColorBrush), typeof(ImageViewerMapper), new PropertyMetadata(default));
         public SolidColorBrush RectStroke
