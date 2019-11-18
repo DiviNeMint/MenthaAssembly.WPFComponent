@@ -84,10 +84,11 @@ namespace MenthaAssembly.Views
                 => this.TextBox = TextBox;
 
             public override void Write(string value)
-                => TextBox.Text += value;
+                => TextBox.Dispatcher.Invoke(() => TextBox.Text += value);
 
             public override void WriteLine()
-                => TextBox.Text += NewLine;
+                => TextBox.Dispatcher.Invoke(() => TextBox.Text += NewLine);
+
         }
         protected class ConsoleListener : TraceListener
         {
@@ -96,10 +97,10 @@ namespace MenthaAssembly.Views
                 => this.TextBox = TextBox;
 
             public override void Write(string message)
-                => TextBox.Text += message;
+                => TextBox.Dispatcher.Invoke(() => TextBox.Text += message);
 
             public override void WriteLine(string message)
-                => TextBox.Text += $"{ message}{Environment.NewLine}";
+                => TextBox.Dispatcher.Invoke(() => TextBox.Text += $"{ message}{Environment.NewLine}");
 
         }
 

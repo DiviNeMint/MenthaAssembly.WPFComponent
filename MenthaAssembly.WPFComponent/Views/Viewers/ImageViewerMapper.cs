@@ -51,6 +51,8 @@ namespace MenthaAssembly.Views
                               NewViewer.SourceChanged += This.OnSourceChanged;
                               NewViewer.ViewBoxChanged += This.OnViewBoxChanged;
                               NewViewer.ViewportChanged += This.OnViewportChanged;
+
+                              This.OnRenderSizeChanged(new SizeChangedInfo(This, This.RenderSize, true, true));
                           }
                       }
                   }));
@@ -89,7 +91,6 @@ namespace MenthaAssembly.Views
             set => SetValue(RectFillProperty, value);
         }
 
-        protected Control PART_Title { set; get; }
         protected Panel PART_Container { set; get; }
         protected Rectangle PART_Rect { set; get; }
 
@@ -118,7 +119,7 @@ namespace MenthaAssembly.Views
                 return;
 
             double ScaleWidth = ActualWidth / TargetViewer.ActualWidth;
-            double ScaleHeight = (ActualHeight - PART_Title?.ActualHeight ?? 0d) / TargetViewer.ActualHeight;
+            double ScaleHeight = ActualHeight / TargetViewer.ActualHeight;
             double Scale = ScaleWidth <= 0 ? ScaleHeight : ScaleHeight <= 0 ? ScaleWidth : Math.Min(ScaleWidth, ScaleHeight);
 
             PART_Container.Width = TargetViewer.ActualWidth * Scale;
@@ -131,8 +132,6 @@ namespace MenthaAssembly.Views
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            if (this.GetTemplateChild("PART_Title") is Control PART_Title)
-                this.PART_Title = PART_Title;
             if (this.GetTemplateChild("PART_Rect") is Rectangle PART_Rect)
                 this.PART_Rect = PART_Rect;
             if (this.GetTemplateChild("PART_Container") is Panel PART_Container)
@@ -222,7 +221,7 @@ namespace MenthaAssembly.Views
                 return;
 
             double ScaleWidth = ActualWidth / TargetViewer.ActualWidth;
-            double ScaleHeight = (ActualHeight - PART_Title?.ActualHeight ?? 0d) / TargetViewer.ActualHeight;
+            double ScaleHeight = ActualHeight / TargetViewer.ActualHeight;
             double Scale = ScaleWidth <= 0 ? ScaleHeight : ScaleHeight <= 0 ? ScaleWidth : Math.Min(ScaleWidth, ScaleHeight);
 
             PART_Container.Width = TargetViewer.ActualWidth * Scale;
