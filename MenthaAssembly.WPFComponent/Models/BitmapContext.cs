@@ -14,7 +14,10 @@ namespace MenthaAssembly
         protected bool IsLocked { set; get; }
         public bool TryLock(int Timeout)
         {
-            if (Bitmap?.TryLock(TimeSpan.FromMilliseconds(Timeout)) ?? false)
+            if (Bitmap is null)
+                return false;
+
+            if (Bitmap.TryLock(TimeSpan.FromMilliseconds(Timeout)))
             {
                 IsLocked = true;
                 return true;

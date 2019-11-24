@@ -11,7 +11,6 @@ namespace MenthaAssembly
 
             byte[] Datas = new byte[Stride * This.PixelHeight];
             This.CopyPixels(Datas, Stride, 0);
-
             return new ImageContext(This.PixelWidth, This.PixelHeight, Datas, Stride, PixelBytes);
         }
 
