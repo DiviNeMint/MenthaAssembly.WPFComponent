@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly.Views
 {
+
     /// <summary>
     /// AccessViolationException
     /// Site : https://blog.elmah.io/debugging-system-accessviolationexception/
@@ -332,6 +334,7 @@ namespace MenthaAssembly.Views
                                             double Y = Viewport.Y + j * FactorStep;
                                             if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                             {
+                                                int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X;
                                                 double X = Viewport.X + DirtyRectX1 * FactorStep;
                                                 for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                                 {
@@ -340,9 +343,7 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        byte* SourceContextBuffer = SourceContextScan0 +
-                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                                    ((int)X - SourceLocation.X);
+                                                        byte* SourceContextBuffer = SourceContextScan0 + Offset + (int)X;
                                                         *Data++ = 255 << 24 |                   // A
                                                                   *SourceContextBuffer << 16 |  // R
                                                                   *SourceContextBuffer << 8 |   // G
@@ -375,6 +376,7 @@ namespace MenthaAssembly.Views
                                             double Y = Viewport.Y + j * FactorStep;
                                             if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                             {
+                                                int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X * SourceContext.PixelBytes;
                                                 double X = Viewport.X + DirtyRectX1 * FactorStep;
                                                 for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                                 {
@@ -383,13 +385,11 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        byte* SourceContextBuffer = SourceContextScan0 +
-                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                                    ((int)X - SourceLocation.X);
-                                                        *Data++ = 255 << 24 |                       // A
-                                                                  *SourceContextBuffer++ << 16 |    // R
-                                                                  *SourceContextBuffer++ << 8 |     // G
-                                                                  *SourceContextBuffer;             // B
+                                                        byte* SourceContextBuffer = SourceContextScan0 + Offset + (int)X * SourceContext.PixelBytes;
+                                                        *Data++ = 255 << 24 |                   // A
+                                                                  *SourceContextBuffer++  |     // R
+                                                                  *SourceContextBuffer++ << 8 | // G
+                                                                  *SourceContextBuffer << 16;   // B
                                                     }
                                                     else
                                                     {
@@ -419,6 +419,7 @@ namespace MenthaAssembly.Views
                                             double Y = Viewport.Y + j * FactorStep;
                                             if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                             {
+                                                int Offset = ((int)Y - SourceLocation.Y) * SourceStrideWidth - SourceLocation.X;
                                                 double X = Viewport.X + DirtyRectX1 * FactorStep;
                                                 for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                                 {
@@ -427,10 +428,7 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        int* SourceContextBuffer = SourceContextScan0 +
-                                                                                   ((int)Y - SourceLocation.Y) * SourceStrideWidth +
-                                                                                   ((int)X - SourceLocation.X);
-                                                        *Data++ = *SourceContextBuffer;
+                                                        *Data++ = *(SourceContextScan0 + Offset + (int)X);
                                                     }
                                                     else
                                                     {
@@ -464,6 +462,7 @@ namespace MenthaAssembly.Views
                                     double Y = Viewport.Y + j * FactorStep;
                                     if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                     {
+                                        int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X;
                                         double X = Viewport.X + DirtyRectX1 * FactorStep;
                                         for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                         {
@@ -472,7 +471,7 @@ namespace MenthaAssembly.Views
 
                                             if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                             {
-                                                int Step = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
+                                                int Step = Offset + (int)X;
                                                 *Data++ = 255 << 24 |                           // A
                                                           *(SourceContextScanR + Step) << 16 |  // R
                                                           *(SourceContextScanG + Step) << 8 |   // G
@@ -509,6 +508,7 @@ namespace MenthaAssembly.Views
                                     double Y = Viewport.Y + j * FactorStep;
                                     if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                     {
+                                        int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X;
                                         double X = Viewport.X + DirtyRectX1 * FactorStep;
                                         for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                         {
@@ -517,7 +517,7 @@ namespace MenthaAssembly.Views
 
                                             if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                             {
-                                                int Step = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
+                                                int Step = Offset + (int)X;
                                                 *Data++ = *(SourceContextScanA + Step) << 24 |  // A
                                                           *(SourceContextScanR + Step) << 16 |  // R
                                                           *(SourceContextScanG + Step) << 8 |   // G
@@ -615,14 +615,16 @@ namespace MenthaAssembly.Views
             => new Size(this.ActualWidth - (this.BorderThickness.Left + this.BorderThickness.Right),
                         this.ActualHeight - (this.BorderThickness.Top + this.BorderThickness.Bottom));
 
+        public ImageContext GetSourceContext()
+            => SourceContext;
         public void SetSourceContext(string ImagePath)
             => SourceContext = new BitmapImage(new Uri(ImagePath)).ToImageContext();
         public void SetSourceContext(Uri ImageUri)
             => SourceContext = new BitmapImage(ImageUri).ToImageContext();
         public void SetSourceContext(ImageContext Source)
             => SourceContext = Source;
-        public void SetSourceContext(int Width, int Height, IntPtr Scan0, int Stride, int PixelBytes)
-            => SourceContext = new ImageContext(Width, Height, Scan0, Stride, PixelBytes);
+        public void SetSourceContext(int Width, int Height, IntPtr Scan0, int Stride, int BitsPerPixel)
+            => SourceContext = new ImageContext(Width, Height, Scan0, Stride, BitsPerPixel);
         public void SetSourceContext(int Width, int Height, IntPtr ScanR, IntPtr ScanG, IntPtr ScanB)
             => SourceContext = new ImageContext(Width, Height, ScanR, ScanG, ScanB);
         public void SetSourceContext(int Width, int Height, IntPtr ScanR, IntPtr ScanG, IntPtr ScanB, int Stride)
@@ -676,8 +678,8 @@ namespace MenthaAssembly.Views
         /// </summary>
         public PixelInfo GetPixel()
         {
-            Point CurrentMousePosition = Mouse.GetPosition(this);
-            return GetPixel(CurrentMousePosition.X, CurrentMousePosition.Y);
+            Point MousePosition = Mouse.GetPosition(this);
+            return GetPixel(MousePosition.X, MousePosition.Y);
         }
         /// <summary>
         /// Get PixelInfo of Point(X, Y) at ImageViewer.
@@ -744,6 +746,57 @@ namespace MenthaAssembly.Views
                 }
             }
             return PixelInfo.Empty;
+        }
+
+        /// <summary>
+        /// Get Pixel's Point of current mouse position in ImageViewer.
+        /// </summary>
+        public Point GetPixelPoint()
+        {
+            Point MousePosition = Mouse.GetPosition(this);
+            return GetPixelPoint(MousePosition.X, MousePosition.Y);
+        }
+        /// <summary>
+        /// Get Pixel's Point of Point(X, Y) at ImageViewer.
+        /// </summary>
+        public Point GetPixelPoint(double X, double Y)
+        {
+            if (SourceContext is null)
+                throw new ArgumentNullException("Source is null.");
+
+            double AreaX = X - BorderThickness.Left;
+            double AreaY = Y - BorderThickness.Top;
+
+            return new Point(Viewport.X + (int)(AreaX / Factor) - (ViewBox.Width - SourceContext.Width) / 2,
+                             Viewport.Y + (int)(AreaY / Factor) - (ViewBox.Height - SourceContext.Height) / 2);
+        }
+
+        public void Save(string FilePath)
+        {
+            using FileStream FileStream = new FileStream(FilePath, FileMode.Create);
+            FileInfo FileInfo = new FileInfo(FilePath);
+            BitmapEncoder Encoder;
+            switch (FileInfo.Extension)
+            {
+                case ".tif":
+                    Encoder = new TiffBitmapEncoder();
+                    break;
+                case ".jpeg":
+                    Encoder = new JpegBitmapEncoder();
+                    break;
+                case ".png":
+                    Encoder = new PngBitmapEncoder();
+                    break;
+                case ".bmp":
+                    DisplayContext.SaveBmp(FilePath);
+                    return;
+                default:
+                    Encoder = new BmpBitmapEncoder();
+                    break;
+            }
+            Encoder.Frames.Add(BitmapFrame.Create(GetDisplayImage(this)));
+            
+            Encoder.Save(FileStream);
         }
 
     }
