@@ -97,6 +97,7 @@ namespace MenthaAssembly.Views
 
         protected BitmapContext DisplayContext { set; get; }
 
+        protected Int32Point SourceLocation { set; get; }
         protected ImageContext SourceContext { set; get; }
 
         protected Int32Size ViewBox { set; get; }
@@ -160,7 +161,7 @@ namespace MenthaAssembly.Views
                 PART_Container.CaptureMouse();
                 IsLeftMouseDown = true;
                 Position = e.GetPosition(PART_Container);
-                TargetViewer.Viewport = CalculateViewportLocation(new Int32Point(
+                TargetViewer.Viewport = CalculateViewport(new Int32Point(
                     Math.Min(Math.Max(0, Position.X), PART_Container.ActualWidth) * ScaleStep,
                     Math.Min(Math.Max(0, Position.Y), PART_Container.ActualHeight) * ScaleStep));
             }
@@ -174,7 +175,7 @@ namespace MenthaAssembly.Views
                     return;
 
                 Position = TempPosition;
-                TargetViewer.Viewport = CalculateViewportLocation(new Int32Point(
+                TargetViewer.Viewport = CalculateViewport(new Int32Point(
                     Math.Min(Math.Max(0, Position.X), PART_Container.ActualWidth) * ScaleStep,
                     Math.Min(Math.Max(0, Position.Y), PART_Container.ActualHeight) * ScaleStep));
             }
@@ -188,7 +189,7 @@ namespace MenthaAssembly.Views
             }
         }
 
-        protected Int32Rect CalculateViewportLocation(Int32Point Position)
+        protected Int32Rect CalculateViewport(Int32Point Position)
         {
             Int32Rect TempViewport = new Int32Rect(Position.X - TargetViewer.Viewport.Width / 2,
                                                    Position.Y - TargetViewer.Viewport.Height / 2,
@@ -204,6 +205,10 @@ namespace MenthaAssembly.Views
         private void OnSourceChanged(object sender, ChangedEventArgs<ImageContext> e)
         {
             SourceContext = e.NewValue;
+            SourceLocation = (SourceContext is null || SourceContext.Width > ViewBox.Width) ?
+                             new Int32Point() :
+                             new Int32Point((ViewBox.Width - SourceContext.Width) / 2,
+                                            (ViewBox.Height - SourceContext.Height) / 2);
             OnRenderImage();
         }
 
@@ -223,6 +228,10 @@ namespace MenthaAssembly.Views
 
             ViewBox = e.NewValue;
             ScaleStep = ViewBox.Width / PART_Container.Width;
+            SourceLocation = (SourceContext is null || SourceContext.Width > ViewBox.Width) ?
+                             new Int32Point() :
+                             new Int32Point((ViewBox.Width - SourceContext.Width) / 2,
+                                            (ViewBox.Height - SourceContext.Height) / 2);
             OnRenderImage();
         }
 
@@ -285,9 +294,7 @@ namespace MenthaAssembly.Views
                 if (SourceContext != null && ScaleStep > 0)
                 {
                     // Calculate Original Source's Rect
-                    Int32Point SourceLocation = new Int32Point((ViewBox.Width - SourceContext.Width) / 2,
-                                                               (ViewBox.Height - SourceContext.Height) / 2),
-                               SourceEndPoint = new Int32Point(SourceLocation.X + SourceContext.Width,
+                    Int32Point SourceEndPoint = new Int32Point(SourceLocation.X + SourceContext.Width,
                                                                SourceLocation.Y + SourceContext.Height);
                     // Calculate Source's Rect in ImageViewer.
                     int ImageX1 = Math.Max((int)(SourceLocation.X / ScaleStep), 0),
@@ -303,13 +310,14 @@ namespace MenthaAssembly.Views
 
                     LastImageRect = new Int32Rect(ImageX1, ImageY1, ImageX2 - ImageX1, ImageY2 - ImageY1);
 
-                    int* DisplayContextScan0 = (int*)DisplayContext.Scan0;
-                    int DisplayStrideWidth = DisplayContext.Stride / DisplayContext.PixelBytes;
 
-                    switch (SourceContext.Channel)
+                    int* DisplayContextScan0 = (int*)DisplayContext.Scan0;
+                    int DisplayStrideWidth = DisplayContext.Stride / ((DisplayContext.BitsPerPixel + 7) >> 3);
+
+                    switch (SourceContext.Channels)
                     {
                         case 1:
-                            switch (SourceContext.PixelBytes)
+                            switch (SourceContext.BitsPerPixel)
                             {
                                 case 1:
                                     {
@@ -322,7 +330,6 @@ namespace MenthaAssembly.Views
                                             double Y = j * ScaleStep;
                                             if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                             {
-                                                int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X;
                                                 double X = DirtyRectX1 * ScaleStep;
                                                 for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                                 {
@@ -331,7 +338,109 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        byte* SourceContextBuffer = SourceContextScan0 + Offset + (int)X;
+                                                        int SourceX = (int)X - SourceLocation.X;
+                                                        int Offset = SourceX >> 3;
+                                                        int Shift = 7 - (SourceX - (Offset << 3));
+
+                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                    Offset;
+                                                        byte Value = (byte)(((*SourceContextBuffer >> Shift) & 0x01) * 255);
+
+                                                        *Data++ = 255 << 24 |     // A
+                                                                  Value << 16 |   // R
+                                                                  Value << 8 |    // G
+                                                                  Value;          // B
+                                                    }
+                                                    else
+                                                    {
+                                                        // Clear
+                                                        *Data++ = 0;
+                                                    }
+                                                    X += ScaleStep;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // Clear
+                                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                                    *Data++ = 0;
+                                            }
+                                        });
+                                    }
+                                    break;
+                                case 4:
+                                    {
+                                        byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
+
+                                        Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
+                                        {
+                                            int* Data = DisplayContextScan0 + j * DisplayStrideWidth + DirtyRectX1;
+
+                                            double Y = j * ScaleStep;
+                                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
+                                            {
+                                                double X = DirtyRectX1 * ScaleStep;
+                                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                                {
+                                                    if (Token.IsCancellationRequested)
+                                                        return;
+
+                                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                                    {
+                                                        int SourceX = (int)X - SourceLocation.X;
+                                                        int Offset = SourceX >> 1;
+                                                        int Shift = 1 - (SourceX - (Offset << 1));
+
+                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                    Offset;
+                                                        byte Value = (byte)(((*SourceContextBuffer >> (Shift << 2)) & 0x0F) * 17);
+
+                                                        *Data++ = 255 << 24 |     // A
+                                                                  Value << 16 |   // R
+                                                                  Value << 8 |    // G
+                                                                  Value;          // B
+                                                    }
+                                                    else
+                                                    {
+                                                        // Clear
+                                                        *Data++ = 0;
+                                                    }
+                                                    X += ScaleStep;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // Clear
+                                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                                    *Data++ = 0;
+                                            }
+                                        });
+                                    }
+                                    break;
+                                case 8:
+                                    {
+                                        byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
+
+                                        Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
+                                        {
+                                            int* Data = DisplayContextScan0 + j * DisplayStrideWidth + DirtyRectX1;
+
+                                            double Y = j * ScaleStep;
+                                            if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
+                                            {
+                                                double X = DirtyRectX1 * ScaleStep;
+                                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                                {
+                                                    if (Token.IsCancellationRequested)
+                                                        return;
+
+                                                    if (SourceLocation.X <= X && X < SourceEndPoint.X)
+                                                    {
+                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                    ((int)X - SourceLocation.X);
                                                         *Data++ = 255 << 24 |                   // A
                                                                   *SourceContextBuffer << 16 |  // R
                                                                   *SourceContextBuffer << 8 |   // G
@@ -354,7 +463,7 @@ namespace MenthaAssembly.Views
                                         });
                                     }
                                     break;
-                                case 3:
+                                case 24:
                                     {
                                         byte* SourceContextScan0 = (byte*)SourceContext.Scan0;
 
@@ -365,7 +474,6 @@ namespace MenthaAssembly.Views
                                             double Y = j * ScaleStep;
                                             if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                             {
-                                                int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X * SourceContext.PixelBytes;
                                                 double X = DirtyRectX1 * ScaleStep;
                                                 for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                                 {
@@ -374,11 +482,13 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        byte* SourceContextBuffer = SourceContextScan0 + Offset + (int)X * SourceContext.PixelBytes;
-                                                        *Data++ = 255 << 24 |                   // A
-                                                                  *SourceContextBuffer++ |      // R
-                                                                  *SourceContextBuffer++ << 8 | // G
-                                                                  *SourceContextBuffer << 16;   // B
+                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                    ((int)X - SourceLocation.X) * 3;
+                                                        *Data++ = 255 << 24 |                       // A
+                                                                  *SourceContextBuffer++ << 16 |    // R
+                                                                  *SourceContextBuffer++ << 8 |     // G
+                                                                  *SourceContextBuffer;             // B
                                                     }
                                                     else
                                                     {
@@ -397,10 +507,10 @@ namespace MenthaAssembly.Views
                                         });
                                     }
                                     break;
-                                case 4:
+                                case 32:
                                     {
                                         int* SourceContextScan0 = (int*)SourceContext.Scan0;
-                                        int SourceStrideWidth = SourceContext.Stride / SourceContext.PixelBytes;
+                                        int SourceStrideWidth = SourceContext.Stride / 4;
 
                                         Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                                         {
@@ -409,7 +519,6 @@ namespace MenthaAssembly.Views
                                             double Y = j * ScaleStep;
                                             if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                             {
-                                                int Offset = ((int)Y - SourceLocation.Y) * SourceStrideWidth - SourceLocation.X;
                                                 double X = DirtyRectX1 * ScaleStep;
                                                 for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                                 {
@@ -418,7 +527,10 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        *Data++ = *(SourceContextScan0 + Offset + (int)X);
+                                                        int* SourceContextBuffer = SourceContextScan0 +
+                                                                                   ((int)Y - SourceLocation.Y) * SourceStrideWidth +
+                                                                                   ((int)X - SourceLocation.X);
+                                                        *Data++ = *SourceContextBuffer;
                                                     }
                                                     else
                                                     {
@@ -452,7 +564,6 @@ namespace MenthaAssembly.Views
                                     double Y = j * ScaleStep;
                                     if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                     {
-                                        int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X;
                                         double X = DirtyRectX1 * ScaleStep;
                                         for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                         {
@@ -461,7 +572,7 @@ namespace MenthaAssembly.Views
 
                                             if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                             {
-                                                int Index = Offset + (int)X;
+                                                int Index = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
                                                 *Data++ = 255 << 24 |                           // A
                                                           *(SourceContextScanR + Index) << 16 | // R
                                                           *(SourceContextScanG + Index) << 8 |  // G
@@ -498,7 +609,6 @@ namespace MenthaAssembly.Views
                                     double Y = j * ScaleStep;
                                     if (SourceLocation.Y <= Y && Y < SourceEndPoint.Y)
                                     {
-                                        int Offset = ((int)Y - SourceLocation.Y) * SourceContext.Stride - SourceLocation.X;
                                         double X = DirtyRectX1 * ScaleStep;
                                         for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                         {
@@ -507,7 +617,7 @@ namespace MenthaAssembly.Views
 
                                             if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                             {
-                                                int Index = Offset + (int)X;
+                                                int Index = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
                                                 *Data++ = *(SourceContextScanA + Index) << 24 | // A
                                                           *(SourceContextScanR + Index) << 16 | // R
                                                           *(SourceContextScanG + Index) << 8 |  // G
@@ -544,5 +654,6 @@ namespace MenthaAssembly.Views
             }
             return new Int32Rect(0, 0, DisplayContext.Width, DisplayContext.Height);
         }
+
     }
 }

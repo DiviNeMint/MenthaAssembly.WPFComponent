@@ -13,7 +13,7 @@ namespace MenthaAssembly
             int Stride = (((This.PixelWidth + 1) >> 1) << 1) * PixelBytes;
             byte[] Datas = new byte[Stride * This.PixelHeight];
             This.CopyPixels(Datas, Stride, 0);
-            return new ImageContext(This.PixelWidth, This.PixelHeight, Datas, Stride, This.Format.BitsPerPixel);
+            return new ImageContext(This.PixelWidth, This.PixelHeight, Datas);
         }
 
         //public static BitmapSource ToBitmapSource(this ImageContext This)
@@ -22,7 +22,7 @@ namespace MenthaAssembly
         //    unsafe
         //    {
         //        byte* Scan0 = (byte*)Bitmap.BackBuffer;
-        //        switch (This.Channel)
+        //        switch (This.Channels)
         //        {
         //            case 1:
         //                Parallel.For(0, Bitmap.PixelHeight, (j) =>
