@@ -342,15 +342,21 @@ namespace MenthaAssembly.Views
                                                         int Offset = SourceX >> 3;
                                                         int Shift = 7 - (SourceX - (Offset << 3));
 
-                                                        byte* SourceContextBuffer = SourceContextScan0 +
-                                                                                    ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                                    Offset;
-                                                        byte Value = (byte)(((*SourceContextBuffer >> Shift) & 0x01) * 255);
-
-                                                        *Data++ = 255 << 24 |     // A
-                                                                  Value << 16 |   // R
-                                                                  Value << 8 |    // G
-                                                                  Value;          // B
+                                                        byte SourceContextBuffer = *(SourceContextScan0 +
+                                                                                   ((int)Y - SourceLocation.Y) * SourceContext.Stride +
+                                                                                   Offset);
+                                                        int PaletteIndex = (SourceContextBuffer >> Shift) & 0x01;
+                                                        if (SourceContext.Palette is null)
+                                                        {
+                                                            int Value = PaletteIndex * 255;
+                                                            *Data++ = SourceContext.Palette?[PaletteIndex] ??
+                                                                      0xFF << 24 |      // A
+                                                                      Value << 16 |     // R
+                                                                      Value << 8 |      // G
+                                                                      Value;            // B
+                                                        }
+                                                        else
+                                                            *Data++ = SourceContext.Palette[PaletteIndex];
                                                     }
                                                     else
                                                     {
@@ -392,15 +398,20 @@ namespace MenthaAssembly.Views
                                                         int Offset = SourceX >> 1;
                                                         int Shift = 1 - (SourceX - (Offset << 1));
 
-                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                        byte SourceContextBuffer = *(SourceContextScan0 +
                                                                                     ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                                    Offset;
-                                                        byte Value = (byte)(((*SourceContextBuffer >> (Shift << 2)) & 0x0F) * 17);
-
-                                                        *Data++ = 255 << 24 |     // A
-                                                                  Value << 16 |   // R
-                                                                  Value << 8 |    // G
-                                                                  Value;          // B
+                                                                                    Offset);
+                                                        int PaletteIndex = (SourceContextBuffer >> (Shift << 2)) & 0x0F;
+                                                        if (SourceContext.Palette is null)
+                                                        {
+                                                            int Value = PaletteIndex * 17;
+                                                            *Data++ = 0xFF << 24 |      // A
+                                                                      Value << 16 |     // R
+                                                                      Value << 8 |      // G
+                                                                      Value;            // B
+                                                        }
+                                                        else
+                                                            *Data++ = SourceContext.Palette[PaletteIndex];
                                                     }
                                                     else
                                                     {
@@ -438,13 +449,14 @@ namespace MenthaAssembly.Views
 
                                                     if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                                     {
-                                                        byte* SourceContextBuffer = SourceContextScan0 +
+                                                        byte SourceContextBuffer = *(SourceContextScan0 +
                                                                                     ((int)Y - SourceLocation.Y) * SourceContext.Stride +
-                                                                                    ((int)X - SourceLocation.X);
-                                                        *Data++ = 255 << 24 |                   // A
-                                                                  *SourceContextBuffer << 16 |  // R
-                                                                  *SourceContextBuffer << 8 |   // G
-                                                                  *SourceContextBuffer;         // B
+                                                                                    ((int)X - SourceLocation.X));
+                                                        *Data++ = SourceContext.Palette?[SourceContextBuffer] ??
+                                                                  0xFF << 24 |                 // A
+                                                                  SourceContextBuffer << 16 |  // R
+                                                                  SourceContextBuffer << 8 |   // G
+                                                                  SourceContextBuffer;         // B
                                                     }
                                                     else
                                                     {
@@ -485,7 +497,7 @@ namespace MenthaAssembly.Views
                                                         byte* SourceContextBuffer = SourceContextScan0 +
                                                                                     ((int)Y - SourceLocation.Y) * SourceContext.Stride +
                                                                                     ((int)X - SourceLocation.X) * 3;
-                                                        *Data++ = 255 << 24 |                       // A
+                                                        *Data++ = 0xFF << 24 |                      // A
                                                                   *SourceContextBuffer++ << 16 |    // R
                                                                   *SourceContextBuffer++ << 8 |     // G
                                                                   *SourceContextBuffer;             // B
@@ -573,7 +585,7 @@ namespace MenthaAssembly.Views
                                             if (SourceLocation.X <= X && X < SourceEndPoint.X)
                                             {
                                                 int Index = ((int)Y - SourceLocation.Y) * SourceContext.Stride + (int)X - SourceLocation.X;
-                                                *Data++ = 255 << 24 |                           // A
+                                                *Data++ = 0xFF << 24 |                          // A
                                                           *(SourceContextScanR + Index) << 16 | // R
                                                           *(SourceContextScanG + Index) << 8 |  // G
                                                           *(SourceContextScanB + Index);        // B
