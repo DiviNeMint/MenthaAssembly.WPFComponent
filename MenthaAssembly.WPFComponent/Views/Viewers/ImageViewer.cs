@@ -153,7 +153,13 @@ namespace MenthaAssembly.Views
         {
             base.OnRenderSizeChanged(sizeInfo);
             if (ActualHeight > 0 && ActualWidth > 0)
+            {
+                IsResizeViewer = true;
+                Resize_ViewportCenterInImage = new Int32Point(Viewport.X + Viewport.Width / 2 - SourceLocation.X,
+                                                              Viewport.Y + Viewport.Height / 2 - SourceLocation.Y);
                 ViewBox = CalculateViewBox();
+                IsResizeViewer = false;
+            }
         }
 
         protected virtual void OnSourceChanged(ChangedEventArgs<ImageContext> e)
@@ -241,11 +247,14 @@ namespace MenthaAssembly.Views
         private bool IsZoomWithMouse;
         private Point Zoom_MousePosition;
         private Vector Zoom_MouseMoveDelta;
+        private bool IsResizeViewer;
+        private Int32Point Resize_ViewportCenterInImage;
         protected Int32Rect CalculateViewport()
         {
             Int32Size ViewportHalfSize = ViewBox * (MinFactor / Factor / 2);
             Int32Point C0 = IsZoomWithMouse ? new Int32Point(Zoom_MousePosition.X - Zoom_MouseMoveDelta.X / Factor, Zoom_MousePosition.Y - Zoom_MouseMoveDelta.Y / Factor) :
-                                              new Int32Point(Viewport.X + Viewport.Width / 2, Viewport.Y + Viewport.Height / 2);
+                            IsResizeViewer ? new Int32Point(Resize_ViewportCenterInImage.X + SourceLocation.X, Resize_ViewportCenterInImage.Y + SourceLocation.Y) :
+                                             new Int32Point(Viewport.X + Viewport.Width / 2, Viewport.Y + Viewport.Height / 2);
 
             Int32Rect Result = new Int32Rect(C0.X - ViewportHalfSize.Width,
                                              C0.Y - ViewportHalfSize.Height,
@@ -692,15 +701,14 @@ namespace MenthaAssembly.Views
             {
                 Point Position = e.GetPosition(this);
 
-                Vector MoveDelta = new Vector(Position.X - MousePosition.X, Position.Y - MousePosition.Y);
-                MouseMoveDelta += MoveDelta;
+                Int32Vector TempVector = new Int32Vector(Position.X - MousePosition.X, Position.Y - MousePosition.Y);
+                MouseMoveDelta += TempVector;
 
-                Int32Rect TempViewport = Viewport - new Int32Vector(MoveDelta / Factor);
+                Int32Rect TempViewport = Viewport - TempVector / Factor;
                 TempViewport.X = Math.Min(Math.Max(0, TempViewport.X), ViewBox.Width - TempViewport.Width);
                 TempViewport.Y = Math.Min(Math.Max(0, TempViewport.Y), ViewBox.Height - TempViewport.Height);
                 Viewport = TempViewport;
-
-                MousePosition = Position;
+                MousePosition = new Point(MousePosition.X + TempVector.X, MousePosition.Y + TempVector.Y);
             }
         }
         protected override void OnMouseUp(MouseButtonEventArgs e)

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Data;
@@ -31,19 +30,34 @@ namespace MenthaAssembly
             DependencyProperty.RegisterAttached("IsEnabled", typeof(bool?), typeof(AnimationHelper), new PropertyMetadata(null,
                 (d, e) =>
                 {
-                    if (d is UIElement This &&
-                        GetBegin(This) is double Begin &&
-                        GetEnd(This) is double End &&
+                    if (GetBegin(d) is double Begin &&
+                        GetEnd(d) is double End &&
                         e.NewValue is bool IsEnabled)
                     {
-                        DoubleAnimation DA = new DoubleAnimation
+                        if (d is UIElement UIElement)
                         {
-                            From = IsEnabled ? Begin : End,
-                            To = IsEnabled ? End : Begin,
-                            Duration = new Duration(TimeSpan.FromMilliseconds(GetInterval(d)))
-                        };
-                        DA.Freeze();
-                        This.ApplyAnimationClock(PercentageProperty, DA.CreateClock());
+                            DoubleAnimation DA = new DoubleAnimation
+                            {
+                                From = IsEnabled ? Begin : End,
+                                To = IsEnabled ? End : Begin,
+                                Duration = new Duration(TimeSpan.FromMilliseconds(GetInterval(d)))
+                            };
+                            DA.Freeze();
+                            UIElement.ApplyAnimationClock(PercentageProperty, DA.CreateClock());
+                            return;
+                        }
+
+                        if (d is ContentElement ContentElement)
+                        {
+                            DoubleAnimation DA = new DoubleAnimation
+                            {
+                                From = IsEnabled ? Begin : End,
+                                To = IsEnabled ? End : Begin,
+                                Duration = new Duration(TimeSpan.FromMilliseconds(GetInterval(d)))
+                            };
+                            DA.Freeze();
+                            ContentElement.ApplyAnimationClock(PercentageProperty, DA.CreateClock());
+                        }
                     }
                 }));
         public static bool GetIsEnabled(DependencyObject obj)
@@ -124,44 +138,80 @@ namespace MenthaAssembly
         protected static void OnAnimationUpdated(DependencyObject d, double? OldValue, double NewValue)
         {
             string Target = GetTarget(d);
-            switch (GetTarget(d))
+            switch (Target)
             {
+                case "X":
+                case "Y":
+                    {
+                        if (double.TryParse(GetFrom(d)?.ToString() ?? "0", out double From) &&
+                            double.TryParse(GetTo(d)?.ToString() ?? "0", out double To) &&
+                            d.GetType().GetProperty("RenderTransform") != null &&
+                            DependencyPropertyDescriptor.FromName(Target,
+                                                                  typeof(TranslateTransform),
+                                                                  typeof(TranslateTransform))?.DependencyProperty is DependencyProperty Dp)
+                        {
+                            TransformGroup TransformGroup = d.GetValue(UIElement.RenderTransformProperty) as TransformGroup;
+                            if (TransformGroup is null)
+                            {
+                                TransformGroup = new TransformGroup();
+                                d.SetValue(UIElement.RenderTransformProperty, TransformGroup);
+                            }
+                            TranslateTransform Transform = TransformGroup.Children.OfType<TranslateTransform>().FirstOrDefault();
+                            if (Transform is null)
+                            {
+                                Transform = new TranslateTransform();
+                                TransformGroup.Children.Add(Transform);
+                            }
+
+                            Transform.SetValue(Dp, GetBegin(d) >= 0 ? From - (From - To) * NewValue : (From - To) * NewValue);
+                        }
+                        break;
+                    }
                 case "Width":
                 case "Height":
-
-                    if (GetTo(d) is double SizeTo &&
-                        d.GetType().GetProperty(Target) is PropertyInfo SizeProperty)
                     {
-                        object From = GetFrom(d);
-                        SizeProperty.SetValue(d, NewValue <= 0d ? (From is null ? double.NaN : Convert.ToDouble(From)) : SizeTo * NewValue);
+                        if (double.TryParse(GetTo(d)?.ToString(), out double To) &&
+                            d.GetType().GetProperty(Target) is PropertyInfo Property)
+                        {
+                            if (Property.PropertyType.Equals(typeof(GridLength)))
+                                Property.SetValue(d, NewValue <= 0d ?
+                                                  (double.TryParse(GetFrom(d)?.ToString(), out double From) ? new GridLength(From) : new GridLength(1, GridUnitType.Auto)) :
+                                                  new GridLength(To * NewValue));
+                            else
+                                Property.SetValue(d, NewValue <= 0d ?
+                                                  (double.TryParse(GetFrom(d)?.ToString(), out double From) ? From : double.NaN) :
+                                                  To * NewValue);
+                        }
+                        break;
                     }
-                    break;
                 case "Margin.Left":
                 case "Margin.Right":
                 case "Margin.Top":
                 case "Margin.Bottom":
-                    if (GetTo(d) is double MarginTo &&
-                        d.GetType().GetProperty("Margin") is PropertyInfo MarginProperty)
                     {
-                        Thickness Margin = (Thickness)MarginProperty.GetValue(d);
-                        switch (Target)
+                        if (double.TryParse(GetTo(d)?.ToString(), out double To) &&
+                            d.GetType().GetProperty("Margin") != null)
                         {
-                            case "Margin.Left":
-                                Margin.Left = MarginTo * (1d - NewValue);
-                                break;
-                            case "Margin.Right":
-                                Margin.Right = MarginTo * NewValue;
-                                break;
-                            case "Margin.Top":
-                                Margin.Top = MarginTo * (1d - NewValue);
-                                break;
-                            case "Margin.Bottom":
-                                Margin.Bottom = MarginTo * NewValue;
-                                break;
+                            Thickness Margin = (Thickness)d.GetValue(FrameworkElement.MarginProperty);
+                            switch (Target)
+                            {
+                                case "Margin.Left":
+                                    Margin.Left = To * (1d - NewValue);
+                                    break;
+                                case "Margin.Right":
+                                    Margin.Right = To * NewValue;
+                                    break;
+                                case "Margin.Top":
+                                    Margin.Top = To * (1d - NewValue);
+                                    break;
+                                case "Margin.Bottom":
+                                    Margin.Bottom = To * NewValue;
+                                    break;
+                            }
+                            d.SetValue(FrameworkElement.MarginProperty, Margin);
                         }
-                        MarginProperty.SetValue(d, Margin);
+                        break;
                     }
-                    break;
                 case "Background":
                     if (GetTo(d) is Brush BrushTo &&
                         d.GetType().GetProperty(Target) is PropertyInfo BrushPorperty)
@@ -200,8 +250,9 @@ namespace MenthaAssembly
                 => string.Join(",", values);
 
             public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-               => Array.Empty<object>();
+               => new object[0];
         }
+
     }
 
 }
