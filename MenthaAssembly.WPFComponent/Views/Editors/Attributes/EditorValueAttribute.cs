@@ -20,6 +20,23 @@ namespace MenthaAssembly
         /// </summary>
         public string SelectedValuePath { get; set; }
 
+        public bool IsEnumLanguageBinding { set; get; } = false;
+
+        /// <summary>
+        /// Binding StringFormat
+        /// </summary>
+        public string StringFormat { set; get; }
+
+        /// <summary>
+        /// Binding Converter's Type
+        /// </summary>
+        public Type ConverterType { set; get; }
+
+        /// <summary>
+        /// Binding ConverterParameter
+        /// </summary>
+        public object ConverterParameter { set; get; }
+
         public object Default { set; get; }
 
         public ExploreType ExploreType { set; get; }

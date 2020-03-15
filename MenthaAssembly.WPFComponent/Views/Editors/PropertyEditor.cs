@@ -37,8 +37,8 @@ namespace MenthaAssembly.Views
         public event EventHandler<PropertyChangedEventArgs> ContentPropertyChanged;
 
         public static readonly DependencyProperty ItemsSourceProperty =
-              DependencyProperty.Register("ItemsSource", typeof(IList<PropertyInfo>), typeof(PropertyEditor), new PropertyMetadata(new ObservableCollection<PropertyInfo>()));
-        internal IList<PropertyInfo> ItemsSource => (IList<PropertyInfo>)GetValue(ItemsSourceProperty);
+              DependencyProperty.Register("ItemsSource", typeof(IList<PropertyEditorSortingData>), typeof(PropertyEditor), new PropertyMetadata(new ObservableCollection<PropertyEditorSortingData>()));
+        internal IList<PropertyEditorSortingData> ItemsSource => (IList<PropertyEditorSortingData>)GetValue(ItemsSourceProperty);
 
         public static readonly DependencyProperty ContentProperty =
               DependencyProperty.Register("Content", typeof(object), typeof(PropertyEditor), new PropertyMetadata(default,
@@ -117,9 +117,9 @@ namespace MenthaAssembly.Views
                                   {
                                       Content.PropertyChanged += This.OnContentPropertyChanged;
                                       if (This.ContentPropertyChanged != null)
-                                          foreach (PropertyInfo item in This.ItemsSource.ToArray())
+                                          foreach (PropertyEditorSortingData item in This.ItemsSource)
                                               if (This.ItemsSource.Contains(item))
-                                                  This.ContentPropertyChanged.Invoke(This, new PropertyChangedEventArgs(item.Name));
+                                                  This.ContentPropertyChanged.Invoke(This, new PropertyChangedEventArgs((item.Content as PropertyInfo)?.Name));
                                   }
                               }
                               This.OnContentChanged();
@@ -136,12 +136,39 @@ namespace MenthaAssembly.Views
             set => SetValue(ContentProperty, value);
         }
 
+        public static readonly DependencyProperty IsGroupingProperty =
+            DependencyProperty.Register("IsGrouping", typeof(bool), typeof(PropertyEditor), new PropertyMetadata(false,
+                (d, e) =>
+                {
+                    if (d is PropertyEditor This &&
+                        CollectionViewSource.GetDefaultView(This.ItemsSource) is ListCollectionView View)
+                    {
+                        if (e.NewValue is true)
+                            View.GroupDescriptions.Add(new PropertyGroupDescription("Group"));
+                        else
+                            View.GroupDescriptions.Clear();
+                    }
+                }));
+        public bool IsGrouping
+        {
+            get => (bool)GetValue(IsGroupingProperty);
+            set => SetValue(IsGroupingProperty, value);
+        }
+
         public static readonly DependencyProperty ItemContainerStyleProperty =
             DependencyProperty.Register("ItemContainerStyle", typeof(Style), typeof(PropertyEditor), new PropertyMetadata(default));
         public Style ItemContainerStyle
         {
             get => (Style)GetValue(ItemContainerStyleProperty);
             set => SetValue(ItemContainerStyleProperty, value);
+        }
+
+        public static readonly DependencyProperty GroupContainerStyleProperty =
+            DependencyProperty.Register("GroupContainerStyle", typeof(Style), typeof(PropertyEditor), new PropertyMetadata(default));
+        public Style GroupContainerStyle
+        {
+            get => (Style)GetValue(GroupContainerStyleProperty);
+            set => SetValue(GroupContainerStyleProperty, value);
         }
 
         public static readonly DependencyProperty PropertyMenuStyleProperty =
@@ -180,14 +207,21 @@ namespace MenthaAssembly.Views
                 this.PART_SearchBox = PART_SearchBox;
                 PART_SearchBox.Predicate = (o, s) =>
                 {
-                    if (o is PropertyInfo Info)
+                    if (o is PropertyEditorSortingData SortingData &&
+                        SortingData.Content is PropertyInfo Info)
                         return string.IsNullOrEmpty(s) ? true : Info.Name.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0;
                     return false;
                 };
             }
 
+            if (this.GetTemplateChild("PART_ItemsControl") is ItemsControl PART_ItemsControl)
+                PART_ItemsControl.GroupStyle.Add(new GroupStyle
+                {
+                    ContainerStyle = this.GroupContainerStyle
+                });
+
             if (CollectionViewSource.GetDefaultView(ItemsSource) is ListCollectionView View)
-                View.CustomSort = new PropertyEditorComparer();
+                View.SortDescriptions.Add(new SortDescription("Index", ListSortDirection.Ascending));
         }
 
         protected virtual void OnContentChanged()
@@ -197,10 +231,39 @@ namespace MenthaAssembly.Views
 
         public void AddProperty(PropertyInfo Info)
         {
-            if (!ItemsSource.Contains(Info))
-                ItemsSource.Add(Info);
+            if (!ItemsSource.Contains(i => i.Content.Equals(Info)))
+            {
+                EditorDisplayAttribute EditorDisplay = Info.GetCustomAttribute<EditorDisplayAttribute>() as EditorDisplayAttribute;
+                ItemsSource.Add(new PropertyEditorSortingData(EditorDisplay?.Index ?? EditorDisplayAttribute.DefaultIndex,
+                                                              EditorDisplay?.Category ?? string.Empty,
+                                                              EditorDisplay?.Tag,
+                                                              Info));
+            }
         }
         public void RemoveProperty(PropertyInfo Info)
-            => ItemsSource.Remove(Info);
+        {
+            if (ItemsSource.FirstOrDefault(i => i.Content.Equals(Info)) is PropertyEditorSortingData Item)
+                ItemsSource.Remove(Item);
+        }
+
+        internal class PropertyEditorSortingData
+        {
+            public int Index { get; }
+
+            public string Group { get; }
+
+            public object Tag { get; }
+
+            public object Content { get; }
+
+            public PropertyEditorSortingData(int Index, string Group, object Tag, object Content)
+            {
+                this.Index = Index;
+                this.Group = Group;
+                this.Tag = Tag;
+                this.Content = Content;
+            }
+
+        }
     }
 }

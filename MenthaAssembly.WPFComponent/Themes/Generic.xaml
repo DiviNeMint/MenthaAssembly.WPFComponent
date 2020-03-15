@@ -3,6 +3,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:Core="clr-namespace:MenthaAssembly"
     xmlns:local="clr-namespace:MenthaAssembly.Views">
+    <ResourceDictionary.MergedDictionaries>
+
+
+        <!--ImageViewer-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Viewers/ImageViewer.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Viewers/ImageViewerMapper.xaml"/>
+
+    </ResourceDictionary.MergedDictionaries>
 
     <DrawingImage x:Key="Icon_Explore">
         <DrawingImage.Drawing>
@@ -54,7 +62,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
     <Style TargetType="{x:Type local:PasswordBox}">
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderBrush" Value="#FFABADB3"/>
@@ -284,7 +292,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
     <Style TargetType="{x:Type local:SwitchView}">
         <Setter Property="Background" Value="LightGray"/>
         <Setter Property="BorderBrush" Value="#FF969696"/>
@@ -472,10 +480,12 @@
                             <ScrollViewer x:Name="ScrollViewer"
                                           Grid.IsSharedSizeScope="True"
                                           Grid.Row="2">
-                                <ItemsControl ItemsSource="{TemplateBinding ItemsSource}">
+                                <ItemsControl x:Name="PART_ItemsControl"
+                                              ItemsSource="{TemplateBinding ItemsSource}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <local:PropertyEditorItem TargetObject="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"
+                                            <local:PropertyEditorItem DataContext="{Binding Content}"
+                                                                      TargetObject="{Binding Content, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"
                                                                       PropertyMenuStyle="{Binding PropertyMenuStyle, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"
                                                                       Style="{Binding ItemContainerStyle, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PropertyEditor}}}"/>
                                         </DataTemplate>
@@ -588,53 +598,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
-    <Style TargetType="{x:Type local:ImageViewer}">
-        <Setter Property="Background" Value="Black"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:ImageViewer}">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <Image Source="{TemplateBinding local:ImageViewer.DisplayImage}"
-                               RenderOptions.BitmapScalingMode="LowQuality"
-                               SnapsToDevicePixels="True"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-    <Style TargetType="{x:Type local:ImageViewerMapper}">
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-        <Setter Property="RectFill" Value="#4C087ECE"/>
-        <Setter Property="RectStroke" Value="#FF087ECE"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:ImageViewerMapper}">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <Grid x:Name="PART_Container"
-                              HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Image Source="{TemplateBinding local:ImageViewerMapper.DisplayImage}"
-                                   RenderOptions.BitmapScalingMode="LowQuality"
-                                   SnapsToDevicePixels="True"/>
-                            <Rectangle x:Name="PART_Rect"
-                                       Fill="{TemplateBinding RectFill}" 
-                                       Stroke="{TemplateBinding RectStroke}" StrokeThickness="1"
-                                       Width="0" Height="0"
-                                       SnapsToDevicePixels="True"
-                                       HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                        </Grid>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
 
     <Style TargetType="{x:Type local:PopupMenu}">
         <Setter Property="MinWidth" Value="150"/>
@@ -741,6 +704,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
-    
+
+
 </ResourceDictionary>

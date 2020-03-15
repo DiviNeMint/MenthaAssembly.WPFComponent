@@ -1,0 +1,38 @@
+﻿<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:MenthaAssembly.Views"
+    xmlns:Primitives="clr-namespace:MenthaAssembly.Views.Primitives">
+
+    <Style TargetType="{x:Type local:ImageViewerMapper}">
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+        <Setter Property="RectFill" Value="#4C087ECE"/>
+        <Setter Property="RectStroke" Value="#FF087ECE"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:ImageViewerMapper}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid x:Name="PART_Container"
+                              SnapsToDevicePixels="True"
+                              UseLayoutRounding="True"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
+                                   RenderOptions.BitmapScalingMode="LowQuality"/>
+                            <Rectangle x:Name="PART_Rect"
+                                       Fill="{TemplateBinding RectFill}" 
+                                       Stroke="{TemplateBinding RectStroke}"
+                                       StrokeThickness="1"
+                                       Width="0" Height="0"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    
+</ResourceDictionary>

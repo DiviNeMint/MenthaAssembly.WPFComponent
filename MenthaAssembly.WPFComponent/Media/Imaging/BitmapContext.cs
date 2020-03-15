@@ -1,15 +1,22 @@
-﻿using System;
+﻿using MenthaAssembly.Media.Imaging;
+using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly
 {
-
-    public class BitmapContext : ImageContext
+    public class BitmapContext : ImageContext<BGRA>
     {
         protected WriteableBitmap Bitmap { get; }
 
-        public BitmapContext(WriteableBitmap Bitmap) : base(Bitmap.PixelWidth, Bitmap.PixelHeight, Bitmap.BackBuffer, Bitmap.BackBufferStride, Bitmap.Format.BitsPerPixel)
+        public BitmapContext(WriteableBitmap Bitmap) :
+            base(Bitmap.PixelWidth,
+                 Bitmap.PixelHeight,
+                 Bitmap.BackBuffer,
+                 Bitmap.BackBufferStride,
+                 Bitmap.Palette?.Colors.Select(i => new BGRA(i.B, i.G, i.R, i.A))
+                                       .ToList())
             => this.Bitmap = Bitmap;
 
         protected bool IsLocked { set; get; }

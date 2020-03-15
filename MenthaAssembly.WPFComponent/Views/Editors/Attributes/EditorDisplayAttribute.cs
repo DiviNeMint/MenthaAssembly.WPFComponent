@@ -17,5 +17,9 @@ namespace MenthaAssembly
 
         public bool Visible { set; get; } = true;
 
+        public bool IsReadOnly { set; get; } = false;
+
+        public object Tag { set; get; }
+
     }
 }

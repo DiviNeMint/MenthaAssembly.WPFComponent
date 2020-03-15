@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MenthaAssembly.Media.Imaging;
+using System;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -7,13 +8,13 @@ namespace MenthaAssembly
 {
     public static class ImageHelper
     {
-        public static ImageContext ToImageContext(this BitmapSource This)
+        public static IImageContext ToImageContext(this BitmapSource This)
         {
             int PixelBytes = (This.Format.BitsPerPixel + 7) >> 3;
             int Stride = (((This.PixelWidth + 1) >> 1) << 1) * PixelBytes;
             byte[] Datas = new byte[Stride * This.PixelHeight];
             This.CopyPixels(Datas, Stride, 0);
-            return new ImageContext(This.PixelWidth, This.PixelHeight, Datas);
+            return new ImageContext<ARGB>(This.PixelWidth, This.PixelHeight, Datas);
         }
 
         //public static BitmapSource ToBitmapSource(this ImageContext This)

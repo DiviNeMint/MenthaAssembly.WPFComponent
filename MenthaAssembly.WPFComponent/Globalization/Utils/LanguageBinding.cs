@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
@@ -57,56 +59,129 @@ namespace MenthaAssembly
                     {
                         // DataContext Property
                         if (Item.GetValue(FrameworkElement.DataContextProperty) is object DataContext &&
-                            DataContext.GetType().GetProperty(this.Path) is PropertyInfo DataProperty)
+                            TryGetValue(DataContext, Path, out object DataValue))
                         {
-                            if (DataContext is INotifyPropertyChanged NotifyData &&
-                                ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
-                                NotifyData.PropertyChanged += (s, e) =>
-                                {
-                                    if (e.PropertyName.Equals(DependencyProperty.Name) &&
-                                        DataProperty.GetValue(DataContext)?.ToString() is string DataPath)
-                                        BindingOperations.SetBinding(Item, DependencyProperty, Create(DataPath, this.Default));
-                                };
+                            // TODO : 
+                            // When DataContext's property changed, update binding.
 
-                            return Create(DataProperty.GetValue(DataContext)?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
+                            //if (DataContext is INotifyPropertyChanged NotifyData &&
+                            //    ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
+                            //    NotifyData.PropertyChanged += (s, e) =>
+                            //    {
+                            //        //if (GetValue(DataContext, Path)?.ToString() is string DataPath)
+                            //        //else
+                            //        //BindingOperations.ClearBinding(Item, DependencyProperty);
+                            //        //if (e.PropertyName.Equals(DependencyProperty.Name) &&
+                            //        //    GetValue(DataContext, Path)?.ToString() is string DataPath)
+                            //        //    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataPath, this.Default));
+                            //    };
+
+                            string DataPath = DataValue?.ToString();
+                            return string.IsNullOrEmpty(DataPath) ? "Null" :
+                                                                    Create(DataPath, this.Default).ProvideValue(Provider);
                         }
 
                         // Control Property
-                        if (Item.GetType() is Type ControlType &&
-                            ControlType.GetProperty(this.Path) is PropertyInfo ControlProperty)
+                        if (TryGetValue(Item, Path, out object ControlValue))
                         {
-                            //if (TypeDescriptor.GetProperties(Item)[Path] is PropertyDescriptor prop)
-                            //{
-                            //    prop.AddValueChanged(Item, (s, e) => 
-                            //    {
-                            //        Console.WriteLine("Test");
-                            //    });
-                            //}
-
-                            //    if (ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
-                            //        DependencyPropertyDescriptor.FromName(Path, ControlType, ControlType).AddValueChanged(Item,
-                            //            (s, e) =>
-                            //            {
-                            //                if (ControlProperty.GetValue(Item)?.ToString() is string NewControlPath)
-                            //                    BindingOperations.SetBinding(Item, DependencyProperty, Create(NewControlPath));
-                            //            });
-
-                            return Create(ControlProperty.GetValue(Item)?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
+                            string ControlPath = ControlValue?.ToString();
+                            return string.IsNullOrEmpty(ControlPath) ? "Null" :
+                                                                       Create(ControlPath?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
                         }
-                    }
 
-                    return Create(this.Path, this.Default).ProvideValue(Provider);
+
+                        // TODO : 
+                        // When Control's property changed, update binding.
+
+                        //if (Item.GetType() is Type ControlType &&
+                        //    ControlType.GetProperty(this.Path) is PropertyInfo ControlProperty)
+                        //{
+                        //    if (TypeDescriptor.GetProperties(Item)[Path] is PropertyDescriptor prop)
+                        //    {
+                        //        prop.AddValueChanged(Item, (s, e) =>
+                        //        {
+                        //            Console.WriteLine("Test");
+                        //        });
+                        //    }
+
+                        //    if (ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
+                        //        DependencyPropertyDescriptor.FromName(Path, ControlType, ControlType).AddValueChanged(Item,
+                        //            (s, e) =>
+                        //            {
+                        //                if (ControlProperty.GetValue(Item)?.ToString() is string NewControlPath)
+                        //                    BindingOperations.SetBinding(Item, DependencyProperty, Create(NewControlPath));
+                        //            });
+
+                        //    return Create(ControlProperty.GetValue(Item)?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
+                        //}
+                        return Create(this.Path, this.Default).ProvideValue(Provider);
+                    }
                 }
                 return this;
             }
             return Create(this.Path, this.Default).ProvideValue(Provider);
         }
+        private bool TryGetValue(object Item, string Path, out object Value)
+        {
+            Value = Item;
+            Type ValueType = Value.GetType();
+            foreach (Match m in Regex.Matches(Path, @"(?<PropertyName>[\w-[\[\]]]+)\[?(?<Index>\d*)\]?"))
+            {
+                if (m.Success &&
+                    ValueType?.GetProperty(m.Groups["PropertyName"].Value) is PropertyInfo TempProperty)
+                {
+                    string IndexStr = m.Groups["Index"].Value;
+                    if (string.IsNullOrEmpty(IndexStr))
+                    {
+                        Value = TempProperty.GetValue(Value);
+                    }
+                    else if (int.TryParse(m.Groups["Index"].Value, out int Index))
+                    {
+                        object Collection = TempProperty.GetValue(Value);
+                        if (Collection is IList List)
+                        {
+                            if (List.Count <= Index)
+                                return false;
 
-        private static string CurrentLanguagePath { get; } = $"{nameof(LanguageManager)}.{nameof(LanguageManager.Current)}";
+                            Value = List[Index];
+                        }
+                        else if (Collection is Array Array)
+                        {
+                            if (Array.Length <= Index)
+                                return false;
+
+                            Value = Array.GetValue(Index);
+                        }
+                        else
+                        {
+                            Value = TempProperty.GetValue(Value, new object[] { Index });
+                        }
+                    }
+                    else
+                        break;
+
+                    ValueType = Value?.GetType();
+                    continue;
+                }
+
+                return false;
+            }
+
+            return !Item.Equals(Value);
+        }
+
+        //private static string CurrentLanguagePath { get; } = $"{nameof(LanguageManager)}.{nameof(LanguageManager.Current)}";
+        //public static Binding Create(string Path, string Default)
+        //    => new Binding
+        //    {
+        //        Path = new PropertyPath($"({CurrentLanguagePath}).{Path}"),
+        //        FallbackValue = string.IsNullOrEmpty(Default) ? Path : Default
+        //    };
+
         public static Binding Create(string Path, string Default)
             => new Binding
             {
-                Path = new PropertyPath($"({CurrentLanguagePath}).{Path}"),
+                Path = new PropertyPath($"({nameof(LanguageManager)}.{nameof(LanguageManager.Current)}).{Path}"),
                 FallbackValue = string.IsNullOrEmpty(Default) ? Path : Default
             };
     }
