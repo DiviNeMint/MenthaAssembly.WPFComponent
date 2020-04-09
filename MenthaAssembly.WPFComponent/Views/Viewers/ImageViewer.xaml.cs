@@ -225,10 +225,10 @@ namespace MenthaAssembly.Views
                        IsResizeViewer ? new Point(Resize_ViewportCenterInImage.X + SourceLocation.X, Resize_ViewportCenterInImage.Y + SourceLocation.Y) :
                                         new Point(Viewport.X + Viewport.Width * 0.5, Viewport.Y + Viewport.Height * 0.5);
 
-            Int32Rect Result = new Int32Rect((int)(C0.X - ViewportHalfSize.Width),
-                                             (int)(C0.Y - ViewportHalfSize.Height),
-                                             (int)(ViewportHalfSize.Width * 2),
-                                             (int)(ViewportHalfSize.Height * 2));
+            Int32Rect Result = new Int32Rect((int)Math.Round(C0.X - ViewportHalfSize.Width),
+                                             (int)Math.Round(C0.Y - ViewportHalfSize.Height),
+                                             (int)Math.Round(ViewportHalfSize.Width * 2),
+                                             (int)Math.Round(ViewportHalfSize.Height * 2));
             Result.X = Math.Min(Math.Max(0, Result.X), ViewBox.Width - Result.Width);
             Result.Y = Math.Min(Math.Max(0, Result.Y), ViewBox.Height - Result.Height);
 
@@ -287,17 +287,17 @@ namespace MenthaAssembly.Views
             {
                 Point Position = e.GetPosition(this);
 
-                Int32Vector TempVector = new Int32Vector(Position.X - MousePosition.X, Position.Y - MousePosition.Y);
+                Vector TempVector = new Vector(Math.Ceiling(Position.X - MousePosition.X), Math.Ceiling(Position.Y - MousePosition.Y));
                 MouseMoveDelta += TempVector;
 
                 if (IsMinFactor)
                     return;
 
-                Int32Rect TempViewport = Viewport - TempVector / Scale;
-                TempViewport.X = Math.Min(Math.Max(0, TempViewport.X), ViewBox.Width - TempViewport.Width);
-                TempViewport.Y = Math.Min(Math.Max(0, TempViewport.Y), ViewBox.Height - TempViewport.Height);
-                Viewport = TempViewport;
-                MousePosition = new Point(MousePosition.X + TempVector.X, MousePosition.Y + TempVector.Y);
+                Viewport = new Int32Rect(Math.Min(Math.Max(0, Viewport.X - (int)(TempVector.X / Scale)), ViewBox.Width - Viewport.Width),
+                                         Math.Min(Math.Max(0, Viewport.Y - (int)(TempVector.Y / Scale)), ViewBox.Height - Viewport.Height),
+                                         Viewport.Width,
+                                         Viewport.Height);
+                MousePosition += TempVector;
             }
         }
         protected override void OnMouseUp(MouseButtonEventArgs e)

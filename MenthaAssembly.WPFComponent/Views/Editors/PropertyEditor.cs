@@ -231,7 +231,7 @@ namespace MenthaAssembly.Views
 
         public void AddProperty(PropertyInfo Info)
         {
-            if (!ItemsSource.Contains(i => i.Content.Equals(Info)))
+            if (!ItemsSource.Any(i => i.Content.Equals(Info)))
             {
                 EditorDisplayAttribute EditorDisplay = Info.GetCustomAttribute<EditorDisplayAttribute>() as EditorDisplayAttribute;
                 ItemsSource.Add(new PropertyEditorSortingData(EditorDisplay?.Index ?? EditorDisplayAttribute.DefaultIndex,

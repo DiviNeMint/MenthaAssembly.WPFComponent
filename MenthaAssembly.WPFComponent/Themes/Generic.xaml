@@ -5,10 +5,15 @@
     xmlns:local="clr-namespace:MenthaAssembly.Views">
     <ResourceDictionary.MergedDictionaries>
 
-
         <!--ImageViewer-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Viewers/ImageViewer.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Viewers/ImageViewerMapper.xaml"/>
+
+        <!--ColorEditor-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/Primitives/ColorEyedropper.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/Primitives/HuePicker.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/Primitives/SaturationBrightnessPicker.xaml"/>
 
     </ResourceDictionary.MergedDictionaries>
 
