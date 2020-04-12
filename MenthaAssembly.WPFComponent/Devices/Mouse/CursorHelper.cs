@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
@@ -12,14 +13,11 @@ using Bitmap = System.Drawing.Bitmap;
 
 namespace MenthaAssembly.Devices
 {
-    public class CursorHelper
+    public static class CursorHelper
     {
         #region Windows API
         [DllImport("user32.dll")]
         private static extern SafeIconHandle CreateIconIndirect(ref IconInfo icon);
-
-        [DllImport("user32.dll", EntryPoint = "CreateIconIndirect")]
-        private static extern IntPtr CreateIconIndirect2(ref IconInfo icon);
 
         [DllImport("user32.dll")]
         private static extern IntPtr CopyIcon(IntPtr hIcon);
@@ -29,14 +27,20 @@ namespace MenthaAssembly.Devices
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetIconInfo(IntPtr hIcon, ref IconInfo pIconInfo);
+        private static extern bool GetIconInfo(IntPtr hIcon, out IconInfo pIconInfo);
+
+        //[DllImport("user32.dll", EntryPoint = "GetCursorInfo")]
+        //private static extern bool GetCursorInfo(out CURSORINFO pci);
 
         [DllImport("user32.dll")]
         private static extern bool SetSystemCursor(IntPtr hCursor, CursorID type);
 
         [DllImport("user32.dll")]
         private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
-        
+
+        [DllImport("gdi32.dll")]
+        private static extern bool DeleteObject(IntPtr hObject);
+
         private struct IconInfo
         {
             public bool fIcon;
@@ -46,48 +50,64 @@ namespace MenthaAssembly.Devices
             public IntPtr hbmColor;
         }
 
-        #endregion
+        //private struct CURSORINFO
+        //{
+        //    public int cbSize;          // Specifies the size, in bytes, of the structure. 
+        //    public int flags;           // Specifies the cursor state. This parameter can be one of the following values:
+        //    public IntPtr hCursor;      // Handle to the cursor. 
+        //    public Int32Point Position; // The screen coordinates of the cursor.
+        //}
 
         [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
         private class SafeIconHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            public SafeIconHandle() : base(true)
-            {
-            }
+            public SafeIconHandle() : base(true) { }
 
             protected override bool ReleaseHandle()
                 => DestroyIcon(handle);
         }
 
-        private static DrawingImage _EyedropperCursorImage;
-        internal static DrawingImage EyedropperCursorImage
-        {
-            get
-            {
-                if (_EyedropperCursorImage is null)
-                {
-                    // Create CursorImage
-                    DrawingGroup ImageDatas = new DrawingGroup();
-                    ImageDatas.Children.Add(new GeometryDrawing(Brushes.Transparent, null, Geometry.Parse("M0,0L32,0 32,32 0,32z")));
-                    ImageDatas.Children.Add(new GeometryDrawing(Brushes.Black, new Pen(Brushes.White, 1d), Geometry.Parse("M23.650993,4.5C25.773577,4.5 27.5,6.2269645 27.5,8.3494997 27.5,9.378129 27.099771,10.344424 26.372868,11.071375L22.750515,14.693191 23.165054,15.10773C23.369261,15.311888,23.369261,15.642676,23.165054,15.846883L21.074127,17.937811C20.972,18.039888 20.838261,18.090954 20.704527,18.090954 20.570789,18.090954 20.437004,18.039888 20.334925,17.937811L19.651148,17.254034C18.922533,17.958 13.172987,23.575525 12.215317,24.593912 11.726289,25.112001 11.035113,25.409121 10.318404,25.409121 9.6925526,25.409121 9.0871353,25.592403 8.5674791,25.93951L6.3581061,27.412182C6.269259,27.47143 6.1682091,27.5 6.0681396,27.5 5.9333739,27.5 5.7996373,27.447956 5.6985388,27.346857L4.6530995,26.301418C4.4764833,26.125341,4.4499221,25.849144,4.5877752,25.641899L5.9997277,23.524462C6.3866768,22.943008 6.5908833,22.26766 6.5908833,21.570848 6.5908833,20.872517 6.862473,20.216036 7.3565979,19.722403L14.738081,12.340917 14.062196,11.66503C13.857988,11.460873,13.857988,11.130083,14.062196,10.925877L16.15312,8.8349504C16.357279,8.630743,16.688068,8.630743,16.892275,8.8349504L17.306765,9.2494402 20.929117,5.6276245C21.656069,4.9002328,22.622902,4.5,23.650993,4.5z")));
-                    ImageDatas.Children.Add(new GeometryDrawing(Brushes.White, null, Geometry.Parse("M16.348545,13.5L18.5,15.70717C17.552536,16.646378,16.208664,17.980757,14.684647,19.5L10.5,19.5z")));
-                    _EyedropperCursorImage = new DrawingImage(ImageDatas);
-                }
-                return _EyedropperCursorImage;
-            }
-        }
-        public static CursorInfo EyedropperCursor
-            => CreateCursor(EyedropperCursorImage,
-                            SystemParameters.CursorWidth,
-                            SystemParameters.CursorHeight,
-                            (int)Math.Ceiling(SystemParameters.CursorWidth * 0.125d),
-                            (int)Math.Ceiling(SystemParameters.CursorHeight * 0.8125d));
+        #endregion
 
+        public static CursorResource Resource
+            => CursorResource.Instance;
+
+        public static CursorInfo EyedropperCursor
+            => CreateCursor(Resource.Eyedropper, 1, 21);
+
+        public static CursorInfo GrabHandCursor
+            => CreateCursor(Resource.GrabHand, 9, 10);
+
+        public static CursorInfo SelectHandCursor
+            => CreateCursor(Resource.SelectHand, 6, 0);
+
+        public static CursorInfo RotateCursor
+            => CreateCursor(Resource.RotateArrow, 13, 13);
+
+        public static CursorInfo Rotate45Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 45d);
+
+        public static CursorInfo Rotate90Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 90d);
+
+        public static CursorInfo Rotate135Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 135d);
+
+        public static CursorInfo Rotate180Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 180d);
+
+        public static CursorInfo Rotate225Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 225d);
+
+        public static CursorInfo Rotate270Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 270d);
+
+        public static CursorInfo Rotate315Cursor
+            => CreateCursor(Resource.RotateArrow, 13, 13, 315d);
 
         private static CursorInfo InternalCreateCursor(Bitmap bitmap, int xHotSpot, int yHotSpot)
         {
-            IconInfo Info = new IconInfo();
-            GetIconInfo(bitmap.GetHicon(), ref Info);
+            GetIconInfo(bitmap.GetHicon(), out IconInfo Info);
 
             Info.xHotspot = xHotSpot;
             Info.yHotspot = yHotSpot;
@@ -101,22 +121,17 @@ namespace MenthaAssembly.Devices
 
         public static CursorInfo CreateCursor(UIElement Element, int xHotSpot, int yHotSpot)
             => InternalCreateCursor(CreateBitmap(Element), xHotSpot, yHotSpot);
-        public static CursorInfo CreateCursor(DrawingImage Image, double Width, double Height, int xHotSpot, int yHotSpot)
+        public static CursorInfo CreateCursor(DrawingImage Image, int xHotSpot, int yHotSpot, double Angle = 0d)
             => CreateCursor(new Image
             {
                 Source = Image,
-                Stretch = Stretch.Uniform,
-                Width = Width,
-                Height = Height
+                Stretch = Stretch.UniformToFill,
+                Width = Image.Width,
+                Height = Image.Height,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = Angle != 0 ? new RotateTransform(Angle) : null
             }, xHotSpot, yHotSpot);
 
-        public static void SetGlobalCursor(CursorID Id, CursorInfo Cursor)
-            => SetSystemCursor(Cursor.Handle, Id);
-        public static void SetGlobalCursor(CursorID Id, UIElement Element, int xHotSpot, int yHotSpot)
-            => SetSystemCursor(CreateCursor(Element, xHotSpot, yHotSpot).Handle, Id);
-        public static void SetGlobalCursor(CursorID Id, DrawingImage Image, double Width, double Height, int xHotSpot, int yHotSpot)
-            => SetSystemCursor(CreateCursor(Image, Width, Height, xHotSpot, yHotSpot).Handle, Id);
-        
         public static void SetAllGlobalCursor(CursorInfo Cursor)
         {
             if (Cursor is null)
@@ -130,13 +145,21 @@ namespace MenthaAssembly.Devices
 
         }
 
+        public static void SetGlobalCursor(CursorID Id, CursorInfo Cursor)
+            => SetSystemCursor(Cursor.Handle, Id);
+        public static void SetGlobalCursor(CursorID Id, UIElement Element, int xHotSpot, int yHotSpot)
+            => SetSystemCursor(CreateCursor(Element, xHotSpot, yHotSpot).Handle, Id);
+        public static void SetGlobalCursor(CursorID Id, DrawingImage Image, int xHotSpot, int yHotSpot)
+            => SetSystemCursor(CreateCursor(Image, xHotSpot, yHotSpot).Handle, Id);
+
+
         private static Bitmap CreateBitmap(UIElement Element)
         {
             Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Element.Arrange(new Rect(new Point(), Element.DesiredSize));
 
-            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap((int)Element.DesiredSize.Width,
-                                                                     (int)Element.DesiredSize.Height,
+            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap((int)SystemParameters.CursorWidth,
+                                                                     (int)SystemParameters.CursorHeight,
                                                                      96,
                                                                      96,
                                                                      PixelFormats.Pbgra32);
@@ -171,6 +194,73 @@ namespace MenthaAssembly.Devices
         //    return new Bitmap(memoryStream);
         //}
 
+        //public static Int32Size CursorSize
+        //{
+        //    get
+        //    {
+        //        CURSORINFO ci = new CURSORINFO();
+        //        ci.CbSize = Marshal.SizeOf(ci);
+
+        //        if (GetCursorInfo(out ci) &&
+        //            ci.Flags == 1)
+        //        {
+        //            IntPtr Hicon = CopyIcon(ci.HCursor);
+        //            if (GetIconInfo(Hicon, out IconInfo icInfo))
+        //            {
+        //                Bitmap bmp = Bitmap.FromHbitmap(icInfo.hbmMask);
+
+        //                int x = 0,
+        //                    y = 0;
+
+        //                for (int i = 0; i < bmp.Width; i++)
+        //                {
+        //                    for (int j = 0; j < bmp.Height; j++)
+        //                    {
+        //                        System.Drawing.Color a = bmp.GetPixel(i, j);
+        //                        if (a.R == 0 && a.G == 0 && a.B == 0)
+        //                        {
+        //                            if (i > x)
+        //                                x = i;
+
+        //                            if (j > y)
+        //                                y = j;
+        //                        }
+        //                    }
+        //                }
+
+        //                bmp.Dispose();
+        //                if (Hicon != IntPtr.Zero)
+        //                    DestroyIcon(Hicon);
+
+        //                if (icInfo.hbmColor != IntPtr.Zero)
+        //                    DeleteObject(icInfo.hbmColor);
+
+        //                if (icInfo.hbmMask != IntPtr.Zero)
+        //                    DeleteObject(icInfo.hbmMask);
+
+        //                if (ci.HCursor != IntPtr.Zero)
+        //                    DeleteObject(ci.HCursor);
+
+        //                return new Int32Size(x, y);
+        //            }
+
+        //            if (Hicon != IntPtr.Zero)
+        //                DestroyIcon(Hicon);
+
+        //            if (icInfo.hbmColor != IntPtr.Zero)
+        //                DeleteObject(icInfo.hbmColor);
+
+        //            if (icInfo.hbmMask != IntPtr.Zero)
+        //                DeleteObject(icInfo.hbmMask);
+        //        }
+
+        //        if (ci.HCursor != IntPtr.Zero)
+        //            DeleteObject(ci.HCursor);
+
+        //        return Int32Size.Empty;
+        //    }
+        //}
 
     }
+
 }

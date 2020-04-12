@@ -12,7 +12,7 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             SnapsToDevicePixels="True">
                         <AdornerDecorator>
-                            <Rectangle x:Name="HuePalette">
+                            <Rectangle x:Name="PART_HuePalette">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1.0">
                                         <GradientStop Color="Red" />

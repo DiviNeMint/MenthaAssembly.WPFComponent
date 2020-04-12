@@ -132,7 +132,10 @@ namespace MenthaAssembly.Views
 
         protected virtual void OnViewBoxChanged(object sender, ChangedEventArgs<Int32Size> e)
         {
-            if (PART_Container is null || TargetViewer is null || ActualWidth <= 0d || ActualHeight <= 0d)
+            if (PART_Container is null || 
+                TargetViewer is null || 
+                ActualWidth <= 0d ||
+                ActualHeight <= 0d)
                 return;
 
             double ScaleWidth = ActualWidth / TargetViewer.DisplayArea.Width,
@@ -146,7 +149,7 @@ namespace MenthaAssembly.Views
 
             ViewBox = e.NewValue;
             Viewport = new Int32Rect(0, 0, ViewBox.Width, ViewBox.Height);
-            this.Scale = PART_Container.Width / ViewBox.Width;
+            this.Scale = Viewport.IsEmpty ? -1 : PART_Container.Width / ViewBox.Width;
             OnRenderImage();
         }
 
@@ -154,6 +157,14 @@ namespace MenthaAssembly.Views
         {
             if (double.IsNaN(Scale) || double.IsInfinity(Scale))
                 return;
+
+            if (Scale == -1)
+            {
+                PART_Rect.Margin = new Thickness();
+                PART_Rect.Width = 0;
+                PART_Rect.Height = 0;
+                return;
+            }
 
             if (TargetViewer.IsMinFactor)
             {
@@ -189,8 +200,7 @@ namespace MenthaAssembly.Views
 
         protected void OnRenderImage()
         {
-            if (SourceContext is null ||
-                PART_Container is null ||
+            if (PART_Container is null ||
                 PART_Container.ActualWidth is 0 ||
                 PART_Container.ActualHeight is 0)
                 return;

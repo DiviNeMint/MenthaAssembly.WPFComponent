@@ -1,11 +1,11 @@
 ﻿using MenthaAssembly.Devices;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MouseButton = MenthaAssembly.Devices.MouseButton;
 
 namespace MenthaAssembly.Views.Primitives
 {
@@ -63,7 +63,7 @@ namespace MenthaAssembly.Views.Primitives
             if (this.GetTemplateChild("PART_IMAGE") is Image PART_IMAGE)
             {
                 this.PART_IMAGE = PART_IMAGE;
-                PART_IMAGE.Source = CursorHelper.EyedropperCursorImage;
+                PART_IMAGE.Source = CursorHelper.Resource.Eyedropper;
             }
         }
 
@@ -72,7 +72,7 @@ namespace MenthaAssembly.Views.Primitives
         {
             base.OnMouseDown(e);
 
-            if (e.ChangedButton == System.Windows.Input.MouseButton.Left &&
+            if (e.ChangedButton == MouseButton.Left &&
                 !IsCapturing)
             {
                 IsCapturing = true;
@@ -84,6 +84,7 @@ namespace MenthaAssembly.Views.Primitives
                 GlobalMouse.MouseDown += OnGlobalMouseDown;
                 GlobalMouse.MouseMove += OnGlobalMouseMove;
                 GlobalMouse.MouseUp += OnGlobalMouseUp;
+                GlobalKeyboard.KeyDown += OnGlobalKeyboardKeyDown;
 
                 // Init Cursor
                 CursorHelper.SetAllGlobalCursor(CursorHelper.EyedropperCursor);
@@ -114,8 +115,9 @@ namespace MenthaAssembly.Views.Primitives
         {
             GlobalMouse.MouseDown -= OnGlobalMouseDown;
             GlobalMouse.MouseMove -= OnGlobalMouseMove;
+            GlobalKeyboard.KeyDown -= OnGlobalKeyboardKeyDown;
 
-            if (e.ChangedButton == MouseButton.Right)
+            if (e.ChangedButton == MouseKey.Right)
                 Color = OriginalColor;
 
             // UI
@@ -136,8 +138,29 @@ namespace MenthaAssembly.Views.Primitives
             {
                 GlobalMouse.MouseUp -= OnGlobalMouseUp;
 
-                if (e.ChangedButton == MouseButton.Right)
-                    GlobalMouse.DoMouseUp(MouseButton.Left);
+                if (e.ChangedButton == MouseKey.Right)
+                    GlobalMouse.DoMouseUp(MouseKey.Left);
+            }
+        }
+
+        private void OnGlobalKeyboardKeyDown(GlobalKeyboardEventArgs e)
+        {
+            if (e.Key == KeyboardKey.Esc)
+            {
+                GlobalMouse.MouseDown -= OnGlobalMouseDown;
+                GlobalMouse.MouseMove -= OnGlobalMouseMove;
+                GlobalKeyboard.KeyDown -= OnGlobalKeyboardKeyDown;
+
+                Color = OriginalColor;
+
+                // UI
+                if (PART_IMAGE != null)
+                    PART_IMAGE.Visibility = Visibility.Visible;
+
+                // Release Cursor
+                CursorHelper.SetAllGlobalCursor(null);
+
+                IsCapturing = false;
             }
         }
 
@@ -150,12 +173,6 @@ namespace MenthaAssembly.Views.Primitives
 
             Color Result = Color.FromArgb(255, (byte)ColorValue, (byte)(ColorValue >> 8), (byte)(ColorValue >> 16));
             this.Dispatcher.Invoke(() => Color = Result);
-        }
-
-        ~ColorEyedropper()
-        {
-            if (IsCapturing)
-                CursorHelper.SetAllGlobalCursor(null);
         }
 
     }

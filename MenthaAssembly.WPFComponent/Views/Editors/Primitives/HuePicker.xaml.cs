@@ -73,14 +73,14 @@ namespace MenthaAssembly.Views.Primitives
             DefaultStyleKeyProperty.OverrideMetadata(typeof(HuePicker), new FrameworkPropertyMetadata(typeof(HuePicker)));
         }
 
-        private Rectangle HuePalette;
+        private Rectangle PART_HuePalette;
         protected PickerAdorner Adorner;
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
-            if (this.GetTemplateChild("HuePalette") is Rectangle HuePalette)
-                this.HuePalette = HuePalette;
+            if (this.GetTemplateChild("PART_HuePalette") is Rectangle HuePalette)
+                this.PART_HuePalette = HuePalette;
 
             CreateAdorner();
         }
@@ -88,10 +88,7 @@ namespace MenthaAssembly.Views.Primitives
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
             base.OnRenderSizeChanged(sizeInfo);
-
-            // Update
-            if (Adorner != null)
-                Adorner.Position = new Point(10, this.ActualHeight * Hue / 360);
+            UpdateAdornerPosition();
         }
 
         protected virtual PickerAdorner CreateAdorner()
@@ -115,14 +112,14 @@ namespace MenthaAssembly.Views.Primitives
             {
                 IsLeftMouseDown = true;
                 CaptureMouse();
-                Hue = Math.Max(Math.Min(e.GetPosition(HuePalette).Y, HuePalette.ActualHeight), 0d) * 360d / HuePalette.ActualHeight;
+                Hue = Math.Max(Math.Min(e.GetPosition(PART_HuePalette).Y, PART_HuePalette.ActualHeight), 0d) * 360d / PART_HuePalette.ActualHeight;
             }
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
             if (IsLeftMouseDown)
-                Hue = Math.Max(Math.Min(e.GetPosition(HuePalette).Y, HuePalette.ActualHeight), 0d) * 360d / HuePalette.ActualHeight;
+                Hue = Math.Max(Math.Min(e.GetPosition(PART_HuePalette).Y, PART_HuePalette.ActualHeight), 0d) * 360d / PART_HuePalette.ActualHeight;
         }
         protected override void OnMouseUp(MouseButtonEventArgs e)
         {
@@ -141,8 +138,7 @@ namespace MenthaAssembly.Views.Primitives
             {
                 IsHueUpdating = true;
                 Hue = GetHue(e.NewValue);
-                if (Adorner != null)
-                    Adorner.Position = new Point(10, this.ActualHeight * Hue / 360);
+                UpdateAdornerPosition();
             }
             finally
             {
@@ -155,13 +151,20 @@ namespace MenthaAssembly.Views.Primitives
             {
                 IsHueUpdating = true;
                 HueColor = GetColor(e.NewValue);
-                if (Adorner != null)
-                    Adorner.Position = new Point(10, this.ActualHeight * e.NewValue / 360);
+                UpdateAdornerPosition();
             }
             finally
             {
                 IsHueUpdating = false;
             }
+        }
+
+        protected void UpdateAdornerPosition()
+        {
+            if (Adorner is null)
+                return;
+
+            Adorner.Position = new Point(10, this.ActualHeight * Hue / 360);
         }
 
         protected Color GetColor(double Hue)

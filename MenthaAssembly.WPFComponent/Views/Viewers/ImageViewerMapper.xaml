@@ -14,12 +14,13 @@
                 <ControlTemplate TargetType="{x:Type local:ImageViewerMapper}">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
                         <Grid x:Name="PART_Container"
-                              SnapsToDevicePixels="True"
                               UseLayoutRounding="True"
                               HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
+                                   Stretch="None"
                                    RenderOptions.BitmapScalingMode="LowQuality"/>
                             <Rectangle x:Name="PART_Rect"
                                        Fill="{TemplateBinding RectFill}" 

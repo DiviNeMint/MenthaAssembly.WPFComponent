@@ -29,9 +29,8 @@ namespace MenthaAssembly.Views
               DependencyProperty.Register("Source", typeof(BitmapSource), typeof(ImageViewer), new PropertyMetadata(default,
                   (d, e) =>
                   {
-                      if (d is ImageViewerBase This &&
-                          e.NewValue is BitmapSource Image)
-                          This.SourceContext = Image.ToImageContext();
+                      if (d is ImageViewerBase This)
+                          This.SourceContext = (e.NewValue as BitmapSource)?.ToImageContext();
                   }));
         public BitmapSource Source
         {
@@ -45,6 +44,13 @@ namespace MenthaAssembly.Views
                   {
                       if (d is ImageViewer This)
                           This.OnScaleChanged(new ChangedEventArgs<double>(e.OldValue, e.NewValue));
+                  },
+                  (d, v) =>
+                  {
+                      if (v is double Value)
+                          return Value <= 0 ? -1d : Value;
+                      
+                      return DependencyProperty.UnsetValue;
                   }));
         public new double Scale
         {
@@ -128,9 +134,6 @@ namespace MenthaAssembly.Views
                 SourceChanged?.Invoke(this, e);
 
             Int32Size ViewBox = CalculateViewBox();
-            if (Int32Size.Empty.Equals(ViewBox))
-                return;
-
             if (ViewBox.Equals(this.ViewBox))
             {
                 OnViewBoxChanged(null);
@@ -204,6 +207,9 @@ namespace MenthaAssembly.Views
 
         protected double CalculateScale()
         {
+            if (base.SourceContext is null)
+                return -1d;
+
             if (IsMinFactor || Scale.Equals(-1d))
                 return MinScale;
 
@@ -217,6 +223,9 @@ namespace MenthaAssembly.Views
         private Int32Point Resize_ViewportCenterInImage;
         protected Int32Rect CalculateViewport()
         {
+            if (base.SourceContext is null || DisplayArea.IsEmpty)
+                return Int32Rect.Empty;
+
             double UnderFactor = 1 / Scale,
                    HalfFactor = MinScale * UnderFactor * 0.5;
 
@@ -326,12 +335,12 @@ namespace MenthaAssembly.Views
         {
             if (ZoomIn)
             {
-                if (Scale < 1)
+                if (0 < Scale && Scale < 1)
                     Scale = Math.Min(1, Scale * ScaleRatio);
             }
             else
             {
-                if (Scale > MinScale)
+                if (0 < Scale && Scale > MinScale)
                     Scale = Math.Max(MinScale, Scale / ScaleRatio);
             }
         }
@@ -339,7 +348,7 @@ namespace MenthaAssembly.Views
         {
             if (ZoomIn)
             {
-                if (Scale < 1)
+                if (0 < Scale && Scale < 1)
                 {
                     IsZoomWithMouse = true;
                     this.Zoom_MousePosition = Zoom_MousePosition;
@@ -350,7 +359,7 @@ namespace MenthaAssembly.Views
             }
             else
             {
-                if (Scale > MinScale)
+                if (0 < Scale && Scale > MinScale)
                 {
                     IsZoomWithMouse = true;
                     this.Zoom_MousePosition = Zoom_MousePosition;

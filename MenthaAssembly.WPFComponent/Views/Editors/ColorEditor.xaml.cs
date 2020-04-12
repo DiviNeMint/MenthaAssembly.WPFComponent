@@ -2,7 +2,9 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace MenthaAssembly.Views
 {
@@ -127,6 +129,37 @@ namespace MenthaAssembly.Views
         static ColorEditor()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ColorEditor), new FrameworkPropertyMetadata(typeof(ColorEditor)));
+        }
+
+        public override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+
+            if (this.GetTemplateChild("PART_OriginalColorRect") is Rectangle OriginalColorRect)
+            {
+                bool IsRectLeftMouseDown = false;
+                OriginalColorRect.MouseDown += (s, e) =>
+                {
+                    if (e.ChangedButton == MouseButton.Left &&
+                        !IsRectLeftMouseDown)
+                    {
+                        IsRectLeftMouseDown = true;
+                        OriginalColorRect.CaptureMouse();
+                    }
+                };
+                OriginalColorRect.MouseUp += (s, e) =>
+                {
+                    if (IsRectLeftMouseDown)
+                    {
+                        OriginalColorRect.ReleaseMouseCapture();
+                        IsRectLeftMouseDown = false;
+
+                        if (OriginalColorRect.IsMouseOver &&
+                             OriginalColorRect.Fill is SolidColorBrush Brush)
+                            Color = Brush.Color;
+                    }
+                };
+            }
         }
 
         protected bool IsUpdating = false;

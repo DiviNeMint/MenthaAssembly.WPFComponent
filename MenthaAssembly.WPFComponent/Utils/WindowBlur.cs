@@ -2,12 +2,48 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
-using static MenthaAssembly.User32;
 
 namespace MenthaAssembly.Helpers
 {
     public class WindowBlur
     {
+        #region Windows API
+        [DllImport("user32")]
+        private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+        private enum WindowCompositionAttribute
+        {
+            Accent_Policy = 19,
+        }
+
+        private enum AccentState
+        {
+            Disabled,
+            Enable_Gradient,
+            Enable_TransparentGradient,
+            Enable_BlurBehind,
+            Invalid_State,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WindowCompositionAttributeData
+        {
+            public WindowCompositionAttribute Attribute { set; get; }
+            public IntPtr Data { set; get; }
+            public int SizeOfData { set; get; }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AccentPolicy
+        {
+            public AccentState AccentState { set; get; }
+            public int AccentFlags { set; get; }
+            public int GradientColor { set; get; }
+            public int AnimationId { set; get; }
+        }
+
+        #endregion
+
         public static readonly DependencyProperty IsEnabledProperty =
             DependencyProperty.RegisterAttached("IsEnabled", typeof(bool), typeof(WindowBlur), new PropertyMetadata(false,
                 (d, e) =>
@@ -83,29 +119,36 @@ namespace MenthaAssembly.Helpers
             EnableBlur(_window);
         }
 
-
-        private static void EnableBlur(Window window)
+        private unsafe static void EnableBlur(Window ThisWindow)
         {
-            WindowInteropHelper windowHelper = new WindowInteropHelper(window);
-            AccentPolicy accent = new AccentPolicy
+            AccentPolicy Accent = new AccentPolicy
             {
-                AccentState = AccentState.Accent_Enable_BlurBehind
+                AccentState = AccentState.Enable_BlurBehind
             };
-
-            int accentStructSize = Marshal.SizeOf(accent);
-            IntPtr accentPtr = Marshal.AllocHGlobal(accentStructSize);
-            Marshal.StructureToPtr(accent, accentPtr, false);
-
+            
             WindowCompositionAttributeData data = new WindowCompositionAttributeData
             {
-                Attribute = WindowCompositionAttribute.WCA_Accent_Policy,
-                SizeOfData = accentStructSize,
-                Data = accentPtr
+                Attribute = WindowCompositionAttribute.Accent_Policy,
+                SizeOfData = Marshal.SizeOf(Accent),
+                Data = (IntPtr)(&Accent)
             };
 
-            SetWindowCompositionAttribute(windowHelper.Handle, ref data);
+            SetWindowCompositionAttribute(new WindowInteropHelper(ThisWindow).Handle, ref data);
 
-            Marshal.FreeHGlobal(accentPtr);
+            //int accentStructSize = Marshal.SizeOf(Accent);
+            //IntPtr accentPtr = Marshal.AllocHGlobal(accentStructSize);
+            //Marshal.StructureToPtr(Accent, accentPtr, false);
+
+            //WindowCompositionAttributeData data = new WindowCompositionAttributeData
+            //{
+            //    Attribute = WindowCompositionAttribute.Accent_Policy,
+            //    SizeOfData = accentStructSize,
+            //    Data = accentPtr
+            //};
+
+            //SetWindowCompositionAttribute(windowHelper.Handle, ref data);
+
+            //Marshal.FreeHGlobal(accentPtr);
         }
 
     }

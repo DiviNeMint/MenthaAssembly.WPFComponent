@@ -40,8 +40,7 @@ namespace MenthaAssembly
                     {
                         // Only DataContext
                         if (ValueTarget.TargetProperty is DependencyProperty DependencyProperty &&
-                            DependencyPropertyDescriptor.FromProperty(FrameworkElement.DataContextProperty, Item.GetType()) is DependencyPropertyDescriptor DPDescriptor &&
-                            Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContextString)
+                            DependencyPropertyDescriptor.FromProperty(FrameworkElement.DataContextProperty, Item.GetType()) is DependencyPropertyDescriptor DPDescriptor)
                         {
                             DPDescriptor.AddValueChanged(Item,
                                 (s, e) =>
@@ -50,7 +49,8 @@ namespace MenthaAssembly
                                         BindingOperations.SetBinding(Item, DependencyProperty, Create(NewDataContextString, NewDataContextString));
                                 });
 
-                            return Create(DataContextString, DataContextString).ProvideValue(Provider);
+                            if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContextString)
+                                return Create(DataContextString, DataContextString).ProvideValue(Provider);
                         }
 
                         return new Binding().ProvideValue(Provider);

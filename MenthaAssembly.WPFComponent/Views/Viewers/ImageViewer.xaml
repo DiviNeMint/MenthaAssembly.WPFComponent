@@ -13,10 +13,11 @@
                 <ControlTemplate TargetType="{x:Type local:ImageViewer}">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
                         <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
                                RenderOptions.BitmapScalingMode="LowQuality"
-                               SnapsToDevicePixels="True"/>
+                               Stretch="None"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
