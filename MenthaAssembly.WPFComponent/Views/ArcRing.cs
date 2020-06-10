@@ -60,9 +60,9 @@ namespace MenthaAssembly.Views
             base.OnRender(dc);
 
             // Calculate
-            double Radius = Math.Min(ActualWidth, ActualHeight) / 2;
-            double LargeR = Math.Max(Radius - BorderThickness / 2, 0d);
-            double SmallR = Math.Max(LargeR - ArcRingThickness, 0d);
+            double Radius = Math.Min(ActualWidth, ActualHeight) / 2,
+                   LargeR = Math.Max(Radius - BorderThickness / 2, 0d),
+                   SmallR = Math.Max(LargeR - ArcRingThickness, 0d);
             Point CenterPoint = new Point(Radius, Radius);
             RenderAngle = (decimal)Angle % 360;
 
@@ -80,10 +80,10 @@ namespace MenthaAssembly.Views
                 FillRule = FillRule.EvenOdd
             };
 
-            Point P1 = CalculateArcPoint(_Center, _LargeR, StartAngle);
-            Point P2 = CalculateArcPoint(_Center, _LargeR, StartAngle + (double)RenderAngle);
-            Point P3 = CalculateArcPoint(_Center, _SmallR, StartAngle);
-            Point P4 = CalculateArcPoint(_Center, _SmallR, StartAngle + (double)RenderAngle);
+            Point P1 = CalculateArcPoint(_Center, _LargeR, StartAngle),
+                  P2 = CalculateArcPoint(_Center, _LargeR, StartAngle + (double)RenderAngle),
+                  P3 = CalculateArcPoint(_Center, _SmallR, StartAngle),
+                  P4 = CalculateArcPoint(_Center, _SmallR, StartAngle + (double)RenderAngle);
 
             bool _IsLargeArc = Math.Abs(RenderAngle) > 180;
             using (StreamGeometryContext ctx = Result.Open())
@@ -104,10 +104,10 @@ namespace MenthaAssembly.Views
                 FillRule = FillRule.EvenOdd
             };
 
-            Point P1 = new Point(_Center.X + _LargeR, _Center.Y);
-            Point P2 = new Point(_Center.X - _LargeR, _Center.Y);
-            Point P3 = new Point(_Center.X + _SmallR, _Center.Y);
-            Point P4 = new Point(_Center.X - _SmallR, _Center.Y);
+            Point P1 = new Point(_Center.X + _LargeR, _Center.Y),
+                  P2 = new Point(_Center.X - _LargeR, _Center.Y),
+                  P3 = new Point(_Center.X + _SmallR, _Center.Y),
+                  P4 = new Point(_Center.X - _SmallR, _Center.Y);
 
             using (StreamGeometryContext ctx = Result.Open())
             {

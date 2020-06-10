@@ -14,7 +14,8 @@ namespace MenthaAssembly
             int Stride = (((This.PixelWidth + 1) >> 1) << 1) * PixelBytes;
             byte[] Datas = new byte[Stride * This.PixelHeight];
             This.CopyPixels(Datas, Stride, 0);
-            return new ImageContext<ARGB>(This.PixelWidth, This.PixelHeight, Datas);
+
+            return new ImageContext<BGRA>(This.PixelWidth, This.PixelHeight, Datas);
         }
 
         //public static BitmapSource ToBitmapSource(this ImageContext This)

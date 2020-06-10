@@ -21,10 +21,6 @@ namespace MenthaAssembly.Views.Primitives
         [DllImport("gdi32.dll", SetLastError = true)]
         private static extern uint GetPixel(IntPtr dc, int x, int y);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetWindowPos(IntPtr hWnd, int hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags = 0x0040u);
-
         #endregion
 
         public static readonly DependencyProperty IsCapturingProperty =

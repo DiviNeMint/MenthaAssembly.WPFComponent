@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace MenthaAssembly.Views.Primitives
 {
@@ -23,12 +24,12 @@ namespace MenthaAssembly.Views.Primitives
             set => SetValue(ShowAdornerProperty, value);
         }
 
-        public static readonly DependencyProperty HuePickerProperty =
-              DependencyProperty.Register("HuePicker", typeof(HuePicker), typeof(SaturationBrightnessPicker), new PropertyMetadata(null));
-        public HuePicker HuePicker
+        public static readonly DependencyProperty HueColorProperty =
+              HuePicker.HueColorProperty.AddOwner(typeof(SaturationBrightnessPicker), new PropertyMetadata(Colors.Red));
+        public Color HueColor
         {
-            get => (HuePicker)GetValue(HuePickerProperty);
-            set => SetValue(HuePickerProperty, value);
+            get => (Color)GetValue(HueColorProperty);
+            set => SetValue(HueColorProperty, value);
         }
 
         public static readonly DependencyProperty SaturationProperty =
@@ -113,7 +114,8 @@ namespace MenthaAssembly.Views.Primitives
         protected override void OnMouseDown(MouseButtonEventArgs e)
         {
             base.OnMouseDown(e);
-            if (e.LeftButton == MouseButtonState.Pressed)
+            if (e.LeftButton == MouseButtonState.Pressed &&
+                !IsLeftMouseDown)
             {
                 IsLeftMouseDown = true;
                 CaptureMouse();

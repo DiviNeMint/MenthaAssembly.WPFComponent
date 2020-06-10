@@ -1,6 +1,5 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
@@ -77,9 +76,6 @@ namespace MenthaAssembly.Devices
 
         public static CursorInfo GrabHandCursor
             => CreateCursor(Resource.GrabHand, 9, 10);
-
-        public static CursorInfo SelectHandCursor
-            => CreateCursor(Resource.SelectHand, 6, 0);
 
         public static CursorInfo RotateCursor
             => CreateCursor(Resource.RotateArrow, 13, 13);

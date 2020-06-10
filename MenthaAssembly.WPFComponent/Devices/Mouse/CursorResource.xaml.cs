@@ -31,9 +31,6 @@ namespace MenthaAssembly.Devices
         public DrawingImage GrabHand
             => this[nameof(GrabHand)];
 
-        public DrawingImage SelectHand
-            => this[nameof(SelectHand)];
-
         public DrawingImage RotateArrow
             => this[nameof(RotateArrow)];
 

@@ -24,8 +24,16 @@ namespace MenthaAssembly.Views
             set => SetValue(ColorProperty, value);
         }
 
+        public static readonly DependencyProperty IsColorCapturingProperty =
+              ColorEyedropper.IsCapturingProperty.AddOwner(typeof(ColorEditor), new PropertyMetadata(false));
+        public bool IsColorCapturing
+        {
+            get => (bool)GetValue(IsColorCapturingProperty);
+            set => SetValue(IsColorCapturingProperty, value);
+        }
+
         public static readonly DependencyProperty HueProperty =
-              DependencyProperty.Register("Hue", typeof(double), typeof(ColorEditor), new PropertyMetadata(0d,
+              HuePicker.HueProperty.AddOwner(typeof(ColorEditor), new PropertyMetadata(0d,
                   (d, e) =>
                   {
                       if (d is ColorEditor This &&
@@ -40,7 +48,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty SaturationProperty =
-              DependencyProperty.Register("Saturation", typeof(double), typeof(ColorEditor), new PropertyMetadata(1d,
+              SaturationBrightnessPicker.SaturationProperty.AddOwner(typeof(ColorEditor), new PropertyMetadata(1d,
                   (d, e) =>
                   {
                       if (d is ColorEditor This &&
@@ -55,7 +63,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty BrightnessProperty =
-              DependencyProperty.Register("Brightness", typeof(double), typeof(ColorEditor), new PropertyMetadata(1d,
+              SaturationBrightnessPicker.BrightnessProperty.AddOwner(typeof(ColorEditor), new PropertyMetadata(1d,
                   (d, e) =>
                   {
                       if (d is ColorEditor This &&

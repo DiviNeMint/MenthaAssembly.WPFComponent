@@ -29,7 +29,7 @@
                                                                    BorderThickness="0,0,1,1"
                                                                    Saturation="{Binding Saturation, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
                                                                    Brightness="{Binding Brightness, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                                                   HuePicker="{Binding ElementName=PART_HubPicker}"/>
+                                                                   HueColor="{Binding HueColor, ElementName=PART_HubPicker}"/>
                             <Primitives:HuePicker x:Name="PART_HubPicker"
                                                   BorderBrush="{TemplateBinding BorderBrush}"
                                                   BorderThickness="0,0,0,1"
@@ -75,6 +75,7 @@
                                 </Grid>
                             </Border>
                             <Primitives:ColorEyedropper x:Name="PART_ColorEyedropper"
+                                                        IsCapturing="{Binding IsColorCapturing, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
                                                         Color="{Binding Color, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
                                                         Background="#FF161616"
                                                         Grid.Column="1" Grid.Row="1"/>

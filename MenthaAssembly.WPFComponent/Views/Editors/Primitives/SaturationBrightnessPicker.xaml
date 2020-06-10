@@ -1,7 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:MenthaAssembly.Views.Primitives">
-    
+
     <Style TargetType="{x:Type local:SaturationBrightnessPicker}">
         <Setter Property="ClipToBounds" Value="True"/>
         <Setter Property="Template">
@@ -17,7 +17,7 @@
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                         <LinearGradientBrush.GradientStops>
                                             <GradientStop Color="White" Offset="0"/>
-                                            <GradientStop Color="{Binding HuePicker.HueColor, FallbackValue=Red, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:SaturationBrightnessPicker}}}" Offset="1"/>
+                                            <GradientStop Color="{Binding HueColor, FallbackValue=Red, RelativeSource={RelativeSource TemplatedParent}}" Offset="1"/>
                                         </LinearGradientBrush.GradientStops>
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
@@ -36,5 +36,5 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
 </ResourceDictionary>
