@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
 
 namespace MenthaAssembly.Views
 {
@@ -233,10 +232,8 @@ namespace MenthaAssembly.Views
                                             break;
                                         case ExploreType.Folder:
                                             FolderBrowserDialog FolderDialog = new FolderBrowserDialog();
-                                            if (FolderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                                            if (FolderDialog.ShowDialog() == true)
                                                 Info.SetValue(This.TargetObject, FolderDialog.SelectedPath);
-
-                                            FolderDialog.Dispose();
                                             break;
                                     }
 

@@ -1,6 +1,8 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Views.Primitives;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -330,7 +332,6 @@ namespace MenthaAssembly.Views
         protected virtual void OnClick(RoutedEventArgs e)
             => RaiseEvent(e);
 
-
         public void Zoom(bool ZoomIn)
         {
             if (ZoomIn)
@@ -371,12 +372,12 @@ namespace MenthaAssembly.Views
         }
 
         /// <summary>
-        /// Move Viewport To Point(X, Y) at SourceImage.
+        /// Move Viewport's Central Point To Point(X, Y) at SourceImage.
         /// </summary>
         public void MoveTo(Int32Point Position)
             => MoveTo(Position.X, Position.Y);
         /// <summary>
-        /// Move Viewport To Point(X, Y) at SourceImage.
+        /// Move Viewport's Central Point To Point(X, Y) at SourceImage.
         /// </summary>
         public void MoveTo(int X, int Y)
         {
@@ -393,7 +394,7 @@ namespace MenthaAssembly.Views
         /// <summary>
         /// Get PixelInfo of current mouse position in ImageViewer.
         /// </summary>
-        public PixelInfo GetPixel()
+        public IPixel GetPixel()
         {
             Point MousePosition = Mouse.GetPosition(this);
             return GetPixel(MousePosition.X, MousePosition.Y);
@@ -401,74 +402,32 @@ namespace MenthaAssembly.Views
         /// <summary>
         /// Get PixelInfo of Point(X, Y) at ImageViewer.
         /// </summary>
-        public PixelInfo GetPixel(double X, double Y)
+        public IPixel GetPixel(double X, double Y)
         {
             if (X < 0 || ActualWidth < X ||
                 Y < 0 || ActualHeight < Y)
                 throw new ArgumentOutOfRangeException();
 
-            double AreaX = X - BorderThickness.Left;
-            double AreaY = Y - BorderThickness.Top;
+            double AreaX = X - BorderThickness.Left,
+                   AreaY = Y - BorderThickness.Top;
 
             if (LastImageRect.X <= AreaX && AreaX <= LastImageRect.X + LastImageRect.Width &&
                 LastImageRect.Y <= AreaY && AreaY <= LastImageRect.Y + LastImageRect.Height)
                 return GetPixel(Math.Min(Viewport.X + (int)(AreaX / Scale) - SourceLocation.X, base.SourceContext.Width - 1),
                                 Math.Min(Viewport.Y + (int)(AreaY / Scale) - SourceLocation.Y, base.SourceContext.Height - 1));
 
-            return PixelInfo.Empty;
+            return new BGRA();
         }
         /// <summary>
         /// Get PixelInfo of Point(X, Y) at SourceImage.
         /// </summary>
-        public PixelInfo GetPixel(int X, int Y)
-        {
-            if (X < 0 || base.SourceContext.Width < X ||
-                Y < 0 || base.SourceContext.Height < Y)
-                throw new ArgumentOutOfRangeException();
-
-            unsafe
-            {
-                switch (SourceContext.Channels)
-                {
-                    case 1:
-                        switch (SourceContext.BitsPerPixel)
-                        {
-                            case 8:
-                                byte Gray = *((byte*)SourceContext.Scan0 + Y * SourceContext.Stride + X);
-                                return new PixelInfo(X, Y, 255, Gray, Gray, Gray);
-                            case 24:
-                                byte* SourceContextScan0 = (byte*)SourceContext.Scan0 + Y * SourceContext.Stride + X * 3;
-                                return new PixelInfo(X, Y, 255, *SourceContextScan0++, *SourceContextScan0++, *SourceContextScan0);
-                            case 32:
-                                return new PixelInfo(X, Y, *((int*)SourceContext.Scan0 + Y * SourceContext.Stride / 4 + X));
-                        }
-                        break;
-                    case 3:
-                        {
-                            int Offset = Y * SourceContext.Stride + X;
-                            byte* SourceContextScanR = (byte*)SourceContext.ScanR + Offset,
-                                  SourceContextScanG = (byte*)SourceContext.ScanG + Offset,
-                                  SourceContextScanB = (byte*)SourceContext.ScanB + Offset;
-                            return new PixelInfo(X, Y, 255, *SourceContextScanR, *SourceContextScanG, *SourceContextScanB);
-                        }
-                    case 4:
-                        {
-                            int Offset = Y * SourceContext.Stride + X;
-                            byte* SourceContextScanA = (byte*)SourceContext.ScanA + Offset,
-                                  SourceContextScanR = (byte*)SourceContext.ScanR + Offset,
-                                  SourceContextScanG = (byte*)SourceContext.ScanG + Offset,
-                                  SourceContextScanB = (byte*)SourceContext.ScanB + Offset;
-                            return new PixelInfo(X, Y, *SourceContextScanA, *SourceContextScanR, *SourceContextScanG, *SourceContextScanB);
-                        }
-                }
-            }
-            return PixelInfo.Empty;
-        }
+        public IPixel GetPixel(int X, int Y)
+            => SourceContext[X, Y];
 
         /// <summary>
         /// Get Pixel's Point of current mouse position in ImageViewer.
         /// </summary>
-        public Point GetPixelPoint()
+        public Int32Point GetPixelPoint()
         {
             Point MousePosition = Mouse.GetPosition(this);
             return GetPixelPoint(MousePosition.X, MousePosition.Y);
@@ -476,16 +435,16 @@ namespace MenthaAssembly.Views
         /// <summary>
         /// Get Pixel's Point of Point(X, Y) at ImageViewer.
         /// </summary>
-        public Point GetPixelPoint(double X, double Y)
+        public Int32Point GetPixelPoint(double X, double Y)
         {
             if (SourceContext is null)
                 throw new ArgumentNullException("Source is null.");
 
-            double AreaX = X - BorderThickness.Left;
-            double AreaY = Y - BorderThickness.Top;
+            double AreaX = X - BorderThickness.Left,
+                   AreaY = Y - BorderThickness.Top;
 
-            return new Point(Viewport.X + (int)(AreaX / Scale) - SourceLocation.X,
-                             Viewport.Y + (int)(AreaY / Scale) - SourceLocation.Y);
+            return new Int32Point(Viewport.X + (int)(AreaX / Scale) - SourceLocation.X,
+                                  Viewport.Y + (int)(AreaY / Scale) - SourceLocation.Y);
         }
 
         /// <summary>
@@ -503,31 +462,6 @@ namespace MenthaAssembly.Views
 
             return new Point((X + SourceLocation.X - Viewport.X) * Scale + BorderThickness.Left,
                              (Y + SourceLocation.Y - Viewport.Y) * Scale + BorderThickness.Top);
-        }
-
-        public void Save(string FilePath)
-        {
-            using FileStream FileStream = new FileStream(FilePath, FileMode.Create);
-            FileInfo FileInfo = new FileInfo(FilePath);
-            BitmapEncoder Encoder;
-            switch (FileInfo.Extension)
-            {
-                case ".tif":
-                    Encoder = new TiffBitmapEncoder();
-                    break;
-                case ".jpeg":
-                    Encoder = new JpegBitmapEncoder();
-                    break;
-                case ".png":
-                    Encoder = new PngBitmapEncoder();
-                    break;
-                case ".bmp":
-                default:
-                    Encoder = new BmpBitmapEncoder();
-                    break;
-            }
-            Encoder.Frames.Add(BitmapFrame.Create(GetDisplayImage(this)));
-            Encoder.Save(FileStream);
         }
 
     }
