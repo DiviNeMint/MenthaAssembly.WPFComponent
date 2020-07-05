@@ -8,7 +8,6 @@ namespace MenthaAssembly.Views
 {
     public class ConsoleBox : TextBox
     {
-
         public static readonly DependencyProperty IsMonitorProperty =
             DependencyProperty.Register("IsMonitor", typeof(bool), typeof(ConsoleBox), new PropertyMetadata(false,
                 (d, e) =>
@@ -24,7 +23,6 @@ namespace MenthaAssembly.Views
             get => (bool)GetValue(IsMonitorProperty);
             set => SetValue(IsMonitorProperty, value);
         }
-
 
         protected ConsoleGrabber Grabber { get; }
 

@@ -11,7 +11,7 @@ namespace MenthaAssembly
 {
     public class LanguageBinding : MarkupExtension
     {
-        private string Path { get; }
+        internal string Path { get; }
 
         public bool IsObjectProperty { set; get; }
 
@@ -170,19 +170,13 @@ namespace MenthaAssembly
             return !Item.Equals(Value);
         }
 
-        //private static string CurrentLanguagePath { get; } = $"{nameof(LanguageManager)}.{nameof(LanguageManager.Current)}";
-        //public static Binding Create(string Path, string Default)
-        //    => new Binding
-        //    {
-        //        Path = new PropertyPath($"({CurrentLanguagePath}).{Path}"),
-        //        FallbackValue = string.IsNullOrEmpty(Default) ? Path : Default
-        //    };
-
+        private static PropertyInfo LanguageCurrentInfo = typeof(LanguageManager).GetProperty(nameof(LanguageManager.Current));
         public static Binding Create(string Path, string Default)
             => new Binding
             {
-                Path = new PropertyPath($"({nameof(LanguageManager)}.{nameof(LanguageManager.Current)}).{Path}"),
+                Path = new PropertyPath($"(0).{Path}", LanguageCurrentInfo),
                 FallbackValue = string.IsNullOrEmpty(Default) ? Path : Default
             };
+
     }
 }

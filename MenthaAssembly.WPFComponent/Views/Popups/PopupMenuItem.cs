@@ -6,6 +6,8 @@ namespace MenthaAssembly.Views
 {
     public class PopupMenuItem : MenuItem
     {
+        public static new readonly DependencyProperty IconProperty =
+              DependencyProperty.Register("Icon", typeof(ImageSource), typeof(PopupMenuItem), new PropertyMetadata(null));
         public new ImageSource Icon
         {
             get => (ImageSource)GetValue(IconProperty);

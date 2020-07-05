@@ -32,7 +32,7 @@ namespace MenthaAssembly.Views
                   (d, e) =>
                   {
                       if (d is ImageViewerBase This)
-                          This.SourceContext = (e.NewValue as BitmapSource)?.ToImageContext();
+                          This.SourceContext = (BitmapContext)(e.NewValue as BitmapSource);
                   }));
         public BitmapSource Source
         {
@@ -332,6 +332,7 @@ namespace MenthaAssembly.Views
         protected virtual void OnClick(RoutedEventArgs e)
             => RaiseEvent(e);
 
+
         public void Zoom(bool ZoomIn)
         {
             if (ZoomIn)
@@ -372,12 +373,12 @@ namespace MenthaAssembly.Views
         }
 
         /// <summary>
-        /// Move Viewport's Central Point To Point(X, Y) at SourceImage.
+        /// Move Viewport To Point(X, Y) at SourceImage.
         /// </summary>
         public void MoveTo(Int32Point Position)
             => MoveTo(Position.X, Position.Y);
         /// <summary>
-        /// Move Viewport's Central Point To Point(X, Y) at SourceImage.
+        /// Move Viewport To Point(X, Y) at SourceImage.
         /// </summary>
         public void MoveTo(int X, int Y)
         {
@@ -408,8 +409,8 @@ namespace MenthaAssembly.Views
                 Y < 0 || ActualHeight < Y)
                 throw new ArgumentOutOfRangeException();
 
-            double AreaX = X - BorderThickness.Left,
-                   AreaY = Y - BorderThickness.Top;
+            double AreaX = X - BorderThickness.Left;
+            double AreaY = Y - BorderThickness.Top;
 
             if (LastImageRect.X <= AreaX && AreaX <= LastImageRect.X + LastImageRect.Width &&
                 LastImageRect.Y <= AreaY && AreaY <= LastImageRect.Y + LastImageRect.Height)
@@ -440,8 +441,8 @@ namespace MenthaAssembly.Views
             if (SourceContext is null)
                 throw new ArgumentNullException("Source is null.");
 
-            double AreaX = X - BorderThickness.Left,
-                   AreaY = Y - BorderThickness.Top;
+            double AreaX = X - BorderThickness.Left;
+            double AreaY = Y - BorderThickness.Top;
 
             return new Int32Point(Viewport.X + (int)(AreaX / Scale) - SourceLocation.X,
                                   Viewport.Y + (int)(AreaY / Scale) - SourceLocation.Y);
@@ -462,6 +463,33 @@ namespace MenthaAssembly.Views
 
             return new Point((X + SourceLocation.X - Viewport.X) * Scale + BorderThickness.Left,
                              (Y + SourceLocation.Y - Viewport.Y) * Scale + BorderThickness.Top);
+        }
+
+        public void Save(string FilePath)
+        {
+            using (FileStream FileStream = new FileStream(FilePath, FileMode.Create))
+            {
+                FileInfo FileInfo = new FileInfo(FilePath);
+                BitmapEncoder Encoder;
+                switch (FileInfo.Extension)
+                {
+                    case ".tif":
+                        Encoder = new TiffBitmapEncoder();
+                        break;
+                    case ".jpeg":
+                        Encoder = new JpegBitmapEncoder();
+                        break;
+                    case ".png":
+                        Encoder = new PngBitmapEncoder();
+                        break;
+                    case ".bmp":
+                    default:
+                        Encoder = new BmpBitmapEncoder();
+                        break;
+                }
+                Encoder.Frames.Add(BitmapFrame.Create(GetDisplayImage(this)));
+                Encoder.Save(FileStream);
+            }
         }
 
     }

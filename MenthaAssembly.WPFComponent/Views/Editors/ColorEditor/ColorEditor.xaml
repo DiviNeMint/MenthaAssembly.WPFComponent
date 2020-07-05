@@ -3,6 +3,7 @@
                     xmlns:local="clr-namespace:MenthaAssembly.Views"
                     xmlns:Primitives="clr-namespace:MenthaAssembly.Views.Primitives">
 
+
     <Style TargetType="{x:Type local:ColorEditor}">
         <Setter Property="BorderBrush" Value="#FF707070"/>
         <Setter Property="BorderThickness" Value="1"/>

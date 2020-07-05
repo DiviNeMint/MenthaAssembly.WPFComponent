@@ -7,11 +7,9 @@ using System.Windows.Data;
 
 namespace MenthaAssembly.Views
 {
-    [StyleTypedProperty(Property = "ItemContainerStyle", StyleTargetType = typeof(PopupMenuItem))]
+    [StyleTypedProperty(Property = "MenuStyleStyle", StyleTargetType = typeof(PopupMenuItem))]
     public class PopupMenu : ItemsControl
     {
-        protected Popup PART_Popup;
-
         public static readonly RoutedEvent OpenedEvent =
             EventManager.RegisterRoutedEvent("Opened", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(PropertyEditor));
         public event RoutedEventHandler Opened
@@ -37,7 +35,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty IsOpenProperty =
-            Popup.IsOpenProperty.AddOwner(typeof(PopupMenu));
+            Popup.IsOpenProperty.AddOwner(typeof(PopupMenu), new PropertyMetadata(false));
         [Category("Appearance")]
         public bool IsOpen
         {
@@ -123,6 +121,7 @@ namespace MenthaAssembly.Views
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PopupMenu), new FrameworkPropertyMetadata(typeof(PopupMenu)));
         }
 
+        protected Popup PART_Popup;
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -130,29 +129,16 @@ namespace MenthaAssembly.Views
             if (this.Parent is Panel Panel)
             {
                 PART_Popup = new Popup();
-                PART_Popup.SetBinding(AllowsTransparencyProperty, new Binding
-                {
-                    Path = new PropertyPath(AllowsTransparencyProperty),
-                    Source = this
-                });
-
-                PART_Popup.SetBinding(PopupAnimationProperty, new Binding
-                {
-                    Path = new PropertyPath(PopupAnimationProperty),
-                    Source = this
-                });
-
-                PART_Popup.SetBinding(StaysOpenProperty, new Binding
-                {
-                    Path = new PropertyPath(StaysOpenProperty),
-                    Source = this
-                });
+                PART_Popup.SetBinding(AllowsTransparencyProperty, new Binding(nameof(AllowsTransparency)) { Source = this });
+                PART_Popup.SetBinding(PopupAnimationProperty, new Binding(nameof(PopupAnimation)) { Source = this });
+                PART_Popup.SetBinding(StaysOpenProperty, new Binding(nameof(StaysOpen)) { Source = this });
 
                 PART_Popup.Opened += (s, e) => OnOpened(e);
                 PART_Popup.Closed += (s, e) =>
                 {
                     if (IsOpen)
                         IsOpen = false;
+
                     OnClosed(e);
                 };
 
@@ -166,8 +152,13 @@ namespace MenthaAssembly.Views
             => RaiseEvent(new RoutedEventArgs(ClosedEvent, this));
 
         protected virtual void OnOpened(EventArgs e)
-            => RaiseEvent(new RoutedEventArgs(OpenedEvent, this));
+        {
+            if (this.ActualHeight is 0d ||
+                this.ActualWidth is 0d)
+                this.InvalidateMeasure();
 
+            RaiseEvent(new RoutedEventArgs(OpenedEvent, this));
+        }
 
         protected override bool IsItemItsOwnContainerOverride(object Item)
             => Item is PopupMenuItem || Item is Separator;

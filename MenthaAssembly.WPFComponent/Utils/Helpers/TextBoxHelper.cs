@@ -267,5 +267,12 @@ namespace MenthaAssembly
             return Activator.CreateInstance(ValueType);
         }
 
+        public static void UpdateTextBindingWhenEnterKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter &&
+                sender is TextBox This)
+                This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+        }
+
     }
 }

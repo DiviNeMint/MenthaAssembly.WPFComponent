@@ -65,7 +65,7 @@ namespace System.Windows
         public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName]string PropertyName = null)
         {
             if (PropertyName is null ||
-                !This.GetType().TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
+                !This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
                 return;
 
             Delegate[] Invocations = Handler.GetInvocationList();
@@ -87,7 +87,7 @@ namespace System.Windows
         public static void OnPropertyChanged(this INotifyPropertyChanged This, PropertyChangedEventArgs e)
         {
             if (e is null ||
-                !This.GetType().TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
+                !This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
                 return;
 
             Delegate[] Invocations = Handler.GetInvocationList();
@@ -108,7 +108,7 @@ namespace System.Windows
 
         public static void OnCollectionChanged(this INotifyCollectionChanged This, NotifyCollectionChangedEventArgs e)
         {
-            if (!This.GetType().TryGetEventField("CollectionChanged", out MulticastDelegate Handler))
+            if (!This.TryGetEventField("CollectionChanged", out MulticastDelegate Handler))
                 return;
 
             foreach (NotifyCollectionChangedEventHandler Event in Handler.GetInvocationList())

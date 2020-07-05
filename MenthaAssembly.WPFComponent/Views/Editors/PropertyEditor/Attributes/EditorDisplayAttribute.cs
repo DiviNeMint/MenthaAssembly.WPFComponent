@@ -19,6 +19,14 @@ namespace MenthaAssembly
 
         public bool IsReadOnly { set; get; } = false;
 
+        /// <summary>
+        /// Provide Property's MenuInfo.
+        /// </summary>
+        /// <remarks>
+        /// Default Type is PropertyEditorItemMenuProvider.
+        /// </remarks>
+        public Type MenuProviderType { set; get; }
+
         public object Tag { set; get; }
 
     }

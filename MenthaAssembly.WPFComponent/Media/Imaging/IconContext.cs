@@ -30,7 +30,7 @@ namespace MenthaAssembly
         protected DrawingGroup Drawings { set; get; } = new DrawingGroup();
         public DrawingCollection Children => Drawings.Children;
 
-        public Size Size { set; get; }
+        public Size Size { set; get; } = Size.Empty;
 
         public Thickness Padding { get; set; }
 
@@ -53,7 +53,7 @@ namespace MenthaAssembly
         public IconContext(IEnumerable<Geometry> Geometries, Brush Fill, Brush Stroke, double StrokeThickness)
         {
             foreach (Geometry item in Geometries)
-                Children.Add(new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), Geometry));
+                Children.Add(new GeometryDrawing(Fill, new Pen(Stroke, StrokeThickness), item));
         }
     }
 }

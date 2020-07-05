@@ -35,7 +35,8 @@ namespace MenthaAssembly.Views
 
         public static readonly DependencyProperty PredicateProperty =
             DependencyProperty.Register("Predicate", typeof(Func<object, string, bool>), typeof(SearchBox), new PropertyMetadata(
-                new Func<object, string, bool>((o, s) => string.IsNullOrEmpty(s) ? true : o.ToString().IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0),
+                new Func<object, string, bool>((o, s) => string.IsNullOrEmpty(s) ||
+                                                         o.ToString().IndexOf(s, StringComparison.OrdinalIgnoreCase) > -1),
                 (d, e) =>
                 {
                     if (d is SearchBox This &&
