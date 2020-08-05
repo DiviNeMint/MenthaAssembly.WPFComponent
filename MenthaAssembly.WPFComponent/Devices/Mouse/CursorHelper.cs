@@ -1,13 +1,11 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Bitmap = System.Drawing.Bitmap;
 
 namespace MenthaAssembly.Devices
@@ -116,7 +114,7 @@ namespace MenthaAssembly.Devices
         }
 
         public static CursorInfo CreateCursor(UIElement Element, int xHotSpot, int yHotSpot)
-            => InternalCreateCursor(CreateBitmap(Element), xHotSpot, yHotSpot);
+            => InternalCreateCursor(ImageHelper.CreateBitmap(Element, (int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight), xHotSpot, yHotSpot);
         public static CursorInfo CreateCursor(DrawingImage Image, int xHotSpot, int yHotSpot, double Angle = 0d)
             => CreateCursor(new Image
             {
@@ -148,27 +146,6 @@ namespace MenthaAssembly.Devices
         public static void SetGlobalCursor(CursorID Id, DrawingImage Image, int xHotSpot, int yHotSpot)
             => SetSystemCursor(CreateCursor(Image, xHotSpot, yHotSpot).Handle, Id);
 
-
-        private static Bitmap CreateBitmap(UIElement Element)
-        {
-            Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Element.Arrange(new Rect(new Point(), Element.DesiredSize));
-
-            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap((int)SystemParameters.CursorWidth,
-                                                                     (int)SystemParameters.CursorHeight,
-                                                                     96,
-                                                                     96,
-                                                                     PixelFormats.Pbgra32);
-            RenderBitmap.Render(Element);
-
-            PngBitmapEncoder PngEncoder = new PngBitmapEncoder();
-            PngEncoder.Frames.Add(BitmapFrame.Create(RenderBitmap));
-
-            using MemoryStream memoryStream = new MemoryStream();
-            PngEncoder.Save(memoryStream);
-
-            return new Bitmap(memoryStream);
-        }
         //private static Bitmap CreateBitmap(DrawingImage Image)
         //{
         //    // Convert To Visual

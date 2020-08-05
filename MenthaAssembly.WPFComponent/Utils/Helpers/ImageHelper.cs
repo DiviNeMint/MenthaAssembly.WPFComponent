@@ -1,8 +1,11 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Bitmap = System.Drawing.Bitmap;
 
 namespace MenthaAssembly
 {
@@ -16,6 +19,23 @@ namespace MenthaAssembly
             This.CopyPixels(Datas, Stride, 0);
 
             return new ImageContext<BGRA>(This.PixelWidth, This.PixelHeight, Datas);
+        }
+
+        public static Bitmap CreateBitmap(UIElement Element, int Width, int Height)
+        {
+            Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Element.Arrange(new Rect(new Point(), Element.DesiredSize));
+
+            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
+            RenderBitmap.Render(Element);
+
+            PngBitmapEncoder PngEncoder = new PngBitmapEncoder();
+            PngEncoder.Frames.Add(BitmapFrame.Create(RenderBitmap));
+
+            using MemoryStream memoryStream = new MemoryStream();
+            PngEncoder.Save(memoryStream);
+
+            return new Bitmap(memoryStream);
         }
 
         //public static BitmapSource ToBitmapSource(this ImageContext This)

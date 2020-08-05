@@ -47,22 +47,22 @@ namespace System.Windows
         public static IEnumerable<T> FindVisualParents<T>(this DependencyObject This)
             where T : DependencyObject
         {
-            if (This != null)
-            {
-                DependencyObject Parent = VisualTreeHelper.GetParent(This);
-                if (Parent is T Result)
-                    yield return Result;
+            if (This is null)
+                yield break;
 
-                foreach (T ParentOfParent in FindVisualParents<T>(Parent))
-                    yield return ParentOfParent;
-            }
+            DependencyObject Parent = VisualTreeHelper.GetParent(This);
+            if (Parent is T Result)
+                yield return Result;
+
+            foreach (T ParentOfParent in FindVisualParents<T>(Parent))
+                yield return ParentOfParent;
         }
 
         public static ChangedEventArgs<T> ToChangedEventArgs<T>(this DependencyPropertyChangedEventArgs e)
             => new ChangedEventArgs<T>(e.OldValue is T New ? New : default,
                                        e.NewValue is T Old ? Old : default);
 
-        public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName]string PropertyName = null)
+        public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName] string PropertyName = null)
         {
             if (PropertyName is null ||
                 !This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
