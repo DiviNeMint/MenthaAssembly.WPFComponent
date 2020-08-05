@@ -25,9 +25,6 @@ namespace MenthaAssembly.Devices
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetIconInfo(IntPtr hIcon, out IconInfo pIconInfo);
 
-        //[DllImport("user32.dll", EntryPoint = "GetCursorInfo")]
-        //private static extern bool GetCursorInfo(out CURSORINFO pci);
-
         [DllImport("user32.dll")]
         private static extern bool SetSystemCursor(IntPtr hCursor, CursorID type);
 
@@ -45,14 +42,6 @@ namespace MenthaAssembly.Devices
             public IntPtr hbmMask;
             public IntPtr hbmColor;
         }
-
-        //private struct CURSORINFO
-        //{
-        //    public int cbSize;          // Specifies the size, in bytes, of the structure. 
-        //    public int flags;           // Specifies the cursor state. This parameter can be one of the following values:
-        //    public IntPtr hCursor;      // Handle to the cursor. 
-        //    public Int32Point Position; // The screen coordinates of the cursor.
-        //}
 
         [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
         private class SafeIconHandle : SafeHandleZeroOrMinusOneIsInvalid
