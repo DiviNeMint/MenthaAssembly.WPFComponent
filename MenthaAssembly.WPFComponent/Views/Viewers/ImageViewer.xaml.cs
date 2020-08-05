@@ -1,9 +1,6 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Views.Primitives;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -51,7 +48,7 @@ namespace MenthaAssembly.Views
                   {
                       if (v is double Value)
                           return Value <= 0 ? -1d : Value;
-                      
+
                       return DependencyProperty.UnsetValue;
                   }));
         public new double Scale
@@ -463,33 +460,6 @@ namespace MenthaAssembly.Views
 
             return new Point((X + SourceLocation.X - Viewport.X) * Scale + BorderThickness.Left,
                              (Y + SourceLocation.Y - Viewport.Y) * Scale + BorderThickness.Top);
-        }
-
-        public void Save(string FilePath)
-        {
-            using (FileStream FileStream = new FileStream(FilePath, FileMode.Create))
-            {
-                FileInfo FileInfo = new FileInfo(FilePath);
-                BitmapEncoder Encoder;
-                switch (FileInfo.Extension)
-                {
-                    case ".tif":
-                        Encoder = new TiffBitmapEncoder();
-                        break;
-                    case ".jpeg":
-                        Encoder = new JpegBitmapEncoder();
-                        break;
-                    case ".png":
-                        Encoder = new PngBitmapEncoder();
-                        break;
-                    case ".bmp":
-                    default:
-                        Encoder = new BmpBitmapEncoder();
-                        break;
-                }
-                Encoder.Frames.Add(BitmapFrame.Create(GetDisplayImage(this)));
-                Encoder.Save(FileStream);
-            }
         }
 
     }

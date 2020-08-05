@@ -38,7 +38,8 @@ namespace MenthaAssembly
                                                  Bitmap.Palette?.Colors.Select(i => new BGRA(i.B, i.G, i.R, i.A))
                                                                        .ToList());
             }
-            else if (PixelFormats.Bgra32.Equals(Bitmap.Format))
+            else if (PixelFormats.Bgra32.Equals(Bitmap.Format) ||
+                     PixelFormats.Pbgra32.Equals(Bitmap.Format))
             {
                 Context = new ImageContext<BGRA>(Bitmap.PixelWidth,
                                                  Bitmap.PixelHeight,
