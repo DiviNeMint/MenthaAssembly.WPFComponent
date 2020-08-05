@@ -88,8 +88,12 @@ namespace MenthaAssembly
             DrawingVisual Visual = new DrawingVisual();
             using (DrawingContext Context = Visual.RenderOpen())
             {
+                double Cx = Image.Width * 0.5d,
+                       Cy = Image.Height * 0.5d;
                 if (Angle != 0)
-                    Context.PushTransform(new RotateTransform(Angle, Image.Width * 0.5d, Image.Height * 0.5d));
+                    Context.PushTransform(new RotateTransform(Angle, Cx, Cy));
+
+                Context.PushTransform(new ScaleTransform(Width / Image.Width, Height / Image.Height, Cx, Cy));
 
                 Context.DrawDrawing(Image.Drawing);
             }

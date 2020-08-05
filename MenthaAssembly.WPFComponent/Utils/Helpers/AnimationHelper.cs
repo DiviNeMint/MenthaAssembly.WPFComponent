@@ -253,6 +253,20 @@ namespace MenthaAssembly
                => new object[0];
         }
 
+        public static DoubleAnimation CreateDoubleAnimation(double From, double To, double Duration)
+            => new DoubleAnimation
+            {
+                From = From,
+                To = To,
+                Duration = new Duration(TimeSpan.FromMilliseconds(Duration))
+            };
+        public static DoubleAnimation CreateDoubleAnimation(double From, double To, double Duration, Action Complete)
+        {
+            DoubleAnimation Animation = CreateDoubleAnimation(From,  To,  Duration);
+            Animation.Completed += (s, e) => Complete?.Invoke();
+            return Animation;
+        }
+
     }
 
 }
