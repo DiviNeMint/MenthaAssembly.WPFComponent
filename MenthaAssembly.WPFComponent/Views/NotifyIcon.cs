@@ -2,7 +2,7 @@
 using MenthaAssembly.Utils;
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
@@ -28,6 +28,8 @@ namespace MenthaAssembly.Views
         public event EventHandler<HandledEventArgs> PreviewMouseDoubleClick;
         public event EventHandler<HandledEventArgs> MouseDoubleClick;
         public event EventHandler Click;
+        public event EventHandler BalloonOpened;
+        public event EventHandler BalloonClosed;
 
         #region Windows API
 
@@ -47,6 +49,9 @@ namespace MenthaAssembly.Views
 
         [DllImport("user32.dll", EntryPoint = "RegisterWindowMessageW")]
         private static extern int RegisterWindowMessage([MarshalAs(UnmanagedType.LPWStr)] string lpString);
+
+        [DllImport("user32.dll")]
+        public static extern bool SetForegroundWindow(IntPtr Hwnd);
 
         //[DllImport("shell32.dll", SetLastError = true)]
         //private static extern int Shell_NotifyIconGetRect([In] ref NotifyIconIdentifier identifier, [Out] out Int32Bound iconLocation);
@@ -131,7 +136,7 @@ namespace MenthaAssembly.Views
             Info = 0x10,
 
             // Internal identifier is set. Reserved, thus commented out.
-            //Guid = 0x20,
+            Guid = 0x20,
 
             /// <summary>
             /// Windows Vista (Shell32.dll version 6.0.6) and later. If the ToolTip
@@ -158,60 +163,60 @@ namespace MenthaAssembly.Views
             UseLegacyToolTips = 0x80
         }
 
-        internal enum BalloonFlags
-        {
-            /// <summary>
-            /// No icon is displayed.
-            /// </summary>
-            None = 0x00,
+        //internal enum BalloonFlags
+        //{
+        //    /// <summary>
+        //    /// No icon is displayed.
+        //    /// </summary>
+        //    None = 0x00,
 
-            /// <summary>
-            /// An information icon is displayed.
-            /// </summary>
-            Info = 0x01,
+        //    /// <summary>
+        //    /// An information icon is displayed.
+        //    /// </summary>
+        //    Info = 0x01,
 
-            /// <summary>
-            /// A warning icon is displayed.
-            /// </summary>
-            Warning = 0x02,
+        //    /// <summary>
+        //    /// A warning icon is displayed.
+        //    /// </summary>
+        //    Warning = 0x02,
 
-            /// <summary>
-            /// An error icon is displayed.
-            /// </summary>
-            Error = 0x03,
+        //    /// <summary>
+        //    /// An error icon is displayed.
+        //    /// </summary>
+        //    Error = 0x03,
 
-            /// <summary>
-            /// Windows XP Service Pack 2 (SP2) and later.
-            /// Use a custom icon as the title icon.
-            /// </summary>
-            User = 0x04,
+        //    /// <summary>
+        //    /// Windows XP Service Pack 2 (SP2) and later.
+        //    /// Use a custom icon as the title icon.
+        //    /// </summary>
+        //    User = 0x04,
 
-            /// <summary>
-            /// Windows XP (Shell32.dll version 6.0) and later.
-            /// Do not play the associated sound. Applies only to balloon ToolTips.
-            /// </summary>
-            NoSound = 0x10,
+        //    /// <summary>
+        //    /// Windows XP (Shell32.dll version 6.0) and later.
+        //    /// Do not play the associated sound. Applies only to balloon ToolTips.
+        //    /// </summary>
+        //    NoSound = 0x10,
 
-            /// <summary>
-            /// Windows Vista (Shell32.dll version 6.0.6) and later. The large version
-            /// of the icon should be used as the balloon icon. This corresponds to the
-            /// icon with dimensions SM_CXICON x SM_CYICON. If this flag is not set,
-            /// the icon with dimensions XM_CXSMICON x SM_CYSMICON is used.<br/>
-            /// - This flag can be used with all stock icons.<br/>
-            /// - Applications that use older customized icons (NIIF_USER with hIcon) must
-            ///   provide a new SM_CXICON x SM_CYICON version in the tray icon (hIcon). These
-            ///   icons are scaled down when they are displayed in the System Tray or
-            ///   System Control Area (SCA).<br/>
-            /// - New customized icons (NIIF_USER with hBalloonIcon) must supply an
-            ///   SM_CXICON x SM_CYICON version in the supplied icon (hBalloonIcon).
-            /// </summary>
-            LargeIcon = 0x20,
+        //    /// <summary>
+        //    /// Windows Vista (Shell32.dll version 6.0.6) and later. The large version
+        //    /// of the icon should be used as the balloon icon. This corresponds to the
+        //    /// icon with dimensions SM_CXICON x SM_CYICON. If this flag is not set,
+        //    /// the icon with dimensions XM_CXSMICON x SM_CYSMICON is used.<br/>
+        //    /// - This flag can be used with all stock icons.<br/>
+        //    /// - Applications that use older customized icons (NIIF_USER with hIcon) must
+        //    ///   provide a new SM_CXICON x SM_CYICON version in the tray icon (hIcon). These
+        //    ///   icons are scaled down when they are displayed in the System Tray or
+        //    ///   System Control Area (SCA).<br/>
+        //    /// - New customized icons (NIIF_USER with hBalloonIcon) must supply an
+        //    ///   SM_CXICON x SM_CYICON version in the supplied icon (hBalloonIcon).
+        //    /// </summary>
+        //    LargeIcon = 0x20,
 
-            /// <summary>
-            /// Windows 7 and later.
-            /// </summary>
-            RespectQuietTime = 0x80
-        }
+        //    /// <summary>
+        //    /// Windows 7 and later.
+        //    /// </summary>
+        //    RespectQuietTime = 0x80
+        //}
 
         internal enum IconState
         {
@@ -306,7 +311,7 @@ namespace MenthaAssembly.Views
             /// Adds an icon to a balloon ToolTip, which is placed to the left of the title. If the
             /// <see cref="BalloonTitle"/> member is zero-length, the icon is not shown.
             /// </summary>
-            public BalloonFlags BalloonFlags;
+            public int BalloonFlags;
 
             /// <summary>
             /// Windows XP (Shell32.dll version 6.0) and later.<br/>
@@ -325,23 +330,23 @@ namespace MenthaAssembly.Views
             /// </summary>
             public IntPtr CustomBalloonIconHandle;
 
-            public NotifyIconIdentifier Identifier => new NotifyIconIdentifier
-            {
-                cbSize = Marshal.SizeOf<NotifyIconIdentifier>(),
-                Hwnd = this.WindowHandle,
-                Uid = this.TaskbarIconId,
-                Guid = this.TaskbarIconGuid
-            };
+            //public NotifyIconIdentifier Identifier => new NotifyIconIdentifier
+            //{
+            //    cbSize = Marshal.SizeOf<NotifyIconIdentifier>(),
+            //    Hwnd = this.WindowHandle,
+            //    Uid = this.TaskbarIconId,
+            //    Guid = this.TaskbarIconGuid
+            //};
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct NotifyIconIdentifier
-        {
-            public int cbSize;
-            public IntPtr Hwnd;
-            public uint Uid;
-            public Guid Guid;
-        }
+        //[StructLayout(LayoutKind.Sequential)]
+        //internal struct NotifyIconIdentifier
+        //{
+        //    public int cbSize;
+        //    public IntPtr Hwnd;
+        //    public uint Uid;
+        //    public Guid Guid;
+        //}
 
         #endregion
 
@@ -419,7 +424,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty BalloonShowDurationProperty =
-            DependencyProperty.Register("BalloonShowDuration", typeof(double), typeof(NotifyIcon), new PropertyMetadata(3000d,
+            DependencyProperty.Register("BalloonShowDuration", typeof(double), typeof(NotifyIcon), new PropertyMetadata(double.PositiveInfinity,
                 (d, e) =>
                 {
                     if (d is NotifyIcon This &&
@@ -467,6 +472,32 @@ namespace MenthaAssembly.Views
             set => SetValue(IsBalloonShownProperty, value);
         }
 
+        public static readonly DependencyProperty IsBalloonStaysOpenProperty =
+              DependencyProperty.Register("IsBalloonStaysOpen", typeof(bool), typeof(NotifyIcon), new PropertyMetadata(false,
+                  (d, e) =>
+                  {
+                      if (d is NotifyIcon This &&
+                          This.BalloonPopup != null)
+                      {
+                          if (e.NewValue is true)
+                          {
+                              This.BalloonPopup.Closed -= This.OnBalloonPopupClosed;
+                              GlobalMouse.MouseDown -= This.OnBalloonPopupGlobalMouseDown;
+                          }
+                          else
+                          {
+                              This.BalloonPopup.Closed += This.OnBalloonPopupClosed;
+                              GlobalMouse.MouseDown += This.OnBalloonPopupGlobalMouseDown;
+                          }
+                      }
+                  }));
+        [Category("Balloon")]
+        public bool IsBalloonStaysOpen
+        {
+            get => (bool)GetValue(IsBalloonStaysOpenProperty);
+            set => SetValue(IsBalloonStaysOpenProperty, value);
+        }
+
         static NotifyIcon()
         {
             VisibilityProperty.OverrideMetadata(typeof(NotifyIcon), new PropertyMetadata(Visibility.Visible,
@@ -497,7 +528,8 @@ namespace MenthaAssembly.Views
                 if (IsCreated)
                     return true;
 
-                Window Parent = Application.Current.MainWindow;
+                Window Parent = Application.Current.MainWindow ??
+                                Application.Current.Windows.OfType<Window>().FirstOrDefault();
 
                 if (Parent is null)
                     return false;
@@ -527,7 +559,7 @@ namespace MenthaAssembly.Views
                     if (IsCreated &&
                         !Attached)
                     {
-                        Application.Current.Exit += (s, e) => this.Dispose();
+                        Parent.Closed += (s, e) => this.Dispose();
                         Attached = true;
                     }
                 }
@@ -651,6 +683,7 @@ namespace MenthaAssembly.Views
                         {
                             // Cancel Single Click
                             DoubleClickChecker?.Cancel();
+                            DoubleClickChecker = null;
 
                             // PreviewMouseDoubleClick
                             HandledEventArgs e = new HandledEventArgs();
@@ -802,6 +835,7 @@ namespace MenthaAssembly.Views
         private const double AnimationDuration = 150d,
                              AnimationLengthScale = 0.8d;
         private DelayActionToken BalloonCloseChecker;
+        private Int32Bound BalloonPosition;
         private void ShowBalloonPopup()
         {
             if (Balloon is null)
@@ -813,20 +847,16 @@ namespace MenthaAssembly.Views
                     BalloonPopup = new Popup
                     {
                         AllowsTransparency = true,
-                        StaysOpen = true,
                         Placement = PlacementMode.AbsolutePoint,
                         Child = Balloon as UIElement ?? new TextBlock { Text = Balloon?.ToString() }
                     };
             });
 
-            BalloonPopup.PopupAnimation = PopupAnimation.None;
-
             // Size
-            if (BalloonPopup.Child.DesiredSize.IsEmpty)
-                BalloonPopup.Child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Size ChildSize = BalloonPopup.Child.DesiredSize;
-            if (ChildSize.IsEmpty)
-                return;
+            if (ChildSize.Width == 0d && ChildSize.Height == 0d)
+                BalloonPopup.Child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            ChildSize = BalloonPopup.Child.DesiredSize;
 
             // Location Info
             ScreenInfo Info = Screen.Current;
@@ -834,8 +864,14 @@ namespace MenthaAssembly.Views
             // Bottom
             if (Info.WorkArea.Bottom < Info.Bound.Bottom)
             {
-                // Position
-                BalloonPopup.HorizontalOffset = (Info.WorkArea.Right - ChildSize.Width) / Info.DpiFactorX;
+                // Real Position
+                BalloonPosition = new Int32Bound(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX,
+                                                 Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY,
+                                                 Info.WorkArea.Right,
+                                                 Info.WorkArea.Bottom);
+
+                // Virtual Position
+                BalloonPopup.HorizontalOffset = Info.WorkArea.Right / Info.DpiFactorX - ChildSize.Width;
                 BalloonPopup.VerticalOffset = Info.WorkArea.Bottom / Info.DpiFactorY;
 
                 // Animation
@@ -848,8 +884,14 @@ namespace MenthaAssembly.Views
             // Right
             else if (Info.WorkArea.Right < Info.Bound.Right)
             {
+                // Real Position
+                BalloonPosition = new Int32Bound(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX,
+                                                 Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY,
+                                                 Info.WorkArea.Right,
+                                                 Info.WorkArea.Bottom);
+
                 // Position
-                BalloonPopup.HorizontalOffset = (Info.WorkArea.Right - 2) / Info.DpiFactorX;
+                BalloonPopup.HorizontalOffset = Info.WorkArea.Right / Info.DpiFactorX;
                 BalloonPopup.VerticalOffset = Info.WorkArea.Bottom / Info.DpiFactorY;
 
                 // Animation
@@ -862,8 +904,14 @@ namespace MenthaAssembly.Views
             // Top
             else if (Info.WorkArea.Top > Info.Bound.Top)
             {
+                // Real Position
+                BalloonPosition = new Int32Bound(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX,
+                                                 Info.WorkArea.Top,
+                                                 Info.WorkArea.Right,
+                                                 Info.WorkArea.Top + ChildSize.Height * Info.DpiFactorY);
+
                 // Position
-                BalloonPopup.HorizontalOffset = (Info.WorkArea.Right - ChildSize.Width) / Info.DpiFactorX;
+                BalloonPopup.HorizontalOffset = Info.WorkArea.Right / Info.DpiFactorX - ChildSize.Width;
                 BalloonPopup.VerticalOffset = Info.WorkArea.Top / Info.DpiFactorY;
 
                 // Animation
@@ -876,6 +924,12 @@ namespace MenthaAssembly.Views
             // Left
             else if (Info.WorkArea.Left > Info.Bound.Left)
             {
+                // Real Position
+                BalloonPosition = new Int32Bound(Info.WorkArea.Left,
+                                                 Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY,
+                                                 Info.WorkArea.Left + ChildSize.Width * Info.DpiFactorX,
+                                                 Info.WorkArea.Bottom);
+
                 // Position
                 BalloonPopup.HorizontalOffset = Info.WorkArea.Left / Info.DpiFactorX;
                 BalloonPopup.VerticalOffset = Info.WorkArea.Bottom / Info.DpiFactorY;
@@ -888,10 +942,20 @@ namespace MenthaAssembly.Views
                                                                                   () => BalloonPopup.BeginAnimation(FrameworkElement.WidthProperty, null)));
             }
 
+            // Show
+            BalloonPopup.PopupAnimation = PopupAnimation.None;
+            BalloonPopup.StaysOpen = IsBalloonStaysOpen;
+
+            if (!IsBalloonStaysOpen)
+                BalloonPopup.Opened += OnBalloonPopupOpened;
+
             BalloonPopup.IsOpen = true;
 
+            BalloonCloseChecker?.Cancel();
             BalloonCloseChecker = double.IsInfinity(BalloonShowDuration) ? null :
-                                                                          TimerHelper.DelayAction(BalloonShowDuration, () => IsBalloonShown = false);
+                                                                           TimerHelper.DelayAction(BalloonShowDuration, () => IsBalloonShown = false);
+            // Raise Open Event
+            BalloonOpened?.Invoke(this, EventArgs.Empty);
         }
         private void CloseBalloonPopup(PopupAnimation Animation)
         {
@@ -906,16 +970,46 @@ namespace MenthaAssembly.Views
 
             BalloonPopup.PopupAnimation = Animation;
             BalloonPopup.IsOpen = false;
+
+            // Raise Close Event
+            if (Animation != PopupAnimation.None)
+                BalloonClosed?.Invoke(this, EventArgs.Empty);
         }
 
-        private void OnHideAnimationCompleted(object sender, EventArgs e)
+        private void OnBalloonPopupOpened(object sender, EventArgs e)
         {
-            if (sender is AnimationClock Animation)
-                Animation.Completed -= OnHideAnimationCompleted;
+            if (sender is Popup ThisPopup)
+            {
+                ThisPopup.Opened -= OnBalloonPopupOpened;
+                ThisPopup.Closed += OnBalloonPopupClosed;
 
-            BalloonPopup.BeginAnimation(FrameworkElement.HeightProperty, null);
-            BalloonPopup.BeginAnimation(FrameworkElement.WidthProperty, null);
-            BalloonPopup.IsOpen = false;
+                if (PresentationSource.FromVisual(BalloonPopup.Child) is HwndSource Source)
+                {
+                    // Activate the BalloonPopup's Child to track deactivation, 
+                    SetForegroundWindow(Source.Handle);
+                    ThisPopup.PopupAnimation = PopupAnimation.Fade;
+                }
+                else
+                {
+                    // Track deactivation by GlobalMouseDown with mouse position.
+                    GlobalMouse.MouseDown += OnBalloonPopupGlobalMouseDown;
+                }
+            }
+        }
+        private void OnBalloonPopupClosed(object sender, EventArgs e)
+        {
+            if (sender is Popup ThisPopup)
+            {
+                ThisPopup.Closed -= OnBalloonPopupClosed;
+                GlobalMouse.MouseDown -= OnBalloonPopupGlobalMouseDown;
+            }
+            IsBalloonShown = false;
+        }
+        private void OnBalloonPopupGlobalMouseDown(GlobalMouseEventArgs e)
+        {
+            if (BalloonPopup != null &&
+                !BalloonPosition.Contains(e.Position.X, e.Position.Y))
+                IsBalloonShown = false;
         }
 
         private Point ContextPosition;
@@ -923,11 +1017,21 @@ namespace MenthaAssembly.Views
         {
             if (sender is ContextMenu Menu)
             {
-                ContextPosition = Menu.PointToScreen(new Point());
-
                 Menu.Opened -= OnContextMenuOpened;
-                Menu.Closed += OnContextMenuClosed;
-                GlobalMouse.MouseDown += OnGlobalMouseMouseDown;
+                if (PresentationSource.FromVisual(ContextMenu) is HwndSource Source)
+                {
+                    // Activate the ContextMenu to track deactivation, 
+                    SetForegroundWindow(Source.Handle);
+                }
+                else
+                {
+                    // Get ContextPosition at Screen.
+                    ContextPosition = Menu.PointToScreen(new Point());
+
+                    // Track deactivation by GlobalMouseDown with mouse position.
+                    Menu.Closed += OnContextMenuClosed;
+                    GlobalMouse.MouseDown += OnContextMenuGlobalMouseDown;
+                }
             }
         }
         private void OnContextMenuClosed(object sender, RoutedEventArgs e)
@@ -935,20 +1039,17 @@ namespace MenthaAssembly.Views
             if (sender is ContextMenu Menu)
             {
                 Menu.Closed -= OnContextMenuClosed;
-                GlobalMouse.MouseDown -= OnGlobalMouseMouseDown;
+                GlobalMouse.MouseDown -= OnContextMenuGlobalMouseDown;
             }
         }
-        private void OnGlobalMouseMouseDown(GlobalMouseEventArgs obj)
+        private void OnContextMenuGlobalMouseDown(GlobalMouseEventArgs e)
         {
-            if (ContextMenu != null)
-            {
-                Int32Point MousePosition = GlobalMouse.Position;
-                if (MousePosition.X < ContextPosition.X ||
-                    MousePosition.Y < ContextPosition.Y ||
-                    MousePosition.X > ContextPosition.X + ContextMenu.ActualWidth ||
-                    MousePosition.Y > ContextPosition.Y + ContextMenu.ActualHeight)
-                    ContextMenu.IsOpen = false;
-            }
+            if (ContextMenu != null &&
+                (e.Position.X < ContextPosition.X ||
+                 e.Position.Y < ContextPosition.Y ||
+                 e.Position.X > ContextPosition.X + ContextMenu.ActualWidth ||
+                 e.Position.Y > ContextPosition.Y + ContextMenu.ActualHeight))
+                ContextMenu.IsOpen = false;
         }
 
         private readonly object LockObject = new object();
@@ -1004,19 +1105,37 @@ namespace MenthaAssembly.Views
             if (!IsCreated)
                 return;
 
+            // Notify Icon
             Data.Flags = NotifyIconFlags.Message;
             Shell_NotifyIcon(NotifyCommand.Delete, ref Data);
             Uids.Enqueue(ref Data.TaskbarIconId);
 
+            // ContextMenu
+            if (ContextMenu != null)
+            {
+                ContextMenu.IsOpen = false;
+                GlobalMouse.MouseDown -= OnContextMenuGlobalMouseDown;
+            }
+
+            // BalloonPopup
             BalloonCloseChecker?.Cancel();
+            BalloonCloseChecker = null;
 
             if (BalloonPopup != null)
             {
                 BalloonPopup.BeginAnimation(FrameworkElement.HeightProperty, null, HandoffBehavior.SnapshotAndReplace);
                 BalloonPopup.BeginAnimation(FrameworkElement.WidthProperty, null, HandoffBehavior.SnapshotAndReplace);
+                BalloonPopup.PopupAnimation = PopupAnimation.None;
+                BalloonPopup.IsOpen = false;
                 BalloonPopup.Child = null;
                 BalloonPopup = null;
+
+                GlobalMouse.MouseDown -= OnBalloonPopupGlobalMouseDown;
             }
+
+            // Click Event
+            DoubleClickChecker?.Cancel();
+            DoubleClickChecker = null;
 
             IsCreated = false;
         }

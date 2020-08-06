@@ -113,6 +113,7 @@ namespace MenthaAssembly
         #endregion
 
         #region AcrylicBlur
+
         #region Windows API
         [DllImport("user32")]
         private static extern bool SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
