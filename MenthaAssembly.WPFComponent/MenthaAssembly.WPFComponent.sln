@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29509.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MenthaAssembly.WPFComponent", "MenthaAssembly.WPFComponent.csproj", "{43F370C0-6321-4144-89E4-96E5AF49D418}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MenthaAssembly.WPFComponent", "MenthaAssembly.WPFComponent.csproj", "{43F370C0-6321-4144-89E4-96E5AF49D418}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MenthaAssembly", "..\..\MenthaAssembly\MenthaAssembly\MenthaAssembly.csproj", "{A6F25C6C-D093-434A-8970-AB732A6A7F4D}"
 EndProject
