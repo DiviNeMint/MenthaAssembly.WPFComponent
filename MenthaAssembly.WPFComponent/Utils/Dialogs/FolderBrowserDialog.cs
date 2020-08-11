@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static MenthaAssembly.Win32.System;
 
 namespace Microsoft.Win32
 {
@@ -207,12 +208,6 @@ namespace Microsoft.Win32
         #region Legacy Dialog
 
         #region Windows API
-        [DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hwnd, int msg, int wParam, string lParam);
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hwnd, int msg, int wParam, int lParam);
-
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         [ResourceExposure(ResourceScope.None)]
         private static extern IntPtr SHBrowseForFolder([In] BrowseInfo lpbi);
@@ -292,9 +287,8 @@ namespace Microsoft.Win32
         // NativeMethods
         private const int MaxPathLength = 260,      // MAX_PATH
                           BFFM_Initialized = 1,
-                          BFFM_SELChanged = 2,
-                          BFFM_EnableOk = (int)Win32Messages.BFFM_EnableOK;
-        private static readonly int BFFM_SetSelection = (int)(Marshal.SystemDefaultCharSize == 1 ? Win32Messages.BFFM_SetSelectionA : Win32Messages.BFFM_SetSelectionW);
+                          BFFM_SELChanged = 2;
+        private static readonly Win32Messages BFFM_SetSelection = Marshal.SystemDefaultCharSize == 1 ? Win32Messages.BFFM_SetSelectionA : Win32Messages.BFFM_SetSelectionW;
 
         #endregion
 
@@ -376,7 +370,7 @@ namespace Microsoft.Win32
                         bool IsFileSystemFolder = SHGetPathFromIDListLongPath(lParam, ref pszSelectedPath);
                         Marshal.FreeHGlobal(pszSelectedPath);
 
-                        SendMessage(hwnd, BFFM_EnableOk, 0, IsFileSystemFolder ? 1 : 0);
+                        SendMessage(hwnd, Win32Messages.BFFM_EnableOK, 0, IsFileSystemFolder);
                     }
                     break;
             }
