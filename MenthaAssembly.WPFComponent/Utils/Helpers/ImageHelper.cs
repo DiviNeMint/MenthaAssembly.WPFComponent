@@ -45,7 +45,7 @@ namespace MenthaAssembly
                                               This.PixelHeight,
                                               Datas,
                                               This.Palette?.Colors.Select(i => new BGRA(i.B, i.G, i.R, i.A))
-                                                                    .ToList());
+                                                                  .ToList());
             }
             else if (PixelFormats.Rgb24.Equals(This.Format))
             {
@@ -89,11 +89,13 @@ namespace MenthaAssembly
             using (DrawingContext Context = Visual.RenderOpen())
             {
                 double Cx = Image.Width * 0.5d,
-                       Cy = Image.Height * 0.5d;
+                       Cy = Image.Height * 0.5d,
+                       Sx = Width / Image.Width,
+                       Sy = Height / Image.Height;
                 if (Angle != 0)
                     Context.PushTransform(new RotateTransform(Angle, Cx, Cy));
 
-                Context.PushTransform(new ScaleTransform(Width / Image.Width, Height / Image.Height, Cx, Cy));
+                Context.PushTransform(new ScaleTransform(Sx, Sy, Cx, Cy));
 
                 Context.DrawDrawing(Image.Drawing);
             }
