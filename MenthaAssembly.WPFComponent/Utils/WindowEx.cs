@@ -1,4 +1,5 @@
 ﻿using MenthaAssembly.Devices;
+using MenthaAssembly.Win32;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
@@ -19,16 +20,25 @@ namespace MenthaAssembly
                 {
                     if (d is Window This)
                     {
+                        WindowInteropHelper InteropHelper = new WindowInteropHelper(This);
+                        if (InteropHelper.Handle == IntPtr.Zero)
+                            InteropHelper.EnsureHandle();
+
                         if (e.NewValue is true)
-                        {
-                            if (!AttachFixSize(This))
-                                This.SourceInitialized += OnAttachFixSizeSourceInitialized;
-                        }
+                            HwndSource.FromHwnd(InteropHelper.Handle).AddHook(FixSizeWindowProc);
                         else
-                        {
-                            if (!DetachFixSize(This))
-                                This.SourceInitialized += OnDetachFixSizeSourceInitialized;
-                        }
+                            HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(FixSizeWindowProc);
+
+                        //if (e.NewValue is true)
+                        //{
+                        //    if (!AttachFixSize(This))
+                        //        This.SourceInitialized += OnAttachFixSizeSourceInitialized;
+                        //}
+                        //else
+                        //{
+                        //    if (!DetachFixSize(This))
+                        //        This.SourceInitialized += OnDetachFixSizeSourceInitialized;
+                        //}
                     }
                 }));
         public static bool GetFixSize(Window obj)
@@ -36,48 +46,44 @@ namespace MenthaAssembly
         public static void SetFixSize(Window obj, bool value)
             => obj.SetValue(FixSizeProperty, value);
 
-        private static bool AttachFixSize(Window Window)
-        {
-            IntPtr Handle = new WindowInteropHelper(Window).Handle;
-            if (Handle != IntPtr.Zero)
-            {
-                HwndSource.FromHwnd(Handle).AddHook(FixSizeHookProc);
-                return true;
-            }
-            return false;
-        }
-        private static bool DetachFixSize(Window Window)
-        {
-            IntPtr Handle = new WindowInteropHelper(Window).Handle;
-            if (Handle != IntPtr.Zero)
-            {
-                HwndSource.FromHwnd(Handle).RemoveHook(FixSizeHookProc);
-                return true;
-            }
-            return false;
-        }
+        //private static bool AttachFixSize(Window Window)
+        //{
+        //    IntPtr Handle = new WindowInteropHelper(Window).Handle;
+        //    if (Handle != IntPtr.Zero)
+        //    {
+        //        HwndSource.FromHwnd(Handle).AddHook(FixSizeWindowProc);
+        //        return true;
+        //    }
+        //    return false;
+        //}
+        //private static bool DetachFixSize(Window Window)
+        //{
+        //    IntPtr Handle = new WindowInteropHelper(Window).Handle;
+        //    if (Handle != IntPtr.Zero)
+        //    {
+        //        HwndSource.FromHwnd(Handle).RemoveHook(FixSizeWindowProc);
+        //        return true;
+        //    }
+        //    return false;
+        //}
 
-        private static void OnAttachFixSizeSourceInitialized(object sender, EventArgs e)
-        {
-            if (sender is Window This)
-            {
-                This.SourceInitialized -= OnAttachFixSizeSourceInitialized;
-                AttachFixSize(This);
-            }
-        }
-        private static void OnDetachFixSizeSourceInitialized(object sender, EventArgs e)
-        {
-            if (sender is Window This)
-            {
-                This.SourceInitialized -= OnDetachFixSizeSourceInitialized;
-                DetachFixSize(This);
-            }
-        }
+        //private static void OnAttachFixSizeSourceInitialized(object sender, EventArgs e)
+        //{
+        //    if (sender is Window This)
+        //    {
+        //        This.SourceInitialized -= OnAttachFixSizeSourceInitialized;
+        //        AttachFixSize(This);
+        //    }
+        //}
+        //private static void OnDetachFixSizeSourceInitialized(object sender, EventArgs e)
+        //{
+        //    if (sender is Window This)
+        //    {
+        //        This.SourceInitialized -= OnDetachFixSizeSourceInitialized;
+        //        DetachFixSize(This);
+        //    }
+        //}
 
-        public static void FixSize(this Window This)
-            => SetFixSize(This, true);
-
-        private static readonly HwndSourceHook FixSizeHookProc = new HwndSourceHook(FixSizeWindowProc);
         private unsafe static IntPtr FixSizeWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             switch ((Win32Messages)msg)
@@ -86,7 +92,7 @@ namespace MenthaAssembly
                     // Fix Window Size
                     if (Screen.Current is ScreenInfo Info)
                     {
-                        MinMaxInfo* pInfo = (MinMaxInfo*)lParam;
+                        WindowMinMaxInfo* pInfo = (WindowMinMaxInfo*)lParam;
                         pInfo->ptMaxPosition = new Int32Point(Info.WorkArea.Left - Info.Bound.Left,
                                                               Info.WorkArea.Left - Info.Bound.Left);
 
@@ -99,16 +105,8 @@ namespace MenthaAssembly
             return IntPtr.Zero;
         }
 
-#pragma warning disable CS0649
-        private struct MinMaxInfo
-        {
-            public Int32Point ptReserved;
-            public Int32Size ptMaxSize;
-            public Int32Point ptMaxPosition;
-            public Int32Size ptMinTrackSize;
-            public Int32Size ptMaxTrackSize;
-        };
-#pragma warning restore CS0649
+        public static void FixSize(this Window This)
+            => SetFixSize(This, true);
 
         #endregion
 
@@ -175,9 +173,9 @@ namespace MenthaAssembly
         [StructLayout(LayoutKind.Sequential)]
         private struct WindowCompositionAttributeData
         {
-            public WindowCompositionAttribute Attribute { set; get; }
-            public IntPtr Data { set; get; }
-            public int SizeOfData { set; get; }
+            public WindowCompositionAttribute Attribute;
+            public IntPtr Data;
+            public int SizeOfData;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -197,15 +195,50 @@ namespace MenthaAssembly
                 {
                     if (d is Window This)
                     {
+                        WindowInteropHelper InteropHelper = new WindowInteropHelper(This);
+                        if (InteropHelper.Handle == IntPtr.Zero)
+                            InteropHelper.EnsureHandle();
+
+                        AccentPolicy Accent = new AccentPolicy();
                         if (e.NewValue is true)
                         {
-                            if (!AttachAcrylicBlur(This))
-                                This.SourceInitialized += OnAttachAcrylicBlurSourceInitialized;
+                            int BuildNumber = 0;
+                            if (TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseID", out dynamic StrBuildNumber) &&
+                                int.TryParse(StrBuildNumber, out BuildNumber) &&
+                                BuildNumber >= 1803)
+                            {
+                                Accent.AccentState = AccentState.Enable_AcrylicBlurBehind;
+                                Color BackgroundColor = This.Background is SolidColorBrush Brush ? Brush.Color :
+                                                                                                   Color.FromArgb(0x40, byte.MaxValue, byte.MaxValue, byte.MaxValue);
+                                This.Background = null;
+                                Accent.GradientColor = BackgroundColor.A << 24 |
+                                                       BackgroundColor.R << 16 |
+                                                       BackgroundColor.G << 8 |
+                                                       BackgroundColor.B;
+
+                                if (WindowChrome.GetWindowChrome(This) is null)
+                                    WindowChrome.SetWindowChrome(This, new WindowChrome { GlassFrameThickness = new Thickness(1, 30, 1, 1) });
+                            }
+                            else
+                            {
+                                Accent.AccentState = AccentState.Enable_BlurBehind;
+                            };
+
                         }
                         else
                         {
-                            if (!DetachAcrylicBlur(This))
-                                This.SourceInitialized += OnDetachAcrylicBlurSourceInitialized;
+                            Accent.AccentState = AccentState.Disabled;
+                        }
+
+                        unsafe
+                        {
+                            WindowCompositionAttributeData Data = new WindowCompositionAttributeData
+                            {
+                                Attribute = WindowCompositionAttribute.Accent_Policy,
+                                SizeOfData = sizeof(WindowCompositionAttributeData),
+                                Data = (IntPtr)(&Accent)
+                            };
+                            SetWindowCompositionAttribute(InteropHelper.Handle, ref Data);
                         }
                     }
                 }));
@@ -214,88 +247,6 @@ namespace MenthaAssembly
         public static bool GetAcrylicBlur(Window obj)
             => (bool)obj.GetValue(AcrylicBlurProperty);
 
-        private unsafe static bool AttachAcrylicBlur(Window Window)
-        {
-            IntPtr Handle = new WindowInteropHelper(Window).Handle;
-            if (Handle != IntPtr.Zero)
-            {
-                AccentPolicy Accent = new AccentPolicy();
-                int BuildNumber = 0;
-                if (TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseID", out dynamic StrBuildNumber) &&
-                    int.TryParse(StrBuildNumber, out BuildNumber) &&
-                    BuildNumber >= 1803)
-                {
-                    Accent.AccentState = AccentState.Enable_AcrylicBlurBehind;
-                    Color BackgroundColor = Window.Background is SolidColorBrush Brush ? Brush.Color :
-                                                                                         Color.FromArgb(0x40, byte.MaxValue, byte.MaxValue, byte.MaxValue);
-                    Window.Background = null;
-                    Accent.GradientColor = BackgroundColor.A << 24 |
-                                           BackgroundColor.R << 16 |
-                                           BackgroundColor.G << 8 |
-                                           BackgroundColor.B;
-
-                    if (WindowChrome.GetWindowChrome(Window) is null)
-                        WindowChrome.SetWindowChrome(Window, new WindowChrome
-                        {
-                            GlassFrameThickness = new Thickness(1, 30, 1, 1)
-                        });
-                }
-                else
-                {
-                    Accent.AccentState = AccentState.Enable_BlurBehind;
-                };
-
-                WindowCompositionAttributeData Data = new WindowCompositionAttributeData
-                {
-                    Attribute = WindowCompositionAttribute.Accent_Policy,
-                    SizeOfData = Marshal.SizeOf(Accent),
-                    Data = (IntPtr)(&Accent)
-                };
-
-                SetWindowCompositionAttribute(Handle, ref Data);
-                return true;
-            }
-            return false;
-        }
-        private unsafe static bool DetachAcrylicBlur(Window Window)
-        {
-            IntPtr Handle = new WindowInteropHelper(Window).Handle;
-            if (Handle != IntPtr.Zero)
-            {
-                AccentPolicy Accent = new AccentPolicy
-                {
-                    AccentState = AccentState.Disabled
-                };
-                WindowCompositionAttributeData Data = new WindowCompositionAttributeData
-                {
-                    Attribute = WindowCompositionAttribute.Accent_Policy,
-                    SizeOfData = Marshal.SizeOf(Accent),
-                    Data = (IntPtr)(&Accent)
-                };
-
-                SetWindowCompositionAttribute(Handle, ref Data);
-                return true;
-            }
-            return false;
-        }
-
-        private static void OnAttachAcrylicBlurSourceInitialized(object sender, EventArgs e)
-        {
-            if (sender is Window This)
-            {
-                This.SourceInitialized -= OnAttachAcrylicBlurSourceInitialized;
-                AttachAcrylicBlur(This);
-            }
-        }
-        private static void OnDetachAcrylicBlurSourceInitialized(object sender, EventArgs e)
-        {
-            if (sender is Window This)
-            {
-                This.SourceInitialized -= OnDetachAcrylicBlurSourceInitialized;
-                DetachAcrylicBlur(This);
-            }
-        }
-
         #endregion
 
         private static bool TryGetRegistryKey(string Path, string Key, out dynamic Value)
@@ -303,14 +254,12 @@ namespace MenthaAssembly
             Value = null;
             try
             {
-                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(Path))
-                {
-                    if (rk == null)
-                        return false;
+                using RegistryKey rk = Registry.LocalMachine.OpenSubKey(Path);
+                if (rk == null)
+                    return false;
 
-                    Value = rk.GetValue(Key);
-                    return Value != null;
-                }
+                Value = rk.GetValue(Key);
+                return Value != null;
             }
             catch
             {

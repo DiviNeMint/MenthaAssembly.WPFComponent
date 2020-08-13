@@ -98,6 +98,10 @@ namespace MenthaAssembly.Views
             get => base.SourceContext;
             set
             {
+                if (base.SourceContext is null && 
+                    value is null)
+                    return;
+                
                 ChangedEventArgs<IImageContext> e = new ChangedEventArgs<IImageContext>(base.SourceContext, value);
                 base.SourceContext = value;
                 this.Dispatcher.Invoke(() => OnSourceChanged(e));
