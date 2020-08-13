@@ -151,6 +151,9 @@ namespace MenthaAssembly
             where U : unmanaged, IPixelIndexed
             => Context.Cast<T, U>();
 
+        public IntPtr CreateHBitmap()
+            => Context.CreateHBitmap();
+
         public void BlockCopy<T>(int X, int Y, int Width, int Height, T* Dest0) where T : unmanaged, IPixel
             => Context.BlockCopy(X, Y, Width, Height, Dest0);
         public void BlockCopy<T>(int X, int Y, int Width, int Height, T[] Dest0) where T : unmanaged, IPixel

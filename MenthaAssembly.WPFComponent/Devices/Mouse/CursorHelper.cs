@@ -1,52 +1,26 @@
-﻿using Microsoft.Win32.SafeHandles;
+﻿using MenthaAssembly.Win32;
+using Microsoft.Win32.SafeHandles;
 using System;
-using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
-using Bitmap = System.Drawing.Bitmap;
+using static MenthaAssembly.Win32.Graphic;
+using static MenthaAssembly.Win32.System;
 
 namespace MenthaAssembly.Devices
 {
     public static class CursorHelper
     {
         #region Windows API
-        [DllImport("user32.dll")]
-        private static extern SafeIconHandle CreateIconIndirect(ref IconInfo icon);
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr CopyIcon(IntPtr hIcon);
-
-        [DllImport("user32.dll")]
-        private static extern bool DestroyIcon(IntPtr hIcon);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetIconInfo(IntPtr hIcon, out IconInfo pIconInfo);
-
-        [DllImport("user32.dll")]
-        private static extern bool SetSystemCursor(IntPtr hCursor, CursorID type);
-
-        [DllImport("user32.dll")]
-        private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
-
-        [DllImport("gdi32.dll")]
-        private static extern bool DeleteObject(IntPtr hObject);
-
-        private struct IconInfo
-        {
-            public bool fIcon;
-            public int xHotspot;
-            public int yHotspot;
-            public IntPtr hbmMask;
-            public IntPtr hbmColor;
-        }
-
         [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
         private class SafeIconHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             public SafeIconHandle() : base(true) { }
+            public SafeIconHandle(IntPtr Handle) : base(true)
+            {
+                base.SetHandle(Handle);
+            }
 
             protected override bool ReleaseHandle()
                 => DestroyIcon(handle);
@@ -87,30 +61,26 @@ namespace MenthaAssembly.Devices
         public static CursorInfo Rotate315Cursor
             => CreateCursor(Resource.RotateArrow, 13, 13, 315d);
 
-        private static CursorInfo InternalCreateCursor(Bitmap bitmap, int xHotSpot, int yHotSpot)
-        {
-            GetIconInfo(bitmap.GetHicon(), out IconInfo Info);
-
-            Info.fIcon = false;
-            Info.xHotspot = xHotSpot;
-            Info.yHotspot = yHotSpot;
-
-            SafeIconHandle cursorHandle = CreateIconIndirect(ref Info);
-            bitmap.Dispose();
-
-            return new CursorInfo(CursorInteropHelper.Create(cursorHandle), cursorHandle);
-        }
-
         public static CursorInfo CreateCursor(UIElement Element, int xHotSpot, int yHotSpot)
-            => InternalCreateCursor(ImageHelper.CreateBitmap(Element, (int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight), xHotSpot, yHotSpot);
+        {
+            IntPtr HIcon = Element.CreateHIcon((int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, xHotSpot, yHotSpot);
+            SafeIconHandle HCursor = new SafeIconHandle(HIcon);
+
+            return new CursorInfo(CursorInteropHelper.Create(HCursor), HCursor);
+        }
         public static CursorInfo CreateCursor(DrawingImage Image, int xHotSpot, int yHotSpot, double Angle)
-            => InternalCreateCursor(ImageHelper.CreateBitmap(Image, (int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, Angle), xHotSpot, yHotSpot);
+        {
+            IntPtr HIcon = Image.CreateHIcon((int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, Angle, xHotSpot, yHotSpot);
+            SafeIconHandle HCursor = new SafeIconHandle(HIcon);
+
+            return new CursorInfo(CursorInteropHelper.Create(HCursor), HCursor);
+        }
 
         public static void SetAllGlobalCursor(CursorInfo Cursor)
         {
             if (Cursor is null)
             {
-                SystemParametersInfo(87, 0, IntPtr.Zero, 2);
+                SystemParametersInfo(SystemParameterActionType.SetCursors, 0, IntPtr.Zero, SystemParameterInfoFlags.SendChange);
                 return;
             }
 

@@ -1,11 +1,11 @@
 ﻿using MenthaAssembly.Media.Imaging;
+using MenthaAssembly.Win32;
 using System;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Bitmap = System.Drawing.Bitmap;
+using static MenthaAssembly.Win32.Graphic;
 
 namespace MenthaAssembly
 {
@@ -73,46 +73,89 @@ namespace MenthaAssembly
             throw new NotImplementedException();
         }
 
-        public static Bitmap CreateBitmap(UIElement Element, int Width, int Height)
+        public static IntPtr CreateHBitmap(this UIElement This, int Width, int Height)
         {
-            Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Element.Arrange(new Rect(new Point(), Element.DesiredSize));
+            This.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            This.Arrange(new Rect(new Point(), This.DesiredSize));
 
             RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
-            RenderBitmap.Render(Element);
+            RenderBitmap.Render(This);
 
-            return CreateBitmap(RenderBitmap.ToImageContext());
+            return RenderBitmap.ToImageContext().CreateHBitmap();
         }
-        public static Bitmap CreateBitmap(DrawingImage Image, int Width, int Height, double Angle)
+        public static IntPtr CreateHBitmap(this DrawingImage This, int Width, int Height, double Angle)
         {
             DrawingVisual Visual = new DrawingVisual();
             using (DrawingContext Context = Visual.RenderOpen())
             {
-                double Sx = Width / Image.Width,
-                       Sy = Height / Image.Height;
+                double Sx = Width / This.Width,
+                       Sy = Height / This.Height;
                 Context.PushTransform(new ScaleTransform(Sx, Sy, 0, 0));
 
                 if (Angle != 0)
                 {
-                    double Cx = Image.Width * 0.5d,
-                           Cy = Image.Height * 0.5d;
+                    double Cx = This.Width * 0.5d,
+                           Cy = This.Height * 0.5d;
                     Context.PushTransform(new RotateTransform(Angle, Cx, Cy));
                 }
 
-                Context.DrawDrawing(Image.Drawing);
+                Context.DrawDrawing(This.Drawing);
                 Context.Pop();
             }
 
             RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
             RenderBitmap.Render(Visual);
 
-            return CreateBitmap(RenderBitmap.ToImageContext());
+            return RenderBitmap.ToImageContext().CreateHBitmap();
         }
-        public static Bitmap CreateBitmap(IImageContext Image)
+
+        public static IntPtr CreateHIcon(this UIElement This, int Width, int Height)
+            => CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
+        public static IntPtr CreateHIcon(this UIElement Element, int Width, int Height, int xHotSpot, int yHotSpot)
+            => CreateHIcon(Element.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
+        public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle)
+            => CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
+        public static IntPtr CreateHIcon(this DrawingImage Image, int Width, int Height, double Angle, int xHotSpot, int yHotSpot)
+            => CreateHIcon(Image.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
+        public static IntPtr CreateHIcon(IntPtr HBmpColor, IntPtr HBmpMask)
         {
-            using MemoryStream memoryStream = new MemoryStream();
-            PngCoder.Encode(Image, memoryStream, true);
-            return new Bitmap(memoryStream);
+            try
+            {
+                IconInfo Info = new IconInfo
+                {
+                    fIcon = true,
+                    hbmMask = HBmpMask,
+                    hbmColor = HBmpColor
+                };
+
+                return CreateIconIndirect(ref Info);
+            }
+            finally
+            {
+                DeleteObject(HBmpMask);
+                DeleteObject(HBmpColor);
+            }
+        }
+        public static IntPtr CreateHIcon(IntPtr HBmpColor, IntPtr HBmpMask, int xHotSpot, int yHotSpot)
+        {
+            try
+            {
+                IconInfo Info = new IconInfo
+                {
+                    fIcon = false,
+                    xHotspot = xHotSpot,
+                    yHotspot = yHotSpot,
+                    hbmMask = HBmpMask,
+                    hbmColor = HBmpColor
+                };
+
+                return CreateIconIndirect(ref Info);
+            }
+            finally
+            {
+                DeleteObject(HBmpMask);
+                DeleteObject(HBmpColor);
+            }
         }
 
     }

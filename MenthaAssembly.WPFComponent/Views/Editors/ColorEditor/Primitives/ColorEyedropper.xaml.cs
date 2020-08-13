@@ -5,18 +5,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using static MenthaAssembly.Win32.Desktop;
+using static MenthaAssembly.Win32.Graphic;
 
 namespace MenthaAssembly.Views.Primitives
 {
     public class ColorEyedropper : ContentControl
     {
         #region Window API
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr GetDesktopWindow();
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr GetWindowDC(IntPtr window);
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern int ReleaseDC(IntPtr window, IntPtr dc);
         [DllImport("gdi32.dll", SetLastError = true)]
         private static extern uint GetPixel(IntPtr dc, int x, int y);
 

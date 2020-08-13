@@ -16,8 +16,8 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using static MenthaAssembly.Win32.Desktop;
+using static MenthaAssembly.Win32.Graphic;
 using static MenthaAssembly.Win32.System;
-using Bitmap = System.Drawing.Bitmap;
 
 namespace MenthaAssembly.Views
 {
@@ -51,11 +51,12 @@ namespace MenthaAssembly.Views
                           if (!This.TryCreate())
                               return;
 
-                          Bitmap Icon = CreateIcon(e.NewValue as ImageSource);
-                          This.Data.Hicon = Icon?.GetHicon() ?? IntPtr.Zero;
+                          if (This.Data.HIcon != IntPtr.Zero)
+                              DestroyIcon(This.Data.HIcon);
+
+                          This.Data.HIcon = CreateHIcon(e.NewValue as ImageSource);
                           This.Data.Flags = NotifyIconFlags.Icon;
                           Shell_NotifyIcon(NotifyCommand.Modify, ref This.Data);
-                          Icon?.Dispose();
                       }
                   }));
         public ImageSource Source
@@ -225,31 +226,23 @@ namespace MenthaAssembly.Views
                 HwndSource HwndSource = HwndSource.FromHwnd(WindowInterop.Handle);
                 HwndSource.AddHook(OnWndProc);
 
-                Bitmap Icon = CreateIcon(this.Source);
-                try
+                Data = new NotifyIconData
                 {
-                    Data = new NotifyIconData
-                    {
-                        TaskbarIconId = Uids.Dequeue(),
-                        cbSize = Environment.OSVersion.Version.Major < 6 ? 952 : Marshal.SizeOf<NotifyIconData>(),
-                        WindowHandle = HwndSource.Handle,
-                        CallbackMessageId = CallbackMessageId,
-                        Hicon = Icon?.GetHicon() ?? IntPtr.Zero,
-                        ToolTipText = ToolTip,
-                        Flags = NotifyIconFlags.Icon | NotifyIconFlags.Tip | NotifyIconFlags.Message
-                    };
-                    IsCreated = Shell_NotifyIcon(NotifyCommand.Add, ref Data);
+                    TaskbarIconId = Uids.Dequeue(),
+                    cbSize = Environment.OSVersion.Version.Major < 6 ? 952 : Marshal.SizeOf<NotifyIconData>(),
+                    WindowHandle = HwndSource.Handle,
+                    CallbackMessageId = CallbackMessageId,
+                    HIcon = CreateHIcon(this.Source),
+                    ToolTipText = ToolTip,
+                    Flags = NotifyIconFlags.Icon | NotifyIconFlags.Tip | NotifyIconFlags.Message
+                };
+                IsCreated = Shell_NotifyIcon(NotifyCommand.Add, ref Data);
 
-                    if (IsCreated &&
-                        !Attached)
-                    {
-                        Parent.Closed += (s, e) => this.Dispose();
-                        Attached = true;
-                    }
-                }
-                finally
+                if (IsCreated &&
+                    !Attached)
                 {
-                    Icon?.Dispose();
+                    Parent.Closed += (s, e) => this.Dispose();
+                    Attached = true;
                 }
 
                 return IsCreated;
@@ -766,15 +759,15 @@ namespace MenthaAssembly.Views
             }
         }
 
-        private static Bitmap CreateIcon(ImageSource Icon)
+        private static IntPtr CreateHIcon(ImageSource Icon)
         {
             if (Icon is null)
-                return null;
+                return IntPtr.Zero;
 
             if (Icon is DrawingImage Image)
-                return ImageHelper.CreateBitmap(Image, 16, 16, 0d);
+                return ImageHelper.CreateHIcon(Image, 16, 16, 0d);
 
-            return ImageHelper.CreateBitmap(new Image
+            return ImageHelper.CreateHIcon(new Image
             {
                 Source = Icon,
                 Stretch = Stretch.UniformToFill,
@@ -793,6 +786,10 @@ namespace MenthaAssembly.Views
             Data.Flags = NotifyIconFlags.Message;
             Shell_NotifyIcon(NotifyCommand.Delete, ref Data);
             Uids.Enqueue(ref Data.TaskbarIconId);
+
+            // Release HIcon
+            if (Data.HIcon != IntPtr.Zero)
+                DestroyIcon(Data.HIcon);
 
             // ContextMenu
             if (ContextMenu != null)
