@@ -625,7 +625,6 @@ namespace MenthaAssembly.Views.Primitives
                             }
                         });
                     };
-
             }
         }
         internal protected virtual Int32Point SourceLocation { set; get; }

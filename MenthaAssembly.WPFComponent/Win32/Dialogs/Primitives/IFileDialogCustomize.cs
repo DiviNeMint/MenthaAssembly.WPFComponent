@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32
 {
-    //internal const string IID_IFileDialogCustomize = "E6FDD21A-163F-4975-9C8C-A69F1BA37034";
     [ComImport, Guid("E6FDD21A-163F-4975-9C8C-A69F1BA37034"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IFileDialogCustomize
     {

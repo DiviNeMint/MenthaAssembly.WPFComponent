@@ -45,7 +45,7 @@ namespace MenthaAssembly
                                               This.PixelHeight,
                                               Datas,
                                               This.Palette?.Colors.Select(i => new BGRA(i.B, i.G, i.R, i.A))
-                                                                    .ToList());
+                                                                  .ToList());
             }
             else if (PixelFormats.Rgb24.Equals(This.Format))
             {
@@ -88,14 +88,19 @@ namespace MenthaAssembly
             DrawingVisual Visual = new DrawingVisual();
             using (DrawingContext Context = Visual.RenderOpen())
             {
-                double Cx = Image.Width * 0.5d,
-                       Cy = Image.Height * 0.5d;
-                if (Angle != 0)
-                    Context.PushTransform(new RotateTransform(Angle, Cx, Cy));
+                double Sx = Width / Image.Width,
+                       Sy = Height / Image.Height;
+                Context.PushTransform(new ScaleTransform(Sx, Sy, 0, 0));
 
-                Context.PushTransform(new ScaleTransform(Width / Image.Width, Height / Image.Height, Cx, Cy));
+                if (Angle != 0)
+                {
+                    double Cx = Image.Width * 0.5d,
+                           Cy = Image.Height * 0.5d;
+                    Context.PushTransform(new RotateTransform(Angle, Cx, Cy));
+                }
 
                 Context.DrawDrawing(Image.Drawing);
+                Context.Pop();
             }
 
             RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);

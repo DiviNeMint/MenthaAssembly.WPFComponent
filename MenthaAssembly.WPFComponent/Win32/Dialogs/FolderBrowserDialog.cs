@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static MenthaAssembly.Win32.Desktop;
 using static MenthaAssembly.Win32.System;
 
 namespace Microsoft.Win32
@@ -44,23 +45,11 @@ namespace Microsoft.Win32
         private class FolderBrowserDialogHandler : IFileDialogEvents, IDisposable
         {
             #region Windows API
-
-            [DllImport("user32.dll")]
-            private static extern int EnumChildWindows(IntPtr hwnd, EnumChildCallbackProc lpfn, IntPtr lParam);
-            private delegate bool EnumChildCallbackProc(IntPtr hwnd, IntPtr lParam);
-
             [DllImport("user32.dll")]
             private static extern IntPtr GetDlgItem(IntPtr hwnd, int ID);
 
             [DllImport("user32.dll")]
             private static extern int GetDlgCtrlID(IntPtr hwnd);
-
-            [DllImport("Comctl32.dll")]
-            private static extern bool SetWindowSubclass(IntPtr hwnd, SubClassProc pfnSubclass, int uIdSubclass, IntPtr dwRefData);
-            private delegate int SubClassProc(IntPtr hwnd, uint uMsg, IntPtr wParam, IntPtr lParam, int uIdSubclass, IntPtr dwRefData);
-
-            [DllImport("Comctl32.dll")]
-            private static extern int DefSubclassProc(IntPtr hwnd, uint uMsg, IntPtr wParam, IntPtr lParam);
 
             #endregion
 

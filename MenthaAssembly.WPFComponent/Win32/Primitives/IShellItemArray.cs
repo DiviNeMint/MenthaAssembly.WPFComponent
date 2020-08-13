@@ -3,8 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32
 {
-    //internal const string IID_IShellItemArray = "B63EA76D-1F85-456F-A19C-48159EFA858B";
-    [ComImport,Guid("B63EA76D-1F85-456F-A19C-48159EFA858B"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport, Guid("B63EA76D-1F85-456F-A19C-48159EFA858B"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IShellItemArray
     {
         // Not supported: IBindCtx
