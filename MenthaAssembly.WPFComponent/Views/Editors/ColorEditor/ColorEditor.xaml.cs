@@ -146,6 +146,15 @@ namespace MenthaAssembly.Views
 
             if (this.GetTemplateChild("PART_OriginalColorRect") is Rectangle OriginalColorRect)
             {
+                if (this.GetTemplateChild("PART_ColorEyedropper") is ColorEyedropper ColorEyedropper)
+                {
+                    SolidColorBrush FillBrush = new SolidColorBrush();
+                    BindingOperations.SetBinding(FillBrush,
+                                                 SolidColorBrush.ColorProperty,
+                                                 new Binding(nameof(ColorEyedropper.OriginalColor)) { Source = ColorEyedropper });
+                    OriginalColorRect.Fill = FillBrush;
+                }
+
                 bool IsRectLeftMouseDown = false;
                 OriginalColorRect.MouseDown += (s, e) =>
                 {
@@ -168,6 +177,14 @@ namespace MenthaAssembly.Views
                             Color = Brush.Color;
                     }
                 };
+            }
+            if (this.GetTemplateChild("PART_CurrentColorRect") is Rectangle CurrentColorRect)
+            {
+                SolidColorBrush FillBrush = new SolidColorBrush();
+                BindingOperations.SetBinding(FillBrush,
+                                             SolidColorBrush.ColorProperty,
+                                             new Binding(nameof(Color)) { Source = this, Mode = BindingMode.TwoWay });
+                CurrentColorRect.Fill = FillBrush;
             }
         }
 

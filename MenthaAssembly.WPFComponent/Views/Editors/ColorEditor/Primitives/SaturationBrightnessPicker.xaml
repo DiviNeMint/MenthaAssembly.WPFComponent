@@ -17,7 +17,7 @@
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                         <LinearGradientBrush.GradientStops>
                                             <GradientStop Color="White" Offset="0"/>
-                                            <GradientStop Color="{Binding HueColor, FallbackValue=Red, RelativeSource={RelativeSource TemplatedParent}}" Offset="1"/>
+                                            <GradientStop x:Name="PART_GradientStopHueColor" Offset="1"/>
                                         </LinearGradientBrush.GradientStops>
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>

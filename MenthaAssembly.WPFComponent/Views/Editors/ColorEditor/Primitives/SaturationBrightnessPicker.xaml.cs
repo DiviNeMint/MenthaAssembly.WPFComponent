@@ -2,6 +2,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -84,6 +85,12 @@ namespace MenthaAssembly.Views.Primitives
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
+
+            if (this.GetTemplateChild("PART_GradientStopHueColor") is GradientStop PART_GradientStopHueColor)
+                BindingOperations.SetBinding(PART_GradientStopHueColor,
+                                             GradientStop.ColorProperty,
+                                             new Binding(nameof(HueColor)) { Source = this, FallbackValue = Colors.Red });
+
             CreateAdorner();
         }
 

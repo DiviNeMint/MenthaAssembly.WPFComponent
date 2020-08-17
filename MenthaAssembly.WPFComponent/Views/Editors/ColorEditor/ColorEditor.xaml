@@ -3,7 +3,6 @@
                     xmlns:local="clr-namespace:MenthaAssembly.Views"
                     xmlns:Primitives="clr-namespace:MenthaAssembly.Views.Primitives">
 
-
     <Style TargetType="{x:Type local:ColorEditor}">
         <Setter Property="BorderBrush" Value="#FF707070"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -63,16 +62,8 @@
                                         <ColumnDefinition/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
-                                    <Rectangle x:Name="PART_OriginalColorRect">
-                                        <Rectangle.Fill>
-                                            <SolidColorBrush Color="{Binding OriginalColor, ElementName=PART_ColorEyedropper}"/>
-                                        </Rectangle.Fill>
-                                    </Rectangle>
-                                    <Rectangle Grid.Column="1">
-                                        <Rectangle.Fill>
-                                            <SolidColorBrush Color="{Binding Color, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
-                                        </Rectangle.Fill>
-                                    </Rectangle>
+                                    <Rectangle x:Name="PART_OriginalColorRect"/>
+                                    <Rectangle x:Name="PART_CurrentColorRect" Grid.Column="1"/>
                                 </Grid>
                             </Border>
                             <Primitives:ColorEyedropper x:Name="PART_ColorEyedropper"
@@ -92,5 +83,5 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
 </ResourceDictionary>
