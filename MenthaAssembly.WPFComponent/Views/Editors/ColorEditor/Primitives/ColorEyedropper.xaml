@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:MenthaAssembly.Views.Primitives">
+                    xmlns:local="clr-namespace:MenthaAssembly.Views.Primitives"
+                    xmlns:Devices="clr-namespace:MenthaAssembly.Devices">
 
     <Style TargetType="{x:Type local:ColorEyedropper}">
         <Setter Property="Background" Value="#FF161616"/>
@@ -12,10 +13,16 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             SnapsToDevicePixels="True">
-                        <Image x:Name="PART_IMAGE"
+                        <Image x:Name="DropperImage"
+                               Source="{Binding Path=(Devices:CursorHelper.Resource).Eyedropper}"
                                Margin="1"
                                Stretch="Uniform"/>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsCapturing" Value="True">
+                            <Setter TargetName="DropperImage" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

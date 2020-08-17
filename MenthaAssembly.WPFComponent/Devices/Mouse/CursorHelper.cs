@@ -70,7 +70,14 @@ namespace MenthaAssembly.Devices
         }
         public static CursorInfo CreateCursor(DrawingImage Image, int xHotSpot, int yHotSpot, double Angle)
         {
-            IntPtr HIcon = Image.CreateHIcon((int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, Angle, xHotSpot, yHotSpot);
+            double IconWidth = Math.Round(SystemParameters.CursorWidth),
+                   IconHeight = Math.Round(SystemParameters.CursorHeight),
+                   RenderWidth = Math.Min(Image.Width, IconWidth),
+                   RenderHeight = Math.Min(Image.Height, IconHeight),
+                   CursorX = Math.Round(xHotSpot * RenderWidth / Image.Width),
+                   CursorY = Math.Round(yHotSpot * RenderHeight / Image.Height);
+
+            IntPtr HIcon = Image.CreateHIcon((int)RenderWidth, (int)RenderHeight, (int)IconWidth, (int)IconHeight, Angle, (int)CursorX, (int)CursorY);
             SafeIconHandle HCursor = new SafeIconHandle(HIcon);
 
             return new CursorInfo(CursorInteropHelper.Create(HCursor), HCursor);

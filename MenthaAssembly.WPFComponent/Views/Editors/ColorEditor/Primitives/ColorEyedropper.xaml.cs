@@ -1,11 +1,11 @@
 ﻿using MenthaAssembly.Devices;
+using MenthaAssembly.Win32;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using static MenthaAssembly.Win32.Desktop;
 using static MenthaAssembly.Win32.Graphic;
 
 namespace MenthaAssembly.Views.Primitives
@@ -14,7 +14,7 @@ namespace MenthaAssembly.Views.Primitives
     {
         #region Window API
         [DllImport("gdi32.dll", SetLastError = true)]
-        private static extern uint GetPixel(IntPtr dc, int x, int y);
+        private static extern int GetPixel(IntPtr dc, int x, int y);
 
         #endregion
 
@@ -47,18 +47,8 @@ namespace MenthaAssembly.Views.Primitives
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ColorEyedropper), new FrameworkPropertyMetadata(typeof(ColorEyedropper)));
         }
 
-        private Image PART_IMAGE;
-        public override void OnApplyTemplate()
-        {
-            base.OnApplyTemplate();
-            if (this.GetTemplateChild("PART_IMAGE") is Image PART_IMAGE)
-            {
-                this.PART_IMAGE = PART_IMAGE;
-                PART_IMAGE.Source = CursorHelper.Resource.Eyedropper;
-            }
-        }
-
-        private IntPtr pDesk;
+        private readonly IntPtr pDesktop = Desktop.Handle;
+        private IntPtr pWindowDC;
         protected override void OnMouseDown(MouseButtonEventArgs e)
         {
             base.OnMouseDown(e);
@@ -80,12 +70,8 @@ namespace MenthaAssembly.Views.Primitives
                 // Init Cursor
                 CursorHelper.SetAllGlobalCursor(CursorHelper.EyedropperCursor);
 
-                // UI
-                if (PART_IMAGE != null)
-                    PART_IMAGE.Visibility = Visibility.Collapsed;
-
-                // Init Desk Intptr
-                pDesk = GetDesktopWindow();
+                // Init Desktop DC
+                pWindowDC = GetWindowDC(pDesktop);
 
                 // Update Color
                 if (Background is SolidColorBrush Brush)
@@ -111,13 +97,12 @@ namespace MenthaAssembly.Views.Primitives
             if (e.ChangedButton == MouseKey.Right)
                 Color = OriginalColor;
 
-            // UI
-            if (PART_IMAGE != null)
-                PART_IMAGE.Visibility = Visibility.Visible;
-
             // Release Cursor
             CursorHelper.SetAllGlobalCursor(null);
 
+            // Release Desktop DC
+            ReleaseDC(pDesktop, pWindowDC);
+            
             IsCapturing = false;
             e.Handled = true;
         }
@@ -144,12 +129,11 @@ namespace MenthaAssembly.Views.Primitives
 
                 Color = OriginalColor;
 
-                // UI
-                if (PART_IMAGE != null)
-                    PART_IMAGE.Visibility = Visibility.Visible;
-
                 // Release Cursor
                 CursorHelper.SetAllGlobalCursor(null);
+
+                // Release Desktop DC
+                ReleaseDC(pDesktop, pWindowDC);
 
                 IsCapturing = false;
             }
@@ -158,9 +142,7 @@ namespace MenthaAssembly.Views.Primitives
         private void UpdateColor(Int32Point Position)
         {
             // GetPixel
-            IntPtr pWindowDC = GetWindowDC(pDesk);
-            int ColorValue = (int)GetPixel(pWindowDC, Position.X, Position.Y);
-            ReleaseDC(pDesk, pWindowDC);
+            int ColorValue = GetPixel(pWindowDC, Position.X, Position.Y);
 
             Color Result = Color.FromArgb(255, (byte)ColorValue, (byte)(ColorValue >> 8), (byte)(ColorValue >> 16));
             this.Dispatcher.Invoke(() => Color = Result);
