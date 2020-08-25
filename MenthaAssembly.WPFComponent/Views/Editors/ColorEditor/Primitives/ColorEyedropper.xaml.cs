@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using static MenthaAssembly.Win32.Graphic;
 
 namespace MenthaAssembly.Views.Primitives
@@ -47,8 +48,9 @@ namespace MenthaAssembly.Views.Primitives
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ColorEyedropper), new FrameworkPropertyMetadata(typeof(ColorEyedropper)));
         }
 
-        private readonly IntPtr pDesktop = Desktop.Handle;
-        private IntPtr pWindowDC;
+        private DispatcherTimer Timer;
+        private IntPtr pDesktop,
+                       pWindowDC;
         protected override void OnMouseDown(MouseButtonEventArgs e)
         {
             base.OnMouseDown(e);
@@ -63,7 +65,6 @@ namespace MenthaAssembly.Views.Primitives
 
                 // Mouse Detect
                 GlobalMouse.MouseDown += OnGlobalMouseDown;
-                GlobalMouse.MouseMove += OnGlobalMouseMove;
                 GlobalMouse.MouseUp += OnGlobalMouseUp;
                 GlobalKeyboard.KeyDown += OnGlobalKeyboardKeyDown;
 
@@ -71,6 +72,7 @@ namespace MenthaAssembly.Views.Primitives
                 CursorHelper.SetAllGlobalCursor(CursorHelper.EyedropperCursor);
 
                 // Init Desktop DC
+                pDesktop = Desktop.Handle;
                 pWindowDC = GetWindowDC(pDesktop);
 
                 // Update Color
@@ -78,20 +80,27 @@ namespace MenthaAssembly.Views.Primitives
                 {
                     Color = Brush.Color;
                 }
-                else
-                {
-                    Int32Point Position = GlobalMouse.Position;
-                    UpdateColor(Position);
-                }
+
+                if (Timer is null)
+                    Timer = new DispatcherTimer(TimeSpan.FromMilliseconds(10d), DispatcherPriority.Normal, OnTimerTick, Dispatcher);
+
+                Timer.Start();
             }
         }
 
-        private void OnGlobalMouseMove(Int32Point Position)
-            => UpdateColor(Position);
+        private void OnTimerTick(object sender, EventArgs e)
+        {
+            Int32Point Position = GlobalMouse.Position;
+
+            // GetPixel
+            int ColorValue = GetPixel(pWindowDC, Position.X, Position.Y);
+
+            Color = Color.FromArgb(255, (byte)ColorValue, (byte)(ColorValue >> 8), (byte)(ColorValue >> 16));
+        }
+
         private void OnGlobalMouseDown(GlobalMouseEventArgs e)
         {
             GlobalMouse.MouseDown -= OnGlobalMouseDown;
-            GlobalMouse.MouseMove -= OnGlobalMouseMove;
             GlobalKeyboard.KeyDown -= OnGlobalKeyboardKeyDown;
 
             if (e.ChangedButton == MouseKey.Right)
@@ -102,9 +111,10 @@ namespace MenthaAssembly.Views.Primitives
 
             // Release Desktop DC
             ReleaseDC(pDesktop, pWindowDC);
-            
+
             IsCapturing = false;
             e.Handled = true;
+            Timer.Stop();
         }
         private void OnGlobalMouseUp(GlobalMouseEventArgs e)
         {
@@ -124,7 +134,6 @@ namespace MenthaAssembly.Views.Primitives
             if (e.Key == KeyboardKey.Esc)
             {
                 GlobalMouse.MouseDown -= OnGlobalMouseDown;
-                GlobalMouse.MouseMove -= OnGlobalMouseMove;
                 GlobalKeyboard.KeyDown -= OnGlobalKeyboardKeyDown;
 
                 Color = OriginalColor;
@@ -136,16 +145,8 @@ namespace MenthaAssembly.Views.Primitives
                 ReleaseDC(pDesktop, pWindowDC);
 
                 IsCapturing = false;
+                Timer.Stop();
             }
-        }
-
-        private void UpdateColor(Int32Point Position)
-        {
-            // GetPixel
-            int ColorValue = GetPixel(pWindowDC, Position.X, Position.Y);
-
-            Color Result = Color.FromArgb(255, (byte)ColorValue, (byte)(ColorValue >> 8), (byte)(ColorValue >> 16));
-            this.Dispatcher.Invoke(() => Color = Result);
         }
 
     }
