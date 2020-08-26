@@ -142,30 +142,27 @@ namespace System.Windows
             => new ChangedEventArgs<T>(e.OldValue is T New ? New : default,
                                        e.NewValue is T Old ? Old : default);
 
-        private static FieldInfo INotifyPropertyChanged_PropertyChanged;
         public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName] string PropertyName = null)
         {
             if (PropertyName is null)
                 return;
 
-            if (INotifyPropertyChanged_PropertyChanged is null)
-                ReflectionHelper.TryGetInternalField(This.GetType(), "PropertyChanged", out INotifyPropertyChanged_PropertyChanged);
-
-            if (INotifyPropertyChanged_PropertyChanged?.GetValue(This) is MulticastDelegate Handler)
+            if (This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
             {
                 Delegate[] Invocations = Handler.GetInvocationList();
                 if (Invocations.Length > 0)
                 {
                     PropertyChangedEventArgs e = new PropertyChangedEventArgs(PropertyName);
-                    foreach (PropertyChangedEventHandler Event in Invocations)
+                    foreach (Delegate Event in Invocations)
                     {
-                        if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
+                        if (Event.Target is DispatcherObject DispObj && 
+                            !DispObj.CheckAccess())
                         {
                             // Invoke handler in the target dispatcher's thread
                             DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
                             continue;
                         }
-                        Event(This, e);
+                        Event.DynamicInvoke(This, e);
                     }
                 }
             }
@@ -175,12 +172,9 @@ namespace System.Windows
             if (e is null)
                 return;
 
-            if (INotifyPropertyChanged_PropertyChanged is null)
-                ReflectionHelper.TryGetInternalField(This.GetType(), "PropertyChanged", out INotifyPropertyChanged_PropertyChanged);
-
-            if (INotifyPropertyChanged_PropertyChanged?.GetValue(This) is MulticastDelegate Handler)
+            if (This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
             {
-                foreach (PropertyChangedEventHandler Event in Handler.GetInvocationList())
+                foreach (Delegate Event in Handler.GetInvocationList())
                 {
                     if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
                     {
@@ -188,20 +182,16 @@ namespace System.Windows
                         DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
                         continue;
                     }
-                    Event(This, e);
+                    Event.DynamicInvoke(This, e);
                 }
             }
         }
 
-        private static FieldInfo INotifyCollectionChanged_CollectionChanged;
         public static void OnCollectionChanged(this INotifyCollectionChanged This, NotifyCollectionChangedEventArgs e)
         {
-            if (INotifyCollectionChanged_CollectionChanged is null)
-                ReflectionHelper.TryGetInternalField(This.GetType(), "CollectionChanged", out INotifyCollectionChanged_CollectionChanged);
-
-            if (INotifyCollectionChanged_CollectionChanged?.GetValue(This) is MulticastDelegate Handler)
+            if (This.TryGetEventField("CollectionChanged", out MulticastDelegate Handler))
             {
-                foreach (NotifyCollectionChangedEventHandler Event in Handler.GetInvocationList())
+                foreach (Delegate Event in Handler.GetInvocationList())
                 {
                     if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
                     {
@@ -209,7 +199,7 @@ namespace System.Windows
                         DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
                         continue;
                     }
-                    Event(This, e);
+                    Event.DynamicInvoke(This, e);
                 }
             }
         }
