@@ -11,15 +11,6 @@ namespace System.Windows
 {
     public static class DependencyHelper
     {
-        //public static DependencyProperty GetDependencyProperty(this DependencyObject This, string PropertyName)
-        //{
-        //    if (This.GetType()?
-        //            .GetField($"{PropertyName}Property", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy) is FieldInfo FieldInfo)
-        //        return FieldInfo.GetValue(null) as DependencyProperty;
-
-        //    return null;
-        //}
-
         public static DependencyProperty GetDependencyProperty(this DependencyObject This, string PropertyName)
         {
             if (This.GetType() is Type ThisType)
@@ -30,17 +21,17 @@ namespace System.Windows
 
         public static IEnumerable<T> FindVisualChildren<T>(this DependencyObject This) where T : DependencyObject
         {
-            if (This != null)
-            {
-                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(This); i++)
-                {
-                    DependencyObject Child = VisualTreeHelper.GetChild(This, i);
-                    if (Child is T)
-                        yield return (T)Child;
+            if (This is null)
+                yield break;
 
-                    foreach (T ChildOfChild in FindVisualChildren<T>(Child))
-                        yield return ChildOfChild;
-                }
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(This); i++)
+            {
+                DependencyObject Child = VisualTreeHelper.GetChild(This, i);
+                if (Child is T TChild)
+                    yield return TChild;
+
+                foreach (T ChildOfChild in FindVisualChildren<T>(Child))
+                    yield return ChildOfChild;
             }
         }
 
@@ -58,42 +49,138 @@ namespace System.Windows
                 yield return ParentOfParent;
         }
 
+        public static IEnumerable<T> FindVisuaBrothers<T>(this DependencyObject This)
+            where T : DependencyObject
+        {
+            if (This is null)
+                yield break;
+
+            if (VisualTreeHelper.GetParent(This) is DependencyObject Parent)
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(Parent); i++)
+                    if (VisualTreeHelper.GetChild(Parent, i) is T Brother)
+                        yield return Brother;
+        }
+
+        private static PropertyInfo PropertyPath_Length;
+        private static MethodInfo PropertyPath_SetContext,
+                                  PropertyPath_GetAccessor,
+                                  PropertyPath_GetItem;
+        public static bool TryGetPropertyByPath<TInfo, TValue>(this DependencyObject This, string PropertyPath, out TInfo PropertyInfo, out TValue ParentObject)
+            where TInfo : class
+            => TryGetPropertyByPath(This, new PropertyPath(PropertyPath), out PropertyInfo, out ParentObject);
+        public static bool TryGetPropertyByPath<TInfo, TValue>(this DependencyObject This, PropertyPath PropertyPath, out TInfo PropertyInfo, out TValue ParentObject)
+            where TInfo : class
+        {
+            if (PropertyPath_Length is null)
+                ReflectionHelper.TryGetInternalProperty<PropertyPath>("Length", out PropertyPath_Length);
+
+            if (PropertyPath_SetContext is null)
+                ReflectionHelper.TryGetInternalMethod<PropertyPath>("SetContext", out PropertyPath_SetContext);
+
+            if (PropertyPath_Length?.GetValue(PropertyPath) is int PropertyPathLength &&
+                PropertyPath_SetContext?.Invoke(PropertyPath, new[] { This }) is IDisposable Worker)
+            {
+
+                if (PropertyPath_GetAccessor is null)
+                    ReflectionHelper.TryGetInternalMethod<PropertyPath>("GetAccessor", out PropertyPath_GetAccessor);
+
+                if (PropertyPath_GetItem is null)
+                    ReflectionHelper.TryGetInternalMethod<PropertyPath>("GetItem", out PropertyPath_GetItem);
+
+                try
+                {
+                    object[] Args = { PropertyPathLength - 1 };
+                    PropertyInfo = PropertyPath_GetAccessor?.Invoke(PropertyPath, Args) as TInfo;
+                    ParentObject = (TValue)PropertyPath_GetItem?.Invoke(PropertyPath, Args);
+
+                    return PropertyInfo != null && ParentObject != null;
+                }
+                finally
+                {
+                    Worker.Dispose();
+                }
+            }
+
+            PropertyInfo = default;
+            ParentObject = default;
+            return false;
+        }
+
+        private static MethodInfo PropertyPath_GetValue;
+        public static bool TryGetPropertyValueByPath<T>(this DependencyObject This, string PropertyPath, out T Value)
+            => TryGetPropertyValueByPath(This, new PropertyPath(PropertyPath), out Value);
+        public static bool TryGetPropertyValueByPath<T>(this DependencyObject This, PropertyPath PropertyPath, out T Value)
+        {
+            if (PropertyPath_Length is null)
+                ReflectionHelper.TryGetInternalProperty<PropertyPath>("Length", out PropertyPath_Length);
+
+            if (PropertyPath_SetContext is null)
+                ReflectionHelper.TryGetInternalMethod<PropertyPath>("SetContext", out PropertyPath_SetContext);
+
+            if (PropertyPath_SetContext?.Invoke(PropertyPath, new[] { This }) is IDisposable Worker)
+            {
+
+                if (PropertyPath_GetValue is null)
+                    ReflectionHelper.TryGetInternalMethod<PropertyPath>("GetValue", out PropertyPath_GetValue);
+
+                try
+                {
+                    Value = (T)PropertyPath_GetValue?.Invoke(PropertyPath, null);
+                    return true;
+                }
+                finally
+                {
+                    Worker.Dispose();
+                }
+            }
+
+            Value = default;
+            return false;
+        }
+
         public static ChangedEventArgs<T> ToChangedEventArgs<T>(this DependencyPropertyChangedEventArgs e)
             => new ChangedEventArgs<T>(e.OldValue is T New ? New : default,
                                        e.NewValue is T Old ? Old : default);
 
+        private static FieldInfo INotifyPropertyChanged_PropertyChanged;
         public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName] string PropertyName = null)
         {
-            if (PropertyName is null ||
-                !This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
+            if (PropertyName is null)
                 return;
 
-            Delegate[] Invocations = Handler.GetInvocationList();
-            if (Invocations.Length > 0)
+            if (INotifyPropertyChanged_PropertyChanged is null)
+                ReflectionHelper.TryGetInternalField(This.GetType(), "PropertyChanged", out INotifyPropertyChanged_PropertyChanged);
+
+            if (INotifyPropertyChanged_PropertyChanged?.GetValue(This) is MulticastDelegate Handler)
             {
-                PropertyChangedEventArgs e = new PropertyChangedEventArgs(PropertyName);
-                foreach (PropertyChangedEventHandler Event in Invocations)
+                Delegate[] Invocations = Handler.GetInvocationList();
+                if (Invocations.Length > 0)
                 {
-                    if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
+                    PropertyChangedEventArgs e = new PropertyChangedEventArgs(PropertyName);
+                    foreach (PropertyChangedEventHandler Event in Invocations)
                     {
-                        // Invoke handler in the target dispatcher's thread
-                        DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
-                        continue;
+                        if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
+                        {
+                            // Invoke handler in the target dispatcher's thread
+                            DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
+                            continue;
+                        }
+                        Event(This, e);
                     }
-                    Event(This, e);
                 }
             }
         }
         public static void OnPropertyChanged(this INotifyPropertyChanged This, PropertyChangedEventArgs e)
         {
-            if (e is null ||
-                !This.TryGetEventField("PropertyChanged", out MulticastDelegate Handler))
+            if (e is null)
                 return;
 
-            Delegate[] Invocations = Handler.GetInvocationList();
-            if (Invocations.Length > 0)
+            if (INotifyPropertyChanged_PropertyChanged is null)
+                ReflectionHelper.TryGetInternalField(This.GetType(), "PropertyChanged", out INotifyPropertyChanged_PropertyChanged);
+
+            if (INotifyPropertyChanged_PropertyChanged?.GetValue(This) is MulticastDelegate Handler)
             {
-                foreach (PropertyChangedEventHandler Event in Invocations)
+                foreach (PropertyChangedEventHandler Event in Handler.GetInvocationList())
                 {
                     if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
                     {
@@ -106,20 +193,24 @@ namespace System.Windows
             }
         }
 
+        private static FieldInfo INotifyCollectionChanged_CollectionChanged;
         public static void OnCollectionChanged(this INotifyCollectionChanged This, NotifyCollectionChangedEventArgs e)
         {
-            if (!This.TryGetEventField("CollectionChanged", out MulticastDelegate Handler))
-                return;
+            if (INotifyCollectionChanged_CollectionChanged is null)
+                ReflectionHelper.TryGetInternalField(This.GetType(), "CollectionChanged", out INotifyCollectionChanged_CollectionChanged);
 
-            foreach (NotifyCollectionChangedEventHandler Event in Handler.GetInvocationList())
+            if (INotifyCollectionChanged_CollectionChanged?.GetValue(This) is MulticastDelegate Handler)
             {
-                if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
+                foreach (NotifyCollectionChangedEventHandler Event in Handler.GetInvocationList())
                 {
-                    //Invoke handler in the target dispatcher's thread
-                    DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
-                    continue;
+                    if (Event.Target is DispatcherObject DispObj && !DispObj.CheckAccess())
+                    {
+                        //Invoke handler in the target dispatcher's thread
+                        DispObj.Dispatcher.Invoke(DispatcherPriority.DataBind, Event, This, e);
+                        continue;
+                    }
+                    Event(This, e);
                 }
-                Event(This, e);
             }
         }
 
