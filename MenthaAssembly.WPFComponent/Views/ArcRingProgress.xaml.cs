@@ -13,23 +13,15 @@ namespace MenthaAssembly.Views
         public static readonly RoutedEvent ValueChangedEvent =
             EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventArgs<double>), typeof(ArcRingProgress));
 
-        public static void AddValueChangedHandler(DependencyObject d, RoutedPropertyChangedEventHandler<double> handler)
-        {
-            if (d is UIElement This)
-                This.AddHandler(ValueChangedEvent, handler);
-        }
-        public static void RemoveValueChangedHandler(DependencyObject d, RoutedPropertyChangedEventHandler<double> handler)
-        {
-            if (d is UIElement This)
-                This.RemoveHandler(ValueChangedEvent, handler);
-        }
-
+        public static void AddValueChangedHandler(UIElement d, RoutedPropertyChangedEventHandler<double> handler) 
+            => d.AddHandler(ValueChangedEvent, handler);
+        public static void RemoveValueChangedHandler(UIElement d, RoutedPropertyChangedEventHandler<double> handler) 
+            => d.RemoveHandler(ValueChangedEvent, handler);
 
         static ArcRingProgress()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ArcRingProgress), new FrameworkPropertyMetadata(typeof(ArcRingProgress)));
         }
-
 
         public static readonly DependencyProperty IsAnimationEnabledProperty =
             DependencyProperty.Register("IsAnimationEnabled", typeof(bool), typeof(ArcRingProgress), new PropertyMetadata(true));
