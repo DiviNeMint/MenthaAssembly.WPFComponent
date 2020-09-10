@@ -177,10 +177,18 @@ namespace MenthaAssembly.Views
                       if (d is PropertyEditor This &&
                           CollectionViewSource.GetDefaultView(This.ItemsSource) is ListCollectionView View)
                       {
+                          int Index = View.GroupDescriptions.IndexOf(i => i is PropertyGroupDescription PropertyGroup &&
+                                                                          PropertyGroup.PropertyName == "GroupName");
                           if (e.NewValue is true)
-                              View.GroupDescriptions.Add(new PropertyGroupDescription("GroupName"));
+                          {
+                              if (Index == -1)
+                                  View.GroupDescriptions.Add(new PropertyGroupDescription("GroupName"));
+                          }
                           else
-                              View.GroupDescriptions.Clear();
+                          {
+                              if (Index > -1)
+                                  View.GroupDescriptions.RemoveAt(Index);
+                          }
                       }
                   }));
         public bool EnableGrouping
