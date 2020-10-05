@@ -1,6 +1,7 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -98,6 +99,7 @@ namespace MenthaAssembly
         }
 
         protected bool IsLocked { set; get; }
+
         public bool TryLock(int Timeout)
         {
             if (Bitmap is null)
@@ -154,76 +156,164 @@ namespace MenthaAssembly
         public IntPtr CreateHBitmap()
             => Context.CreateHBitmap();
 
-        public void BlockCopy<T>(int X, int Y, int Width, int Height, T* Dest0) where T : unmanaged, IPixel
+
+        #region BlockCopy
+        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0)
             => Context.BlockCopy(X, Y, Width, Height, Dest0);
-        public void BlockCopy<T>(int X, int Y, int Width, int Height, T[] Dest0) where T : unmanaged, IPixel
+        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, int DestStride)
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
+        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, int DestOffset, int DestStride)
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestOffset, DestStride);
+        public void BlockCopy(int X, int Y, int Width, int Height, IntPtr Dest0)
             => Context.BlockCopy(X, Y, Width, Height, Dest0);
+        public void BlockCopy(int X, int Y, int Width, int Height, IntPtr Dest0, int DestStride)
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
         public void BlockCopy(int X, int Y, int Width, int Height, byte* Dest0)
             => Context.BlockCopy(X, Y, Width, Height, Dest0);
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, int DestOffset)
-            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestOffset);
-        public void BlockCopy<T>(int X, int Y, int Width, int Height, byte[] Dest0, int DestOffset) where T : unmanaged, IPixel
-            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0, DestOffset);
-        public void BlockCopy(int X, int Y, int Width, int Height, byte* DestR, byte* DestG, byte* DestB)
-            => Context.BlockCopy(X, Y, Width, Height, DestR, DestG, DestB);
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] DestR, byte[] DestG, byte[] DestB)
-            => Context.BlockCopy(X, Y, Width, Height, DestR, DestG, DestB);
-        public void BlockCopy(int X, int Y, int Width, int Height, byte* DestA, byte* DestR, byte* DestG, byte* DestB)
-            => Context.BlockCopy(X, Y, Width, Height, DestA, DestR, DestG, DestB);
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB)
-            => Context.BlockCopy(X, Y, Width, Height, DestA, DestR, DestG, DestB);
+        public void BlockCopy(int X, int Y, int Width, int Height, byte* Dest0, int DestStride)
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
 
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, T[] Dest0) where T : unmanaged, IPixel
+            => Context.BlockCopy(X, Y, Width, Height, Dest0);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, T[] Dest0, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, T[] Dest0, int DestOffset, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestOffset, DestStride);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, T* Dest0) where T : unmanaged, IPixel
+            => Context.BlockCopy(X, Y, Width, Height, Dest0);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, T* Dest0, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, byte[] Dest0) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, byte[] Dest0, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0, DestStride);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, byte[] Dest0, int DestOffset, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0, DestOffset, DestStride);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, IntPtr Dest0) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, IntPtr Dest0, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0, DestStride);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, byte* Dest0) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0);
+        public void BlockCopy<T>(int X, int Y, int Width, int Height, byte* Dest0, int DestStride) where T : unmanaged, IPixel
+            => Context.BlockCopy<T>(X, Y, Width, Height, Dest0, DestStride);
+
+        public void BlockCopy3(int X, int Y, int Width, int Height, byte[] DestR, byte[] DestG, byte[] DestB)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB);
+        public void BlockCopy3(int X, int Y, int Width, int Height, byte[] DestR, byte[] DestG, byte[] DestB, int DestStride)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB, DestStride);
+        public void BlockCopy3(int X, int Y, int Width, int Height, byte[] DestR, byte[] DestG, byte[] DestB, int DestOffset, int DestStride)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB, DestOffset, DestStride);
+        public void BlockCopy3(int X, int Y, int Width, int Height, IntPtr DestR, IntPtr DestG, IntPtr DestB)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB);
+        public void BlockCopy3(int X, int Y, int Width, int Height, IntPtr DestR, IntPtr DestG, IntPtr DestB, int DestStride)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB, DestStride);
+        public void BlockCopy3(int X, int Y, int Width, int Height, byte* DestR, byte* DestG, byte* DestB)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB);
+        public void BlockCopy3(int X, int Y, int Width, int Height, byte* DestR, byte* DestG, byte* DestB, int DestStride)
+            => Context.BlockCopy3(X, Y, Width, Height, DestR, DestG, DestB, DestStride);
+
+        public void BlockCopy4(int X, int Y, int Width, int Height, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB);
+        public void BlockCopy4(int X, int Y, int Width, int Height, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB, int DestStride)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestStride);
+        public void BlockCopy4(int X, int Y, int Width, int Height, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB, int DestOffset, int DestStride)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestOffset, DestStride);
+        public void BlockCopy4(int X, int Y, int Width, int Height, IntPtr DestA, IntPtr DestR, IntPtr DestG, IntPtr DestB)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB);
+        public void BlockCopy4(int X, int Y, int Width, int Height, IntPtr DestA, IntPtr DestR, IntPtr DestG, IntPtr DestB, int DestStride)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestStride);
+        public void BlockCopy4(int X, int Y, int Width, int Height, byte* DestA, byte* DestR, byte* DestG, byte* DestB)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB);
+        public void BlockCopy4(int X, int Y, int Width, int Height, byte* DestA, byte* DestR, byte* DestG, byte* DestB, int DestStride)
+            => Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestStride);
+
+        #endregion
+
+        #region ScanLineCopy
+        public void ScanLineCopy(int OffsetX, int Y, int Length, byte[] Dest0)
+            => Context.ScanLineCopy(OffsetX, Y, Length, Dest0);
+        public void ScanLineCopy(int OffsetX, int Y, int Length, byte[] Dest0, int DestOffset)
+            => Context.ScanLineCopy(OffsetX, Y, Length, Dest0, DestOffset);
+        public void ScanLineCopy(int OffsetX, int Y, int Length, IntPtr Dest0)
+            => Context.ScanLineCopy(OffsetX, Y, Length, Dest0);
+        public void ScanLineCopy(int OffsetX, int Y, int Length, byte* Dest0)
+            => Context.ScanLineCopy(OffsetX, Y, Length, Dest0);
         public void ScanLineCopy<T>(int OffsetX, int Y, int Length, T* Dest0) where T : unmanaged, IPixel
             => Context.ScanLineCopy(OffsetX, Y, Length, Dest0);
         public void ScanLineCopy<T>(int OffsetX, int Y, int Length, T[] Dest0) where T : unmanaged, IPixel
             => Context.ScanLineCopy(OffsetX, Y, Length, Dest0);
-        public void ScanLineCopy(int OffsetX, int Y, int Length, byte* Dest0)
-            => Context.ScanLineCopy(OffsetX, Y, Length, Dest0);
-        public void ScanLineCopy(int OffsetX, int Y, int Length, byte[] Dest0, int DestOffset)
+        public void ScanLineCopy<T>(int OffsetX, int Y, int Length, T[] Dest0, int DestOffset) where T : unmanaged, IPixel
             => Context.ScanLineCopy(OffsetX, Y, Length, Dest0, DestOffset);
+        public void ScanLineCopy<T>(int OffsetX, int Y, int Length, byte[] Dest0) where T : unmanaged, IPixel
+            => Context.ScanLineCopy<T>(OffsetX, Y, Length, Dest0);
         public void ScanLineCopy<T>(int OffsetX, int Y, int Length, byte[] Dest0, int DestOffset) where T : unmanaged, IPixel
             => Context.ScanLineCopy<T>(OffsetX, Y, Length, Dest0, DestOffset);
-        public void ScanLineCopy(int OffsetX, int Y, int Length, byte* DestR, byte* DestG, byte* DestB)
-            => Context.ScanLineCopy(OffsetX, Y, Length, DestR, DestG, DestB);
-        public void ScanLineCopy(int OffsetX, int Y, int Length, byte[] DestR, byte[] DestG, byte[] DestB)
-            => Context.ScanLineCopy(OffsetX, Y, Length, DestR, DestG, DestB);
-        public void ScanLineCopy(int OffsetX, int Y, int Length, byte* DestA, byte* DestR, byte* DestG, byte* DestB)
-            => Context.ScanLineCopy(OffsetX, Y, Length, DestA, DestR, DestG, DestB);
-        public void ScanLineCopy(int OffsetX, int Y, int Length, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB)
-            => Context.ScanLineCopy(OffsetX, Y, Length, DestA, DestR, DestG, DestB);
+        public void ScanLineCopy<T>(int OffsetX, int Y, int Length, IntPtr Dest0) where T : unmanaged, IPixel
+            => Context.ScanLineCopy<T>(OffsetX, Y, Length, Dest0);
+        public void ScanLineCopy<T>(int OffsetX, int Y, int Length, byte* Dest0) where T : unmanaged, IPixel
+            => Context.ScanLineCopy<T>(OffsetX, Y, Length, Dest0);
+        public void ScanLineCopy3(int OffsetX, int Y, int Length, byte[] DestR, byte[] DestG, byte[] DestB)
+            => Context.ScanLineCopy3(OffsetX, Y, Length, DestR, DestG, DestB);
+        public void ScanLineCopy3(int OffsetX, int Y, int Length, byte[] DestR, byte[] DestG, byte[] DestB, int DestOffset)
+            => Context.ScanLineCopy3(OffsetX, Y, Length, DestR, DestG, DestB, DestOffset);
+        public void ScanLineCopy3(int OffsetX, int Y, int Length, IntPtr DestR, IntPtr DestG, IntPtr DestB)
+            => Context.ScanLineCopy3(OffsetX, Y, Length, DestR, DestG, DestB);
+        public void ScanLineCopy3(int OffsetX, int Y, int Length, byte* DestR, byte* DestG, byte* DestB)
+            => Context.ScanLineCopy3(OffsetX, Y, Length, DestR, DestG, DestB);
+        public void ScanLineCopy4(int OffsetX, int Y, int Length, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB)
+            => Context.ScanLineCopy4(OffsetX, Y, Length, DestA, DestR, DestG, DestB);
+        public void ScanLineCopy4(int OffsetX, int Y, int Length, byte[] DestA, byte[] DestR, byte[] DestG, byte[] DestB, int DestOffset)
+            => Context.ScanLineCopy4(OffsetX, Y, Length, DestA, DestR, DestG, DestB, DestOffset);
+        public void ScanLineCopy4(int OffsetX, int Y, int Length, IntPtr DestA, IntPtr DestR, IntPtr DestG, IntPtr DestB)
+            => Context.ScanLineCopy4(OffsetX, Y, Length, DestA, DestR, DestG, DestB);
+        public void ScanLineCopy4(int OffsetX, int Y, int Length, byte* DestA, byte* DestR, byte* DestG, byte* DestB)
+            => Context.ScanLineCopy4(OffsetX, Y, Length, DestA, DestR, DestG, DestB);
 
-        public void BlockPaste<T>(int X, int Y, int Width, int Height, T* Source) where T : unmanaged, IPixel
-            => Context.BlockPaste(X, Y, Width, Height, Source);
-        public void BlockPaste<T>(int X, int Y, int Width, int Height, T[] Source) where T : unmanaged, IPixel
-            => Context.BlockPaste(X, Y, Width, Height, Source);
-        public void BlockPaste<T>(int X, int Y, int Width, int Height, byte[] Source, int SourceOffset) where T : unmanaged, IPixel
-            => Context.BlockPaste<T>(X, Y, Width, Height, Source, SourceOffset);
-        public void BlockPaste(int X, int Y, int Width, int Height, byte* SourceR, byte* SourceG, byte* SourceB)
-            => Context.BlockPaste(X, Y, Width, Height, SourceR, SourceG, SourceB);
-        public void BlockPaste(int X, int Y, int Width, int Height, byte[] SourceR, byte[] SourceG, byte[] SourceB)
-            => Context.BlockPaste(X, Y, Width, Height, SourceR, SourceG, SourceB);
-        public void BlockPaste(int X, int Y, int Width, int Height, byte* SourceA, byte* SourceR, byte* SourceG, byte* SourceB)
-            => Context.BlockPaste(X, Y, Width, Height, SourceA, SourceR, SourceG, SourceB);
-        public void BlockPaste(int X, int Y, int Width, int Height, byte[] SourceA, byte[] SourceR, byte[] SourceG, byte[] SourceB)
-            => Context.BlockPaste(X, Y, Width, Height, SourceA, SourceR, SourceG, SourceB);
+        #endregion
 
-        public void ScanLinePaste<T>(int OffsetX, int Y, int Length, T* Source) where T : unmanaged, IPixel
-            => Context.ScanLinePaste(OffsetX, Y, Length, Source);
-        public void ScanLinePaste<T>(int OffsetX, int Y, IEnumerable<T> Source) where T : unmanaged, IPixel
-            => Context.ScanLinePaste(OffsetX, Y, Source);
-        public void ScanLinePaste<T>(int OffsetX, int Y, int Length, byte[] Source, int SourceOffset) where T : unmanaged, IPixel
-            => Context.ScanLinePaste<T>(OffsetX, Y, Length, Source, SourceOffset);
-        public void ScanLinePaste(int OffsetX, int Y, int Length, byte* SourceR, byte* SourceG, byte* SourceB)
-            => Context.ScanLinePaste(OffsetX, Y, Length, SourceR, SourceG, SourceB);
-        public void ScanLinePaste(int OffsetX, int Y, int Length, byte[] SourceR, byte[] SourceG, byte[] SourceB)
-            => Context.ScanLinePaste(OffsetX, Y, Length, SourceR, SourceG, SourceB);
-        public void ScanLinePaste(int OffsetX, int Y, int Length, byte* SourceA, byte* SourceR, byte* SourceG, byte* SourceB)
-            => Context.ScanLinePaste(OffsetX, Y, Length, SourceA, SourceR, SourceG, SourceB);
-        public void ScanLinePaste(int OffsetX, int Y, int Length, byte[] SourceA, byte[] SourceR, byte[] SourceG, byte[] SourceB)
-            => Context.ScanLinePaste(OffsetX, Y, Length, SourceA, SourceR, SourceG, SourceB);
+        #region BlockOverlayTo
+        void IImageContext.BlockOverlayTo<T>(int X, int Y, int Width, int Height, byte* Dest0, int DestStride)
+            => Context.BlockOverlayTo<T>(X, Y, Width, Height, Dest0, DestStride);
+        void IImageContext.BlockOverlayTo<T>(int X, int Y, int Width, int Height, byte* DestR, byte* DestG, byte* DestB, int DestStride)
+            => Context.BlockOverlayTo<T>(X, Y, Width, Height, DestR, DestG, DestB, DestStride);
+        void IImageContext.BlockOverlayTo<T>(int X, int Y, int Width, int Height, byte* DestA, byte* DestR, byte* DestG, byte* DestB, int DestStride)
+            => Context.BlockOverlayTo<T>(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestStride);
+
+        #endregion
+
+        //public void BlockPaste<T>(int X, int Y, int Width, int Height, T* Source) where T : unmanaged, IPixel
+        //    => Context.BlockPaste(X, Y, Width, Height, Source);
+        //public void BlockPaste<T>(int X, int Y, int Width, int Height, T[] Source) where T : unmanaged, IPixel
+        //    => Context.BlockPaste(X, Y, Width, Height, Source);
+        //public void BlockPaste<T>(int X, int Y, int Width, int Height, byte[] Source, int SourceOffset) where T : unmanaged, IPixel
+        //    => Context.BlockPaste<T>(X, Y, Width, Height, Source, SourceOffset);
+        //public void BlockPaste(int X, int Y, int Width, int Height, byte* SourceR, byte* SourceG, byte* SourceB)
+        //    => Context.BlockPaste(X, Y, Width, Height, SourceR, SourceG, SourceB);
+        //public void BlockPaste(int X, int Y, int Width, int Height, byte[] SourceR, byte[] SourceG, byte[] SourceB)
+        //    => Context.BlockPaste(X, Y, Width, Height, SourceR, SourceG, SourceB);
+        //public void BlockPaste(int X, int Y, int Width, int Height, byte* SourceA, byte* SourceR, byte* SourceG, byte* SourceB)
+        //    => Context.BlockPaste(X, Y, Width, Height, SourceA, SourceR, SourceG, SourceB);
+        //public void BlockPaste(int X, int Y, int Width, int Height, byte[] SourceA, byte[] SourceR, byte[] SourceG, byte[] SourceB)
+        //    => Context.BlockPaste(X, Y, Width, Height, SourceA, SourceR, SourceG, SourceB);
+        //public void ScanLinePaste<T>(int OffsetX, int Y, int Length, T* Source) where T : unmanaged, IPixel
+        //    => Context.ScanLinePaste(OffsetX, Y, Length, Source);
+        //public void ScanLinePaste<T>(int OffsetX, int Y, IEnumerable<T> Source) where T : unmanaged, IPixel
+        //    => Context.ScanLinePaste(OffsetX, Y, Source);
+        //public void ScanLinePaste<T>(int OffsetX, int Y, int Length, byte[] Source, int SourceOffset) where T : unmanaged, IPixel
+        //    => Context.ScanLinePaste<T>(OffsetX, Y, Length, Source, SourceOffset);
+        //public void ScanLinePaste(int OffsetX, int Y, int Length, byte* SourceR, byte* SourceG, byte* SourceB)
+        //    => Context.ScanLinePaste(OffsetX, Y, Length, SourceR, SourceG, SourceB);
+        //public void ScanLinePaste(int OffsetX, int Y, int Length, byte[] SourceR, byte[] SourceG, byte[] SourceB)
+        //    => Context.ScanLinePaste(OffsetX, Y, Length, SourceR, SourceG, SourceB);
+        //public void ScanLinePaste(int OffsetX, int Y, int Length, byte* SourceA, byte* SourceR, byte* SourceG, byte* SourceB)
+        //    => Context.ScanLinePaste(OffsetX, Y, Length, SourceA, SourceR, SourceG, SourceB);
+        //public void ScanLinePaste(int OffsetX, int Y, int Length, byte[] SourceA, byte[] SourceR, byte[] SourceG, byte[] SourceB)
+        //    => Context.ScanLinePaste(OffsetX, Y, Length, SourceA, SourceR, SourceG, SourceB);
 
         public object Clone()
             => Context.Clone();
+
 
         public static implicit operator ImageSource(BitmapContext Target) => Target?.Bitmap;
         public static implicit operator BitmapContext(BitmapSource Target) => Target is null ? null : new BitmapContext(Target);

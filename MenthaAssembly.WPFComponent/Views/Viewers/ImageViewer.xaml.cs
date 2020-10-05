@@ -28,7 +28,7 @@ namespace MenthaAssembly.Views
               DependencyProperty.Register("Source", typeof(BitmapSource), typeof(ImageViewer), new PropertyMetadata(default,
                   (d, e) =>
                   {
-                      if (d is ImageViewerBase This)
+                      if (d is ImageViewer This)
                           This.SourceContext = (BitmapContext)(e.NewValue as BitmapSource);
                   }));
         public BitmapSource Source
