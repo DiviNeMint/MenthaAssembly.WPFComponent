@@ -24,9 +24,6 @@ namespace MenthaAssembly.Views.Primitives
     /// </summary>
     public abstract class ImageViewerBase : Control
     {
-        [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
-        protected static extern void SetMemory(IntPtr dst, int Color, int Length);
-
         public static readonly DependencyProperty DisplayImageProperty =
             DependencyProperty.RegisterAttached("DisplayImage", typeof(WriteableBitmap), typeof(ImageViewerBase), new PropertyMetadata(default,
                 (d, e) =>
@@ -57,26 +54,27 @@ namespace MenthaAssembly.Views.Primitives
                     if (value.StructType == typeof(BGR))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
                                         if (0 <= X && X < MaxX)
                                         {
-                                            int XDataOffset = X >> 7;
+                                            long XDataOffset = X >> 7;
                                             XDataOffset -= XDataOffset % 3;
 
                                             byte* sScanT = sScan + XDataOffset;
@@ -105,9 +103,12 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(BGRA))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
+
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
@@ -116,7 +117,7 @@ namespace MenthaAssembly.Views.Primitives
                                     int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
                                         MaxX = value.Width << 7;
 
-                                    BGRA* SourceScan = (BGRA*)(value.Scan0 + Y * value.Stride);
+                                    BGRA* SourceScan = (BGRA*)(SourceScan0 + Y * value.Stride);
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
                                         *Data++ = (0 <= X && X < MaxX) ?
@@ -139,20 +140,21 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(ABGR))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
@@ -185,26 +187,27 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(RGB))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
                                         if (0 <= X && X < MaxX)
                                         {
-                                            int XDataOffset = X >> 7;
+                                            long XDataOffset = X >> 7;
                                             XDataOffset -= XDataOffset % 3;
 
                                             byte* sScanT = sScan + XDataOffset;
@@ -233,20 +236,21 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(ARGB))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
@@ -279,20 +283,21 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(RGBA))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
@@ -325,20 +330,21 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(Gray8))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
@@ -370,21 +376,22 @@ namespace MenthaAssembly.Views.Primitives
                     else if (value.StructType == typeof(Indexed8))
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
-                            byte* SourceScan0 = (byte*)value.Scan0;
+                            byte* SourceScan0 = (byte*)value.Scan0,
+                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
                             BGRA[] Palette = value.Palette.Cast<BGRA>().ToArray();
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     byte* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                        MaxX = value.Stride << 7;
+                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
+                                         MaxX = value.Stride << 7;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
@@ -409,13 +416,14 @@ namespace MenthaAssembly.Views.Primitives
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
                             Indexed4* SourceScan0 = (Indexed4*)value.Scan0;
+                            byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
                             BGRA[] Palette = value.Palette.Cast<BGRA>().ToArray();
 
                             // int XStep = FactorStep * BitsPerPixel / 8;
                             int XStep = FactorStep >> 1;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
@@ -453,27 +461,28 @@ namespace MenthaAssembly.Views.Primitives
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                         {
                             Indexed1* SourceScan0 = (Indexed1*)value.Scan0;
+                            byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
                             BGRA[] Palette = value.Palette.Cast<BGRA>().ToArray();
 
                             int XStep = FactorStep >> 3;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
 
                                 if (0 <= Y && Y < value.Height)
                                 {
                                     Indexed1* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                        MaxX = value.Width << 7,
-                                        YDataOffset = Y * value.Stride;
+                                    long X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
+                                         MaxX = value.Width << 7,
+                                         YDataOffset = Y * value.Stride;
 
                                     for (int i = DirtyRectX1; i < DirtyRectX2; i++)
                                     {
                                         if (0 <= X && X < MaxX)
                                         {
-                                            int XDataOffset = X >> 7,
+                                            int XDataOffset = (int)(X >> 7),
                                                 Index = XDataOffset & 0x07; // Index = XDataOffset % Indexed1.Length;
                                             *Data++ = Palette[sScan[XDataOffset >> 3][Index]];
                                         }
@@ -495,9 +504,11 @@ namespace MenthaAssembly.Views.Primitives
                     // Common
                     else
                         DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
+                        {
+                            byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                             {
-                                BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                                 int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
                                 if (0 <= Y && Y < value.Height)
@@ -529,23 +540,25 @@ namespace MenthaAssembly.Views.Primitives
                                         *Data++ = EmptyPixel;
                                 }
                             });
+                        };
                 }
                 else if (value.Channels == 3)
                     DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
                     {
                         byte* SourceScanR = (byte*)value.ScanR,
                               SourceScanG = (byte*)value.ScanG,
-                              SourceScanB = (byte*)value.ScanB;
+                              SourceScanB = (byte*)value.ScanB,
+                              DisplayScan0 = (byte*)DisplayContext.Scan0;
                         Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                         {
-                            BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                            BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                             int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
                             if (0 <= Y && Y < value.Height)
                             {
-                                int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                    MaxX = value.Stride << 7,
-                                    YDataOffset = Y * value.Stride;
+                                long X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
+                                     MaxX = value.Stride << 7,
+                                     YDataOffset = Y * value.Stride;
 
                                 byte* sScanB = SourceScanB + YDataOffset,
                                       sScanG = SourceScanG + YDataOffset,
@@ -555,7 +568,7 @@ namespace MenthaAssembly.Views.Primitives
                                 {
                                     if (0 <= X && X < MaxX)
                                     {
-                                        int DataOffset = X >> 7;
+                                        long DataOffset = X >> 7;
                                         Data->B = sScanB[DataOffset];
                                         Data->G = sScanG[DataOffset];
                                         Data->R = sScanR[DataOffset];
@@ -583,17 +596,18 @@ namespace MenthaAssembly.Views.Primitives
                         byte* SourceScanA = (byte*)value.ScanA,
                               SourceScanR = (byte*)value.ScanR,
                               SourceScanG = (byte*)value.ScanG,
-                              SourceScanB = (byte*)value.ScanB;
+                              SourceScanB = (byte*)value.ScanB,
+                              DisplayScan0 = (byte*)DisplayContext.Scan0;
                         Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
                         {
-                            BGRA* Data = (BGRA*)(DisplayContext.Scan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                            BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
 
                             int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
                             if (0 <= Y && Y < value.Height)
                             {
-                                int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                    MaxX = value.Stride << 7,
-                                    YDataOffset = Y * value.Stride;
+                                long X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
+                                     MaxX = value.Stride << 7,
+                                     YDataOffset = Y * value.Stride;
 
                                 byte* sScanB = SourceScanB + YDataOffset,
                                       sScanG = SourceScanG + YDataOffset,
@@ -604,7 +618,7 @@ namespace MenthaAssembly.Views.Primitives
                                 {
                                     if (0 <= X && X < MaxX)
                                     {
-                                        int DataOffset = X >> 7;
+                                        long DataOffset = X >> 7;
                                         Data->B = sScanB[DataOffset];
                                         Data->G = sScanG[DataOffset];
                                         Data->R = sScanR[DataOffset];
@@ -674,7 +688,7 @@ namespace MenthaAssembly.Views.Primitives
             else
             {
                 // Clear
-                SetMemory(DisplayContext.Scan0, 0, DisplayContext.Stride * DisplayContext.Height);
+                DisplayContext.ParallelClear(EmptyPixel);
             }
 
             return new Int32Rect(0, 0, DisplayContext.Width, DisplayContext.Height);
