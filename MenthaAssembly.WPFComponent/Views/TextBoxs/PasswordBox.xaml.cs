@@ -13,7 +13,7 @@ namespace MenthaAssembly.Views
                     if (d is PasswordBox This &&
                         This.Password is string Password &&
                         e.NewValue is bool NewValue)
-                        SetText(This, NewValue ? Password : new string(This.PasswordChar, Password.Length), 0);
+                        This.SetText(NewValue ? Password : new string(This.PasswordChar, Password.Length), 0);
                 }));
         public bool IsPasswordShown
         {
@@ -28,7 +28,7 @@ namespace MenthaAssembly.Views
                     if (d is PasswordBox This &&
                         !This.IsPasswordShown &&
                         e.NewValue is char NewValue)
-                        SetText(This, new string(NewValue, This.Password.Length), 0);
+                        This.SetText(new string(NewValue, This.Password.Length), 0);
                 }));
         public char PasswordChar
         {
@@ -43,9 +43,8 @@ namespace MenthaAssembly.Views
                     if (d is PasswordBox This)
                     {
                         string NewValue = e.NewValue?.ToString() ?? string.Empty;
-                        SetText(This,
-                                This.IsPasswordShown ? NewValue : new string(This.PasswordChar, NewValue.Length),
-                                This.IsTextChanging ? 0 : 1);
+                        This.SetText(This.IsPasswordShown ? NewValue : new string(This.PasswordChar, NewValue.Length),
+                                     This.IsTextChanging ? 0 : 1);
                     }
                 }));
         public string Password
@@ -54,13 +53,13 @@ namespace MenthaAssembly.Views
             set => SetValue(PasswordProperty, value);
         }
 
-        private static void SetText(PasswordBox This, string Value, int Offset)
+        private void SetText(string Value, int Offset)
         {
-            int Index = This.SelectionStart + Offset;
-            This.IsPasswordChanging = true;
-            This.Text = Value;
-            This.IsPasswordChanging = false;
-            This.SelectionStart = Index;
+            int Index = this.SelectionStart + Offset;
+            this.IsPasswordChanging = true;
+            this.Text = Value;
+            this.IsPasswordChanging = false;
+            this.SelectionStart = Index;
         }
 
         static PasswordBox()
