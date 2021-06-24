@@ -23,6 +23,26 @@ namespace MenthaAssembly
                 t.Tick -= OnTimerTick;
             });
         }
+        public static DelayActionToken DelayAction(double Milliseconds, Action Action, Action CancelAction)
+            => DelayAction(Milliseconds, Action, CancelAction, DispatcherPriority.Normal);
+        public static DelayActionToken DelayAction(double Milliseconds, Action Action, Action CancelAction, DispatcherPriority Priority)
+        {
+            DispatcherTimer Timer = new DispatcherTimer(Priority)
+            {
+                Interval = TimeSpan.FromMilliseconds(Milliseconds),
+                Tag = Action
+            };
+
+            Timer.Tick += OnTimerTick;
+            Timer.Start();
+            return new DelayActionToken(Timer, (t) =>
+            {
+                t.Stop();
+                t.Tick -= OnTimerTick;
+
+                CancelAction?.Invoke();
+            });
+        }
 
         private static void OnTimerTick(object sender, EventArgs e)
         {

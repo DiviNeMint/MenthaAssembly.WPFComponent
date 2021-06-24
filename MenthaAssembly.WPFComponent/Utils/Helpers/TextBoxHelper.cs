@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -9,6 +10,8 @@ namespace MenthaAssembly
 {
     public static class TextBoxHelper
     {
+        public static double DelayNotifyInterval { get; set; } = 500d;
+
         public static readonly DependencyProperty InputModeProperty = DependencyProperty.RegisterAttached("InputMode", typeof(KeyboardInputMode), typeof(TextBoxHelper), new PropertyMetadata(KeyboardInputMode.All,
                 (d, e) =>
                 {
@@ -120,13 +123,14 @@ namespace MenthaAssembly
         public static void SetValueType(TextBox obj, Type value)
             => obj.SetValue(ValueTypeProperty, value);
 
-        private static readonly DependencyProperty DelayTimerProperty = DependencyProperty.RegisterAttached("DelayTimer", typeof(DispatcherTimer), typeof(TextBoxHelper), new PropertyMetadata(null));
-        private static DispatcherTimer GetDelayTimer(DependencyObject obj)
-            => (DispatcherTimer)obj.GetValue(DelayTimerProperty);
-        private static void SetDelayTimer(DependencyObject obj, DispatcherTimer value)
-            => obj.SetValue(DelayTimerProperty, value);
+        private static readonly DependencyProperty DelayTokenProperty =
+            DependencyProperty.RegisterAttached("DelayToken", typeof(DelayActionToken), typeof(TextBoxHelper), new PropertyMetadata(null));
+        private static DelayActionToken GetDelayToken(DependencyObject obj)
+            => (DelayActionToken)obj.GetValue(DelayTokenProperty);
+        private static void SetDelayToken(DependencyObject obj, DelayActionToken value)
+            => obj.SetValue(DelayTokenProperty, value);
 
-        public static readonly DependencyProperty EnableDelayUpdateValueProperty = DependencyProperty.RegisterAttached("EnableDelayUpdateValue", typeof(bool), typeof(TextBoxHelper), new PropertyMetadata(false,
+        public static readonly DependencyProperty EnableDelayNotifyTextProperty = DependencyProperty.RegisterAttached("EnableDelayNotifyText", typeof(bool), typeof(TextBoxHelper), new PropertyMetadata(false,
             (d, e) =>
             {
                 if (d is TextBox This)
@@ -139,19 +143,16 @@ namespace MenthaAssembly
                     {
                         This.TextChanged -= OnTextChanged;
 
-                        if (GetDelayTimer(This) is DispatcherTimer Timer)
-                        {
-                            Timer.Stop();
-                            SetDelayTimer(This, null);
-                        }
+                        if (GetDelayToken(This) is DelayActionToken Token)
+                            Token.Cancel();
                     }
                 }
             }));
 
-        public static bool GetEnableDelayUpdateValue(TextBox obj)
-            => (bool)obj.GetValue(EnableDelayUpdateValueProperty);
-        public static void SetEnableDelayUpdateValue(TextBox obj, bool value)
-            => obj.SetValue(EnableDelayUpdateValueProperty, value);
+        public static bool GetEnableDelayNotifyText(TextBox obj)
+            => (bool)obj.GetValue(EnableDelayNotifyTextProperty);
+        public static void SetEnableDelayNotifyText(TextBox obj, bool value)
+            => obj.SetValue(EnableDelayNotifyTextProperty, value);
 
         private static void OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -230,12 +231,10 @@ namespace MenthaAssembly
             {
                 if (e.Key is Key.Enter)
                 {
+                    if (GetDelayToken(This) is DelayActionToken Token)
+                        Token.Cancel();
+
                     This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-                    if (GetDelayTimer(This) is DispatcherTimer Timer)
-                    {
-                        Timer.Stop();
-                        SetDelayTimer(This, null);
-                    }
                 }
 
                 else if (e.Key is Key.Up)
@@ -243,8 +242,9 @@ namespace MenthaAssembly
                     Type ValueType = GetValueType(This);
                     dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType),
                             Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) : This.Text.ToValueType(ValueType),
-                            Delta = Convert.ChangeType(GetDelta(This), ValueType);
-
+                            Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
+                                                                                                                               GetDelta(This), ValueType);
+                    
                     This.Text = (Max - Delta < Value ? Max : Value + Delta).ToString();
                     e.Handled = true;
                 }
@@ -254,7 +254,8 @@ namespace MenthaAssembly
                     Type ValueType = GetValueType(This);
                     dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType),
                             Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) : This.Text.ToValueType(ValueType),
-                            Delta = Convert.ChangeType(GetDelta(This), ValueType);
+                            Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
+                                                                                                                               GetDelta(This), ValueType);
 
                     This.Text = (Min + Delta > Value ? Min : Value - Delta).ToString();
                     e.Handled = true;
@@ -288,21 +289,19 @@ namespace MenthaAssembly
         {
             if (sender is TextBox This)
             {
-                if (GetDelayTimer(This) is DispatcherTimer OldTimer)
-                    OldTimer.Stop();
+                if (GetDelayToken(This) is DelayActionToken OldToken)
+                    OldToken.Cancel();
 
-                DispatcherTimer Timer = new DispatcherTimer(DispatcherPriority.Normal, This.Dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
-                Timer.Tick += (s, arg) =>
+                void DelayTask()
                 {
-                    Timer.Stop();
-                    SetDelayTimer(This, null);
+                    SetDelayToken(This, null);
 
                     if (!string.IsNullOrEmpty(This.Text))
                         This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-                };
+                }
 
-                Timer.Start();
-                SetDelayTimer(This, Timer);
+                DelayActionToken Token = TimerHelper.DelayAction(DelayNotifyInterval, DelayTask, () => SetDelayToken(This, null));
+                SetDelayToken(This, Token);
             }
         }
 
