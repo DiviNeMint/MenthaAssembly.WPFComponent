@@ -3,13 +3,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace MenthaAssembly
 {
     public static class TextBoxHelper
     {
-        public static readonly DependencyProperty InputModeProperty =
-            DependencyProperty.RegisterAttached("InputMode", typeof(KeyboardInputMode), typeof(TextBoxHelper), new PropertyMetadata(KeyboardInputMode.All,
+        public static readonly DependencyProperty InputModeProperty = DependencyProperty.RegisterAttached("InputMode", typeof(KeyboardInputMode), typeof(TextBoxHelper), new PropertyMetadata(KeyboardInputMode.All,
                 (d, e) =>
                 {
                     if (d is TextBox This)
@@ -27,92 +27,36 @@ namespace MenthaAssembly
                         }
                     }
                 }));
-
-        private static void OnKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key is Key.Tab)
-                return;
-
-            if (sender is TextBox This)
-            {
-                switch (GetInputMode(This))
-                {
-                    case KeyboardInputMode.Number:
-                        if (Key.D0 <= e.Key && e.Key <= Key.D9)
-                            return;
-                        if (Key.NumPad0 <= e.Key && e.Key <= Key.NumPad9)
-                            return;
-                        break;
-                    case KeyboardInputMode.NegativeNumber:
-                        if (Key.D0 <= e.Key && e.Key <= Key.D9)
-                            return;
-                        if (Key.NumPad0 <= e.Key && e.Key <= Key.NumPad9)
-                            return;
-                        if (!This.Text.Contains("-") &&
-                           (e.Key is Key.Subtract || e.Key is Key.OemMinus))
-                            return;
-                        break;
-                    case KeyboardInputMode.NumberAndDot:
-                        if (Key.D0 <= e.Key && e.Key <= Key.D9)
-                            return;
-                        if (Key.NumPad0 <= e.Key && e.Key <= Key.NumPad9)
-                            return;
-                        if (!This.Text.Contains(".") &&
-                            (e.Key is Key.Decimal || e.Key is Key.OemPeriod))
-                            return;
-                        break;
-                    case KeyboardInputMode.NegativeNumberAndDot:
-                        if (Key.D0 <= e.Key && e.Key <= Key.D9)
-                            return;
-                        if (Key.NumPad0 <= e.Key && e.Key <= Key.NumPad9)
-                            return;
-                        if (!This.Text.Contains(".") &&
-                            (e.Key is Key.Decimal || e.Key is Key.OemPeriod))
-                            return;
-                        if (!This.Text.Contains("-") &&
-                           (e.Key is Key.Subtract || e.Key is Key.OemMinus))
-                            return;
-                        break;
-                }
-            }
-            e.Handled = true;
-        }
-
         public static KeyboardInputMode GetInputMode(TextBox obj)
             => (KeyboardInputMode)obj.GetValue(InputModeProperty);
-        public static void SetInputMode(DependencyObject obj, KeyboardInputMode value)
+        public static void SetInputMode(TextBox obj, KeyboardInputMode value)
             => obj.SetValue(InputModeProperty, value);
 
-        public static readonly DependencyProperty MinimumProperty =
-            DependencyProperty.RegisterAttached("Minimum", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
+        public static readonly DependencyProperty MinimumProperty = DependencyProperty.RegisterAttached("Minimum", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetMinimum(TextBox obj)
             => obj.GetValue(MinimumProperty);
         public static void SetMinimum(TextBox obj, object value)
             => obj.SetValue(MinimumProperty, value);
 
-        public static readonly DependencyProperty MaximumProperty =
-            DependencyProperty.RegisterAttached("Maximum", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
+        public static readonly DependencyProperty MaximumProperty = DependencyProperty.RegisterAttached("Maximum", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetMaximum(TextBox obj)
             => obj.GetValue(MaximumProperty);
         public static void SetMaximum(TextBox obj, object value)
             => obj.SetValue(MaximumProperty, value);
 
-        public static readonly DependencyProperty DeltaProperty =
-            DependencyProperty.RegisterAttached("Delta", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
+        public static readonly DependencyProperty DeltaProperty = DependencyProperty.RegisterAttached("Delta", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetDelta(TextBox obj)
             => obj.GetValue(DeltaProperty);
         public static void SetDelta(TextBox obj, object value)
             => obj.SetValue(DeltaProperty, value);
 
-        public static readonly DependencyProperty CombineDeltaProperty =
-            DependencyProperty.RegisterAttached("CombineDelta", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
+        public static readonly DependencyProperty CombineDeltaProperty = DependencyProperty.RegisterAttached("CombineDelta", typeof(object), typeof(TextBoxHelper), new PropertyMetadata(default));
         public static object GetCombineDelta(TextBox obj)
             => obj.GetValue(CombineDeltaProperty);
         public static void SetCombineDelta(TextBox obj, object value)
             => obj.SetValue(CombineDeltaProperty, value);
 
-        public static readonly DependencyProperty ValueTypeProperty =
-            DependencyProperty.RegisterAttached("ValueType", typeof(Type), typeof(TextBoxHelper), new PropertyMetadata(default,
+        public static readonly DependencyProperty ValueTypeProperty = DependencyProperty.RegisterAttached("ValueType", typeof(Type), typeof(TextBoxHelper), new PropertyMetadata(default,
                 (d, e) =>
                 {
                     if (d is TextBox This &&
@@ -171,7 +115,78 @@ namespace MenthaAssembly
                         }
                     }
                 }));
+        public static Type GetValueType(TextBox obj)
+            => (Type)obj.GetValue(ValueTypeProperty);
+        public static void SetValueType(TextBox obj, Type value)
+            => obj.SetValue(ValueTypeProperty, value);
 
+        private static readonly DependencyProperty DelayTimerProperty = DependencyProperty.RegisterAttached("DelayTimer", typeof(DispatcherTimer), typeof(TextBoxHelper), new PropertyMetadata(null));
+        private static DispatcherTimer GetDelayTimer(DependencyObject obj)
+            => (DispatcherTimer)obj.GetValue(DelayTimerProperty);
+        private static void SetDelayTimer(DependencyObject obj, DispatcherTimer value)
+            => obj.SetValue(DelayTimerProperty, value);
+
+        public static readonly DependencyProperty EnableDelayUpdateValueProperty = DependencyProperty.RegisterAttached("EnableDelayUpdateValue", typeof(bool), typeof(TextBoxHelper), new PropertyMetadata(false,
+            (d, e) =>
+            {
+                if (d is TextBox This)
+                {
+                    if (e.NewValue is true)
+                    {
+                        This.TextChanged += OnTextChanged;
+                    }
+                    else
+                    {
+                        This.TextChanged -= OnTextChanged;
+
+                        if (GetDelayTimer(This) is DispatcherTimer Timer)
+                        {
+                            Timer.Stop();
+                            SetDelayTimer(This, null);
+                        }
+                    }
+                }
+            }));
+
+        public static bool GetEnableDelayUpdateValue(TextBox obj)
+            => (bool)obj.GetValue(EnableDelayUpdateValueProperty);
+        public static void SetEnableDelayUpdateValue(TextBox obj, bool value)
+            => obj.SetValue(EnableDelayUpdateValueProperty, value);
+
+        private static void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key is Key.Tab)
+                return;
+
+            if (sender is TextBox This)
+            {
+                KeyboardInputMode Mode = GetInputMode(This);
+
+                // 0 - 9
+                if ((Mode & KeyboardInputMode.Number) > 0 &&
+                    ((Key.D0 <= e.Key && e.Key <= Key.D9) || (Key.NumPad0 <= e.Key && e.Key <= Key.NumPad9)))
+                    return;
+
+                // A - Z
+                if ((Mode & KeyboardInputMode.Alphabet) > 0 &&
+                    Key.A <= e.Key && e.Key <= Key.Z)
+                    return;
+
+                // .
+                if ((Mode & KeyboardInputMode.Dot) > 0 &&
+                    !This.Text.Contains(".") &&
+                    (e.Key is Key.Decimal || e.Key is Key.OemPeriod))
+                    return;
+
+                // -
+                if ((Mode & KeyboardInputMode.Negative) > 0 &&
+                    !This.Text.Contains("-") &&
+                    (e.Key is Key.Subtract || e.Key is Key.OemMinus))
+                    return;
+
+                e.Handled = true;
+            }
+        }
 
         public static void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
@@ -180,11 +195,11 @@ namespace MenthaAssembly
         }
         public static void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is TextBoxBase Base &&
-                !Base.IsKeyboardFocusWithin)
+            if (sender is TextBox This &&
+                !This.IsKeyboardFocusWithin)
             {
                 e.Handled = true;
-                Base.Focus();
+                This.Focus();
             }
         }
 
@@ -194,18 +209,18 @@ namespace MenthaAssembly
                 This.IsKeyboardFocusWithin)
             {
                 Type ValueType = GetValueType(This);
-                dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
-                dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
-                dynamic Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
-                                                                  This.Text.ToValueType(ValueType);
-                dynamic Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) : GetDelta(This), ValueType);
+                dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType),
+                        Min = Convert.ChangeType(GetMinimum(This), ValueType),
+                        Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
+                                                                  This.Text.ToValueType(ValueType),
+                        Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
+                                                                                                                           GetDelta(This), ValueType);
 
                 This.Text = e.Delta > 0 ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
                                           (Min + Delta > Value ? Min : Value - Delta).ToString();
                 e.Handled = true;
             }
         }
-
         private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key is Key.Tab)
@@ -213,46 +228,83 @@ namespace MenthaAssembly
 
             if (sender is TextBox This)
             {
-                if (e.Key == Key.Enter)
+                if (e.Key is Key.Enter)
                 {
                     This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-                    return;
+                    if (GetDelayTimer(This) is DispatcherTimer Timer)
+                    {
+                        Timer.Stop();
+                        SetDelayTimer(This, null);
+                    }
                 }
-                if (e.Key is Key.Up || e.Key is Key.Down)
+
+                else if (e.Key is Key.Up)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
-                    dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
-                    dynamic Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
-                                                                      This.Text.ToValueType(ValueType);
-                    dynamic Delta = Convert.ChangeType(GetDelta(This), ValueType);
+                    dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType),
+                            Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) : This.Text.ToValueType(ValueType),
+                            Delta = Convert.ChangeType(GetDelta(This), ValueType);
 
-                    This.Text = e.Key is Key.Up ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
-                                                  (Min + Delta > Value ? Min : Value - Delta).ToString();
+                    This.Text = (Max - Delta < Value ? Max : Value + Delta).ToString();
                     e.Handled = true;
-                    return;
                 }
-                if (e.Key is Key.PageUp || e.Key is Key.PageDown)
+
+                else if (e.Key is Key.Down)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType);
-                    dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType);
-                    dynamic Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) :
-                                                                      This.Text.ToValueType(ValueType);
-                    dynamic Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
+                    dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType),
+                            Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) : This.Text.ToValueType(ValueType),
+                            Delta = Convert.ChangeType(GetDelta(This), ValueType);
 
-                    This.Text = e.Key is Key.PageUp ? (Max - Delta < Value ? Max : Value + Delta).ToString() :
-                                                      (Min + Delta > Value ? Min : Value - Delta).ToString();
+                    This.Text = (Min + Delta > Value ? Min : Value - Delta).ToString();
                     e.Handled = true;
-                    return;
+                }
+
+                else if (e.Key is Key.PageUp)
+                {
+                    Type ValueType = GetValueType(This);
+                    dynamic Max = Convert.ChangeType(GetMaximum(This), ValueType),
+                            Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) : This.Text.ToValueType(ValueType),
+                            Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
+
+                    This.Text = (Max - Delta < Value ? Max : Value + Delta).ToString();
+                    e.Handled = true;
+                }
+
+                else if (e.Key is Key.PageDown)
+                {
+                    Type ValueType = GetValueType(This);
+                    dynamic Min = Convert.ChangeType(GetMinimum(This), ValueType),
+                            Value = string.IsNullOrEmpty(This.Text) ? Activator.CreateInstance(ValueType) : This.Text.ToValueType(ValueType),
+                            Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
+
+                    This.Text = (Min + Delta > Value ? Min : Value - Delta).ToString();
+                    e.Handled = true;
                 }
             }
         }
 
-        public static Type GetValueType(TextBox obj)
-            => (Type)obj.GetValue(ValueTypeProperty);
-        public static void SetValueType(DependencyObject obj, Type value)
-            => obj.SetValue(ValueTypeProperty, value);
+        private static void OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox This)
+            {
+                if (GetDelayTimer(This) is DispatcherTimer OldTimer)
+                    OldTimer.Stop();
+
+                DispatcherTimer Timer = new DispatcherTimer(DispatcherPriority.Normal, This.Dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
+                Timer.Tick += (s, arg) =>
+                {
+                    Timer.Stop();
+                    SetDelayTimer(This, null);
+
+                    if (!string.IsNullOrEmpty(This.Text))
+                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                };
+
+                Timer.Start();
+                SetDelayTimer(This, Timer);
+            }
+        }
 
         public static object ToValueType(this string This, Type ValueType)
         {
