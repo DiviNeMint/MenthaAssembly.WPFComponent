@@ -106,11 +106,13 @@ namespace MenthaAssembly
             if (Bitmap is null)
                 return false;
 
-            if (Bitmap.Dispatcher.Invoke(() => Bitmap.TryLock(TimeSpan.FromMilliseconds(Timeout))))
+            if ((Bitmap.Dispatcher.CheckAccess() && Bitmap.TryLock(TimeSpan.FromMilliseconds(Timeout))) ||
+                Bitmap.Dispatcher.Invoke(() => Bitmap.TryLock(TimeSpan.FromMilliseconds(Timeout))))
             {
                 IsLocked = true;
                 return true;
             }
+
             return false;
         }
         public void Unlock()
@@ -119,7 +121,12 @@ namespace MenthaAssembly
                 return;
 
             if (IsLocked)
-                Bitmap.Dispatcher.Invoke(() => Bitmap.Unlock());
+            {
+                if (Bitmap.Dispatcher.CheckAccess())
+                    Bitmap.Unlock();
+                else
+                    Bitmap.Dispatcher.Invoke(() => Bitmap.Unlock());
+            }
         }
 
         public void AddDirtyRect(Int32Rect Rect)
