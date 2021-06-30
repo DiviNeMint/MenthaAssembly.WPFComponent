@@ -185,10 +185,6 @@ namespace MenthaAssembly
             return Context.ParallelCast<T, U>(Options);
         }
 
-        public IntPtr CreateHBitmap()
-            => Context.CreateHBitmap();
-
-
         #region BlockCopy
         public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0)
             => Context.BlockCopy(X, Y, Width, Height, Dest0);

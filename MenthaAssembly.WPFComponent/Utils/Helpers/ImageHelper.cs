@@ -5,7 +5,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static MenthaAssembly.Win32.Graphic;
 
 namespace MenthaAssembly
 {
@@ -112,59 +111,18 @@ namespace MenthaAssembly
         }
 
         public static IntPtr CreateHIcon(this UIElement This, int Width, int Height)
-            => CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
+            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
         public static IntPtr CreateHIcon(this UIElement This, int Width, int Height, int xHotSpot, int yHotSpot)
-            => CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
+            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
         public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle)
-            => CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
+            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
         public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle, int xHotSpot, int yHotSpot)
-            => CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
+            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
         public static IntPtr CreateHIcon(this DrawingImage This, int RenderWidth, int RenderHeight, int IconWidth, int IconHeight, double Angle, int xHotSpot, int yHotSpot)
-            => CreateHIcon(This.CreateHBitmap(RenderWidth, RenderHeight, IconWidth, IconHeight, Angle),
-                           new ImageContext<BGRA>(IconWidth, IconHeight).CreateHBitmap(),
-                           xHotSpot,
-                           yHotSpot);
-
-        public static IntPtr CreateHIcon(IntPtr HBmpColor, IntPtr HBmpMask)
-        {
-            try
-            {
-                IconInfo Info = new IconInfo
-                {
-                    fIcon = true,
-                    hbmMask = HBmpMask,
-                    hbmColor = HBmpColor
-                };
-
-                return CreateIconIndirect(ref Info);
-            }
-            finally
-            {
-                DeleteObject(HBmpMask);
-                DeleteObject(HBmpColor);
-            }
-        }
-        public static IntPtr CreateHIcon(IntPtr HBmpColor, IntPtr HBmpMask, int xHotSpot, int yHotSpot)
-        {
-            try
-            {
-                IconInfo Info = new IconInfo
-                {
-                    fIcon = false,
-                    xHotspot = xHotSpot,
-                    yHotspot = yHotSpot,
-                    hbmMask = HBmpMask,
-                    hbmColor = HBmpColor
-                };
-
-                return CreateIconIndirect(ref Info);
-            }
-            finally
-            {
-                DeleteObject(HBmpMask);
-                DeleteObject(HBmpColor);
-            }
-        }
+            => Graphic.CreateHIcon(This.CreateHBitmap(RenderWidth, RenderHeight, IconWidth, IconHeight, Angle),
+                                   new ImageContext<BGRA>(IconWidth, IconHeight).CreateHBitmap(),
+                                   xHotSpot,
+                                   yHotSpot);
 
     }
 }
