@@ -63,7 +63,7 @@ namespace MenthaAssembly.Views
             base.OnApplyTemplate();
 
             if (this.GetTemplateChild("PART_ContentHost") is ScrollViewer PART_ContentHost)
-                ScrollViewerHelper.SetAutoScrollToEnd(PART_ContentHost, true);
+                ScrollViewerEx.SetAutoScrollToEnd(PART_ContentHost, true);
         }
 
         ~ConsoleBox()

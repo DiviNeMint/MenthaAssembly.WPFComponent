@@ -84,7 +84,7 @@ namespace MenthaAssembly
         //    }
         //}
 
-        private unsafe static IntPtr FixSizeWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        private static unsafe IntPtr FixSizeWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             switch ((Win32Messages)msg)
             {
@@ -246,6 +246,54 @@ namespace MenthaAssembly
             => obj.SetValue(AcrylicBlurProperty, value);
         public static bool GetAcrylicBlur(Window obj)
             => (bool)obj.GetValue(AcrylicBlurProperty);
+
+        #endregion
+
+        #region TitleBar ContextMenu
+        public static readonly DependencyProperty DisableTitleBarContextMenuProperty =
+            DependencyProperty.RegisterAttached("DisableTitleBarContextMenu", typeof(bool), typeof(WindowEx), new PropertyMetadata(false,
+                (d, e) =>
+                {
+                    if (d is Window This)
+                    {
+                        WindowInteropHelper InteropHelper = new WindowInteropHelper(This);
+                        if (InteropHelper.Handle == IntPtr.Zero)
+                            InteropHelper.EnsureHandle();
+
+                        if (e.NewValue is true)
+                            HwndSource.FromHwnd(InteropHelper.Handle).AddHook(TitleBarContextMenuWindowProc);
+                        else
+                            HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(TitleBarContextMenuWindowProc);
+                    }
+                }));
+        public static bool GetDisableTitleBarContextMenu(Window obj)
+            => (bool)obj.GetValue(DisableTitleBarContextMenuProperty);
+        public static void SetDisableTitleBarContextMenu(Window obj, bool value)
+            => obj.SetValue(DisableTitleBarContextMenuProperty, value);
+
+        private static unsafe IntPtr TitleBarContextMenuWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch ((Win32Messages)msg)
+            {
+                case Win32Messages.WM_NCRButtonDown:
+                    {
+                        switch ((WindowHitTests)wParam.ToInt32())
+                        {
+                            case WindowHitTests.Caption:
+                            case WindowHitTests.Size:
+                            case WindowHitTests.MinButton:
+                            case WindowHitTests.MaxButton:
+                            case WindowHitTests.Close:
+                            case WindowHitTests.Help:
+                                handled = true;
+                                break;
+                        }
+                        break;
+                    }
+            }
+
+            return IntPtr.Zero;
+        }
 
         #endregion
 

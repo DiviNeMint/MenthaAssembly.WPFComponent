@@ -3,10 +3,10 @@ using System.Windows.Controls;
 
 namespace MenthaAssembly
 {
-    public static class ScrollViewerHelper
+    public static class ScrollViewerEx
     {
         public static readonly DependencyProperty AutoScrollToEndProperty =
-            DependencyProperty.RegisterAttached("AutoScrollToEnd", typeof(bool), typeof(ScrollViewerHelper), new PropertyMetadata(false,
+            DependencyProperty.RegisterAttached("AutoScrollToEnd", typeof(bool), typeof(ScrollViewerEx), new PropertyMetadata(false,
                 (d, e) =>
                 {
                     if (d is ScrollViewer This)
@@ -22,7 +22,6 @@ namespace MenthaAssembly
                             {
                                 This.ScrollChanged -= OnScrollChanged;
                             }
-
                         }
                     }
                 }));
@@ -32,26 +31,25 @@ namespace MenthaAssembly
             => obj.SetValue(AutoScrollToEndProperty, value);
 
 
-        public static readonly DependencyProperty IsAutoScrollToEndProperty =
-            DependencyProperty.RegisterAttached("IsAutoScrollToEnd", typeof(bool), typeof(ScrollViewerHelper), new PropertyMetadata(true));
-        public static bool GetIsAutoScrollToEnd(ScrollViewer obj)
-            => (bool)obj.GetValue(IsAutoScrollToEndProperty);
-        private static void SetIsAutoScrollToEnd(ScrollViewer obj, bool value)
-            => obj.SetValue(IsAutoScrollToEndProperty, value);
+        public static readonly DependencyProperty IsScrolledToEndProperty =
+            DependencyProperty.RegisterAttached("IsScrolledToEnd", typeof(bool), typeof(ScrollViewerEx), new PropertyMetadata(true));
+        public static bool GetIsScrolledToEnd(ScrollViewer obj)
+            => (bool)obj.GetValue(IsScrolledToEndProperty);
+        private static void SetIsScrolledToEnd(ScrollViewer obj, bool value)
+            => obj.SetValue(IsScrolledToEndProperty, value);
 
         private static void OnScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (sender is ScrollViewer This)
             {
                 if (e.ExtentHeightChange == 0)
-                    SetIsAutoScrollToEnd(This, This.VerticalOffset.Equals(This.ScrollableHeight));
+                    SetIsScrolledToEnd(This, This.VerticalOffset.Equals(This.ScrollableHeight));
 
-                if (GetIsAutoScrollToEnd(This) &&
+                if (GetIsScrolledToEnd(This) &&
                     e.ExtentHeightChange != 0)
                     This.ScrollToVerticalOffset(This.ExtentHeight);
             }
         }
-
 
     }
 }

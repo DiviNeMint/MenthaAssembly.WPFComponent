@@ -178,17 +178,17 @@ namespace MenthaAssembly.Views
                                       Source = This.TargetObject
                                   };
                                   PART_ValueTextBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                  TextBoxHelper.SetValueType(PART_ValueTextBox, Data.Property.PropertyType);
+                                  TextBoxEx.SetValueType(PART_ValueTextBox, Data.Property.PropertyType);
                                   if (Data.Option != null)
                                   {
                                       if (Data.Option.Delta != null)
-                                          TextBoxHelper.SetDelta(PART_ValueTextBox, Data.Option.Delta);
+                                          TextBoxEx.SetDelta(PART_ValueTextBox, Data.Option.Delta);
                                       if (Data.Option.CombineDelta != null)
-                                          TextBoxHelper.SetCombineDelta(PART_ValueTextBox, Data.Option.CombineDelta);
+                                          TextBoxEx.SetCombineDelta(PART_ValueTextBox, Data.Option.CombineDelta);
                                       if (Data.Option.Minimum != null)
-                                          TextBoxHelper.SetMinimum(PART_ValueTextBox, Data.Option.Minimum);
+                                          TextBoxEx.SetMinimum(PART_ValueTextBox, Data.Option.Minimum);
                                       if (Data.Option.Maximum != null)
-                                          TextBoxHelper.SetMaximum(PART_ValueTextBox, Data.Option.Maximum);
+                                          TextBoxEx.SetMaximum(PART_ValueTextBox, Data.Option.Maximum);
                                   }
                                   PART_ValueTextBox.Style = This.TryFindResource("PART_ValueTextBoxStyle") as Style;
                                   This.Content = PART_ValueTextBox;
@@ -209,7 +209,7 @@ namespace MenthaAssembly.Views
 
                                       };
                                       PART_TextBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                      PART_TextBox.PreviewKeyDown += TextBoxHelper.UpdateTextBindingWhenEnterKeyDown;
+                                      PART_TextBox.PreviewKeyDown += TextBoxEx.UpdateTextBindingWhenEnterKeyDown;
                                   }
                                   else
                                   {
