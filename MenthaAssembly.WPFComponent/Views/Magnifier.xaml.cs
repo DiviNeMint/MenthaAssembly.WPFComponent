@@ -11,7 +11,6 @@ using System.Windows.Threading;
 
 namespace MenthaAssembly.Views
 {
-
     public class Magnifier : Control
     {
         public event EventHandler<ChangedEventArgs<double>> ZoomFactorChanged;

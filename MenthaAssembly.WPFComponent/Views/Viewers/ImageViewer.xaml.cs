@@ -98,10 +98,10 @@ namespace MenthaAssembly.Views
             get => base.SourceContext;
             set
             {
-                if (base.SourceContext is null && 
+                if (base.SourceContext is null &&
                     value is null)
                     return;
-                
+
                 ChangedEventArgs<IImageContext> e = new ChangedEventArgs<IImageContext>(base.SourceContext, value);
                 base.SourceContext = value;
                 this.Dispatcher.Invoke(() => OnSourceChanged(e));
@@ -133,35 +133,45 @@ namespace MenthaAssembly.Views
 
         protected virtual void OnSourceChanged(ChangedEventArgs<IImageContext> e)
         {
-            if (e != null)
-                SourceChanged?.Invoke(this, e);
-
-            Int32Size ViewBox = CalculateViewBox();
-            if (ViewBox.Equals(this.ViewBox))
+            try
             {
-                OnViewBoxChanged(null);
-                return;
+                Int32Size ViewBox = CalculateViewBox();
+                if (ViewBox.Equals(this.ViewBox))
+                {
+                    OnViewBoxChanged(null);
+                    return;
+                }
+                this.ViewBox = ViewBox;
             }
-            this.ViewBox = ViewBox;
+            finally
+            {
+                if (e != null)
+                    SourceChanged?.Invoke(this, e);
+            }
         }
 
         protected virtual void OnViewBoxChanged(ChangedEventArgs<Int32Size> e)
         {
-            if (e != null)
-                ViewBoxChanged?.Invoke(this, e);
-
-            SourceLocation = (base.SourceContext is null || base.SourceContext.Width > ViewBox.Width) ?
-                             new Int32Point() :
-                             new Int32Point((ViewBox.Width - base.SourceContext.Width) / 2,
-                                            (ViewBox.Height - base.SourceContext.Height) / 2);
-
-            double NewScale = CalculateScale();
-            if (NewScale.Equals(this.Scale))
+            try
             {
-                OnScaleChanged(null);
-                return;
+                SourceLocation = (base.SourceContext is null || base.SourceContext.Width > ViewBox.Width) ?
+                                 new Int32Point() :
+                                 new Int32Point((ViewBox.Width - base.SourceContext.Width) / 2,
+                                                (ViewBox.Height - base.SourceContext.Height) / 2);
+
+                double NewScale = CalculateScale();
+                if (NewScale.Equals(this.Scale))
+                {
+                    OnScaleChanged(null);
+                    return;
+                }
+                this.Scale = NewScale;
             }
-            this.Scale = NewScale;
+            finally
+            {
+                if (e != null)
+                    ViewBoxChanged?.Invoke(this, e);
+            }
         }
 
         internal protected bool IsMinFactor = true;
