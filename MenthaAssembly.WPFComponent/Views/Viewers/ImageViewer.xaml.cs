@@ -204,7 +204,9 @@ namespace MenthaAssembly.Views
 
         protected Int32Size CalculateViewBox()
         {
-            if (base.SourceContext is null || DisplayArea.IsEmpty)
+            if (base.SourceContext is null || 
+                base.SourceContext.Width == 0 || base.SourceContext.Height == 0 || 
+                DisplayArea.IsEmpty)
                 return Int32Size.Empty;
 
             double Ratio = 1;

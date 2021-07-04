@@ -155,30 +155,30 @@ namespace MenthaAssembly
         public IImageContext Convolute(int[,] Kernel, int KernelFactorSum, int KernelOffsetSum)
             => Context.Convolute(Kernel, KernelFactorSum, KernelOffsetSum);
 
-        public IImageContext Cast<T>() where T : unmanaged, IPixel
+        public ImageContext<T> Cast<T>() where T : unmanaged, IPixel
             => Context.Cast<T>();
-        public IImageContext Cast<T, U>()
+        public ImageContext<T, U> Cast<T, U>()
             where T : unmanaged, IPixel
             where U : unmanaged, IPixelIndexed
         {
             return Context.Cast<T, U>();
         }
 
-        public IImageContext ParallelCast<T>() where T : unmanaged, IPixel
+        public ImageContext<T> ParallelCast<T>() where T : unmanaged, IPixel
         {
             return Context.ParallelCast<T>();
         }
-        public IImageContext ParallelCast<T>(ParallelOptions Options) where T : unmanaged, IPixel
+        public ImageContext<T> ParallelCast<T>(ParallelOptions Options) where T : unmanaged, IPixel
         {
             return Context.ParallelCast<T>(Options);
         }
-        public IImageContext ParallelCast<T, U>()
+        public ImageContext<T, U> ParallelCast<T, U>()
             where T : unmanaged, IPixel
             where U : unmanaged, IPixelIndexed
         {
             return Context.ParallelCast<T, U>();
         }
-        public IImageContext ParallelCast<T, U>(ParallelOptions Options)
+        public ImageContext<T, U> ParallelCast<T, U>(ParallelOptions Options)
             where T : unmanaged, IPixel
             where U : unmanaged, IPixelIndexed
         {

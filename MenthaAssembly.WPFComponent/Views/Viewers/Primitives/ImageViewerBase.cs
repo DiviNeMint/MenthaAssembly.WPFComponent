@@ -658,7 +658,9 @@ namespace MenthaAssembly.Views.Primitives
         protected Action<int, int, int, int, int> DrawHandler;
         protected unsafe virtual Int32Rect OnDraw()
         {
-            if (SourceContext != null && Scale > 0)
+            if (SourceContext != null &&
+                SourceContext.Width > 0 && SourceContext.Height > 0 &&
+                Scale > 0)
             {
                 Int32Point SourceEndPoint = new Int32Point(SourceLocation.X + SourceContext.Width,
                                                            SourceLocation.Y + SourceContext.Height);
