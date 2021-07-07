@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -124,11 +125,36 @@ namespace MenthaAssembly
         private bool TryGetValue(object Item, string Path, out object Value)
         {
             Value = Item;
+            if (Value is null)
+                return false;
+
             Type ValueType = Value.GetType();
-            foreach (Match m in Regex.Matches(Path, @"(?<PropertyName>[\w-[\[\]]]+)\[?(?<Index>\d*)\]?"))
+
+            // Index
+            Match mItem = Regex.Match(Path, @"^\[?(?<Index>[\d\w]+)\]$");
+            if (mItem.Success)
+            {
+                string Key = mItem.Groups["Index"].Value;
+                foreach (MethodInfo Method in ValueType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                                       .Where(i => i.Name.Equals("get_Item")))
+                {
+                    ParameterInfo[] Args = Method.GetParameters();
+                    if (Args.Length > 1)
+                        continue;
+
+                    object Arg = Convert.ChangeType(Key, Args[0].ParameterType);
+                    Value = Method.Invoke(Item, new[] { Arg });
+                    return true;
+                }
+
+                return false;
+            }
+
+            // Property
+            foreach (Match m in Regex.Matches(Path, @"(?<PropertyName>[\w-[\[\]]]+)(\[(?<Index>\d+)\])?"))
             {
                 if (m.Success &&
-                    ValueType?.GetProperty(m.Groups["PropertyName"].Value) is PropertyInfo TempProperty)
+                    ValueType.GetProperty(m.Groups["PropertyName"].Value) is PropertyInfo TempProperty)
                 {
                     string IndexStr = m.Groups["Index"].Value;
                     if (string.IsNullOrEmpty(IndexStr))
@@ -158,23 +184,25 @@ namespace MenthaAssembly
                         }
                     }
                     else
+                    {
                         break;
+                    }
 
-                    ValueType = Value?.GetType();
-                    continue;
+                    if (Value is null)
+                        return false;
+
+                    ValueType = Value.GetType();
                 }
-
-                return false;
             }
 
             return !Item.Equals(Value);
         }
 
-        private static PropertyInfo LanguageCurrentInfo = typeof(LanguageManager).GetProperty(nameof(LanguageManager.Current));
+        private static readonly PropertyInfo LanguageCurrentInfo = typeof(LanguageManager).GetProperty(nameof(LanguageManager.Current));
         public static Binding Create(string Path, string Default)
             => new Binding
             {
-                Path = new PropertyPath($"(0).{Path}", LanguageCurrentInfo),
+                Path = new PropertyPath($"(0)[{Path}]", LanguageCurrentInfo),
                 FallbackValue = string.IsNullOrEmpty(Default) ? Path : Default
             };
 
