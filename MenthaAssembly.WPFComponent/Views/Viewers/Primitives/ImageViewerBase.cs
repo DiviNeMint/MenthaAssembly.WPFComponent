@@ -378,7 +378,7 @@ namespace MenthaAssembly.Views.Primitives
                         {
                             byte* SourceScan0 = (byte*)value.Scan0,
                                   DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            BGRA[] Palette = value.Palette.Cast<BGRA>().ToArray();
+                            BGRA[] Palette = value.Palette.Extract<BGRA>();
 
                             int XStep = FactorStep * BytesPerPixel;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
@@ -417,7 +417,7 @@ namespace MenthaAssembly.Views.Primitives
                         {
                             Indexed4* SourceScan0 = (Indexed4*)value.Scan0;
                             byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            BGRA[] Palette = value.Palette.Cast<BGRA>().ToArray();
+                            BGRA[] Palette = value.Palette.Extract<BGRA>();
 
                             // int XStep = FactorStep * BitsPerPixel / 8;
                             int XStep = FactorStep >> 1;
@@ -462,7 +462,7 @@ namespace MenthaAssembly.Views.Primitives
                         {
                             Indexed1* SourceScan0 = (Indexed1*)value.Scan0;
                             byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            BGRA[] Palette = value.Palette.Cast<BGRA>().ToArray();
+                            BGRA[] Palette = value.Palette.Extract<BGRA>();
 
                             int XStep = FactorStep >> 3;
                             Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
@@ -690,7 +690,7 @@ namespace MenthaAssembly.Views.Primitives
             else
             {
                 // Clear
-                DisplayContext.ParallelClear(EmptyPixel);
+                DisplayContext.Clear(EmptyPixel, null);
             }
 
             return new Int32Rect(0, 0, DisplayContext.Width, DisplayContext.Height);

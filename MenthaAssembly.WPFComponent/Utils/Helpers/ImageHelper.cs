@@ -19,9 +19,7 @@ namespace MenthaAssembly
                 This.CopyPixels(Datas, Stride, 0);
                 return new ImageContext<BGR>(This.PixelWidth,
                                              This.PixelHeight,
-                                             Datas,
-                                             This.Palette?.Colors.Select(i => new BGR(i.B, i.G, i.R))
-                                                                 .ToList());
+                                             Datas);
             }
             else if (PixelFormats.Bgr32.Equals(This.Format))
             {
@@ -30,9 +28,7 @@ namespace MenthaAssembly
                 This.CopyPixels(Datas, Stride, 0);
                 return new ImageContext<BGRA>(This.PixelWidth,
                                               This.PixelHeight,
-                                              Datas,
-                                              This.Palette?.Colors.Select(i => new BGRA(i.B, i.G, i.R, i.A))
-                                                                  .ToList());
+                                              Datas);
             }
             else if (PixelFormats.Bgra32.Equals(This.Format) ||
                      PixelFormats.Pbgra32.Equals(This.Format))
@@ -42,9 +38,7 @@ namespace MenthaAssembly
                 This.CopyPixels(Datas, Stride, 0);
                 return new ImageContext<BGRA>(This.PixelWidth,
                                               This.PixelHeight,
-                                              Datas,
-                                              This.Palette?.Colors.Select(i => new BGRA(i.B, i.G, i.R, i.A))
-                                                                  .ToList());
+                                              Datas);
             }
             else if (PixelFormats.Rgb24.Equals(This.Format))
             {
@@ -53,9 +47,7 @@ namespace MenthaAssembly
                 This.CopyPixels(Datas, Stride, 0);
                 return new ImageContext<RGB>(This.PixelWidth,
                                              This.PixelHeight,
-                                             Datas,
-                                             This.Palette?.Colors.Select(i => new RGB(i.R, i.G, i.B))
-                                                                 .ToList());
+                                             Datas);
             }
             else if (PixelFormats.Gray8.Equals(This.Format))
             {
@@ -64,9 +56,7 @@ namespace MenthaAssembly
                 This.CopyPixels(Datas, Stride, 0);
                 return new ImageContext<Gray8>(This.PixelWidth,
                                                This.PixelHeight,
-                                               Datas,
-                                               This.Palette?.Colors.Select(i => new Gray8(i.B, i.G, i.R))
-                                                                   .ToList());
+                                               Datas);
             }
 
             throw new NotImplementedException();

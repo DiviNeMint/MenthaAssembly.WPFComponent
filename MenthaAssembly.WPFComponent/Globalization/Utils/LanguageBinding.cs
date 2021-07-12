@@ -200,11 +200,14 @@ namespace MenthaAssembly
 
         private static readonly PropertyInfo LanguageCurrentInfo = typeof(LanguageManager).GetProperty(nameof(LanguageManager.Current));
         public static Binding Create(string Path, string Default)
-            => new Binding
+        {
+            string Temp = string.IsNullOrEmpty(Default) ? Path : Default;
+            return new Binding
             {
                 Path = new PropertyPath($"(0)[{Path}]", LanguageCurrentInfo),
-                FallbackValue = string.IsNullOrEmpty(Default) ? Path : Default
+                FallbackValue = Temp,
+                TargetNullValue = Temp
             };
-
+        }
     }
 }
