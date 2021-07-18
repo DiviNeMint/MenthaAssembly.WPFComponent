@@ -118,6 +118,7 @@ namespace MenthaAssembly.Views
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
             base.OnRenderSizeChanged(sizeInfo);
+
             if (ActualHeight > 0 && ActualWidth > 0)
             {
                 DisplayArea = new Size(this.ActualWidth - (this.BorderThickness.Left + this.BorderThickness.Right),
@@ -152,26 +153,21 @@ namespace MenthaAssembly.Views
 
         protected virtual void OnViewBoxChanged(ChangedEventArgs<Int32Size> e)
         {
-            try
-            {
-                SourceLocation = (base.SourceContext is null || base.SourceContext.Width > ViewBox.Width) ?
-                                 new Int32Point() :
-                                 new Int32Point((ViewBox.Width - base.SourceContext.Width) / 2,
-                                                (ViewBox.Height - base.SourceContext.Height) / 2);
+            SourceLocation = (base.SourceContext is null || base.SourceContext.Width > ViewBox.Width) ?
+                             new Int32Point() :
+                             new Int32Point((ViewBox.Width - base.SourceContext.Width) / 2,
+                                            (ViewBox.Height - base.SourceContext.Height) / 2);
 
-                double NewScale = CalculateScale();
-                if (NewScale.Equals(this.Scale))
-                {
-                    OnScaleChanged(null);
-                    return;
-                }
-                this.Scale = NewScale;
-            }
-            finally
+            if (e != null)
+                ViewBoxChanged?.Invoke(this, e);
+
+            double NewScale = CalculateScale();
+            if (NewScale.Equals(this.Scale))
             {
-                if (e != null)
-                    ViewBoxChanged?.Invoke(this, e);
+                OnScaleChanged(null);
+                return;
             }
+            this.Scale = NewScale;
         }
 
         internal protected bool IsMinFactor = true;
@@ -196,21 +192,22 @@ namespace MenthaAssembly.Views
         {
             if (e != null)
             {
-                ViewportChanged?.Invoke(this, e);
                 base.Viewport = e.NewValue;
+                ViewportChanged?.Invoke(this, e);
             }
+
             OnRenderImage();
         }
 
         protected Int32Size CalculateViewBox()
         {
-            if (base.SourceContext is null || 
-                base.SourceContext.Width == 0 || base.SourceContext.Height == 0 || 
+            if (base.SourceContext is null ||
+                base.SourceContext.Width == 0 || base.SourceContext.Height == 0 ||
                 DisplayArea.IsEmpty)
                 return Int32Size.Empty;
 
-            double Ratio = 1;
-            double Scale = Math.Max(base.SourceContext.Width / DisplayArea.Width, base.SourceContext.Height / DisplayArea.Height);
+            double Ratio = 1,
+                   Scale = Math.Max(base.SourceContext.Width / DisplayArea.Width, base.SourceContext.Height / DisplayArea.Height);
 
             while (Ratio < Scale)
                 Ratio *= ScaleRatio;

@@ -117,8 +117,8 @@ namespace MenthaAssembly.Views
                                              ScaleHeight <= 0 ? ScaleWidth :
                                                                 Math.Min(ScaleWidth, ScaleHeight);
 
-            PART_Container.Width = Math.Ceiling(TargetViewer.DisplayArea.Width * Scale);
-            PART_Container.Height = Math.Ceiling(TargetViewer.DisplayArea.Height * Scale);
+            PART_Container.Width = TargetViewer.DisplayArea.Width * Scale;
+            PART_Container.Height = TargetViewer.DisplayArea.Height * Scale;
 
             this.Scale = PART_Container.Width / base.ViewBox.Width;
             OnViewportChanged(null, new ChangedEventArgs<Int32Rect>(Int32Rect.Empty, TargetViewer.Viewport));
@@ -132,8 +132,8 @@ namespace MenthaAssembly.Views
 
         protected virtual void OnViewBoxChanged(object sender, ChangedEventArgs<Int32Size> e)
         {
-            if (PART_Container is null || 
-                TargetViewer is null || 
+            if (PART_Container is null ||
+                TargetViewer is null ||
                 ActualWidth <= 0d ||
                 ActualHeight <= 0d)
                 return;
@@ -169,8 +169,8 @@ namespace MenthaAssembly.Views
             if (TargetViewer.IsMinFactor)
             {
                 PART_Rect.Margin = new Thickness();
-                PART_Rect.Width = PART_Container.ActualWidth;
-                PART_Rect.Height = PART_Container.ActualHeight;
+                PART_Rect.Width = PART_Container.Width;
+                PART_Rect.Height = PART_Container.Height;
                 return;
             }
 

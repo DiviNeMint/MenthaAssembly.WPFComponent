@@ -2,7 +2,6 @@
 using MenthaAssembly.Media.Imaging.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -215,6 +214,23 @@ namespace MenthaAssembly
             Context.DrawBeziers(Points, Contour, Fill);
         }
 
+        public void DrawText(int X, int Y, string Text, int CharSize, IPixel Fill)
+        {
+            Context.DrawText(X, Y, Text, CharSize, Fill);
+        }
+        public void DrawText(int X, int Y, string Text, int CharSize, IPixel Fill, double Angle, FontWeightType Weight, bool Italic)
+        {
+            Context.DrawText(X, Y, Text, CharSize, Fill, Angle, Weight, Italic);
+        }
+        public void DrawText(int X, int Y, string Text, string FontName, int CharSize, IPixel Fill)
+        {
+            Context.DrawText(X, Y, Text, FontName, CharSize, Fill);
+        }
+        public void DrawText(int X, int Y, string Text, string FontName, int CharSize, IPixel Fill, double Angle, FontWeightType Weight, bool Italic)
+        {
+            Context.DrawText(X, Y, Text, FontName, CharSize, Fill, Angle, Weight, Italic);
+        }
+
         public void DrawTriangle(int X1, int Y1, int X2, int Y2, int X3, int Y3, IPixel Color)
         {
             Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Color);
@@ -400,6 +416,15 @@ namespace MenthaAssembly
         #endregion
 
         #region Transform Processing
+        public ImageContext<T> Resize<T>(int Width, int Height, InterpolationTypes Interpolation) where T : unmanaged, IPixel
+        {
+            return Context.Resize<T>(Width, Height, Interpolation);
+        }
+        public ImageContext<T> Resize<T>(int Width, int Height, InterpolationTypes Interpolation, ParallelOptions Options) where T : unmanaged, IPixel
+        {
+            return Context.Resize<T>(Width, Height, Interpolation, Options);
+        }
+
         public ImageContext<T> Flip<T>(FlipMode Mode) where T : unmanaged, IPixel
         {
             return Context.Flip<T>(Mode);
