@@ -1,9 +1,5 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,8 +18,12 @@ namespace MenthaAssembly.Views.Primitives
     /// <legacyCorruptedStateExceptionsPolicy enabled = "true" />
     /// </ runtime >
     /// </summary>
-    public abstract class ImageViewerBase : Control
+    public unsafe abstract class ImageViewerBase : Control
     {
+        private static readonly ParallelOptions DefaultParallelOptions = new ParallelOptions();
+
+        public ParallelOptions RenderParallelOptions { set; get; }
+
         public static readonly DependencyProperty DisplayImageProperty =
             DependencyProperty.RegisterAttached("DisplayImage", typeof(WriteableBitmap), typeof(ImageViewerBase), new PropertyMetadata(default,
                 (d, e) =>
@@ -40,601 +40,177 @@ namespace MenthaAssembly.Views.Primitives
         internal protected virtual BitmapContext DisplayContext { set; get; }
 
         private IImageContext _SourceContext;
-        internal protected virtual unsafe IImageContext SourceContext
+        internal protected virtual IImageContext SourceContext
         {
             get => _SourceContext;
             set
             {
                 _SourceContext = value;
 
-                if (value.Channels == 1)
-                {
-                    int BytesPerPixel = Marshal.SizeOf(value.StructType);
-                    // BGR
-                    if (value.StructType == typeof(BGR))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            long XDataOffset = X >> 7;
-                                            XDataOffset -= XDataOffset % 3;
-
-                                            byte* sScanT = sScan + XDataOffset;
-                                            Data->B = *sScanT++;
-                                            Data->G = *sScanT++;
-                                            Data->R = *sScanT;
-                                            Data->A = byte.MaxValue;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // BGRA
-                    else if (value.StructType == typeof(BGRA))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                        MaxX = value.Width << 7;
-
-                                    BGRA* SourceScan = (BGRA*)(SourceScan0 + Y * value.Stride);
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        *Data++ = (0 <= X && X < MaxX) ?
-                                                  *(SourceScan + (X >> 7)) :
-                                                  EmptyPixel;
-
-                                        X += FactorStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // ABGR
-                    else if (value.StructType == typeof(ABGR))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            byte* sScanT = sScan + (X >> 7);
-                                            Data->A = *sScanT++;
-                                            Data->B = *sScanT++;
-                                            Data->G = *sScanT++;
-                                            Data->R = *sScanT;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-
-                                }
-                            });
-                        };
-
-                    // RGB
-                    else if (value.StructType == typeof(RGB))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            long XDataOffset = X >> 7;
-                                            XDataOffset -= XDataOffset % 3;
-
-                                            byte* sScanT = sScan + XDataOffset;
-                                            Data->A = byte.MaxValue;
-                                            Data->R = *sScanT++;
-                                            Data->G = *sScanT++;
-                                            Data->B = *sScanT;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // ARGB
-                    else if (value.StructType == typeof(ARGB))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            byte* sScanT = sScan + (X >> 7);
-                                            Data->A = *sScanT++;
-                                            Data->R = *sScanT++;
-                                            Data->G = *sScanT++;
-                                            Data->B = *sScanT;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-
-                                }
-                            });
-                        };
-
-                    // RGBA
-                    else if (value.StructType == typeof(RGBA))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            byte* sScanT = sScan + (X >> 7);
-                                            Data->R = *sScanT++;
-                                            Data->G = *sScanT++;
-                                            Data->B = *sScanT++;
-                                            Data->A = *sScanT;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-
-                                }
-                            });
-                        };
-
-                    // Gray8
-                    else if (value.StructType == typeof(Gray8))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            byte Gray = sScan[X >> 7];
-                                            Data->A = byte.MaxValue;
-                                            Data->R = Gray;
-                                            Data->G = Gray;
-                                            Data->B = Gray;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // Indexed8
-                    else if (value.StructType == typeof(Indexed8))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* SourceScan0 = (byte*)value.Scan0,
-                                  DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            BGRA[] Palette = value.Palette.Extract<BGRA>();
-
-                            int XStep = FactorStep * BytesPerPixel;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    byte* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = (((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep) * BytesPerPixel,
-                                         MaxX = value.Stride << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        *Data++ = (0 <= X && X < MaxX) ?
-                                                  Palette[sScan[X >> 7] >> 0] :
-                                                  EmptyPixel;
-
-                                        X += XStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // Indexed4
-                    else if (value.StructType == typeof(Indexed4))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            Indexed4* SourceScan0 = (Indexed4*)value.Scan0;
-                            byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            BGRA[] Palette = value.Palette.Extract<BGRA>();
-
-                            // int XStep = FactorStep * BitsPerPixel / 8;
-                            int XStep = FactorStep >> 1;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    Indexed4* sScan = SourceScan0 + Y * value.Stride;
-                                    int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                        MaxX = value.Width << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            int XDataOffset = X >> 7,
-                                                Index = XDataOffset & 0x01; // Index = XDataOffset % Indexed4.Length;
-                                            *Data++ = Palette[sScan[XDataOffset >> 1][Index]];
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += FactorStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // Indexed1
-                    else if (value.StructType == typeof(Indexed1))
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            Indexed1* SourceScan0 = (Indexed1*)value.Scan0;
-                            byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            BGRA[] Palette = value.Palette.Extract<BGRA>();
-
-                            int XStep = FactorStep >> 3;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    Indexed1* sScan = SourceScan0 + Y * value.Stride;
-                                    long X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                         MaxX = value.Width << 7,
-                                         YDataOffset = Y * value.Stride;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            int XDataOffset = (int)(X >> 7),
-                                                Index = XDataOffset & 0x07; // Index = XDataOffset % Indexed1.Length;
-                                            *Data++ = Palette[sScan[XDataOffset >> 3][Index]];
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += FactorStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-
-                    // Common
-                    else
-                        DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
-                        {
-                            byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-                            Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
-                            {
-                                BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
-
-                                int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-                                if (0 <= Y && Y < value.Height)
-                                {
-                                    int X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                        MaxX = value.Width << 7;
-
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                    {
-                                        if (0 <= X && X < MaxX)
-                                        {
-                                            IPixel Pixel = value[X >> 7, Y];
-                                            Data->A = Pixel.A;
-                                            Data->R = Pixel.R;
-                                            Data->G = Pixel.G;
-                                            Data->B = Pixel.B;
-                                            Data++;
-                                        }
-                                        else
-                                            *Data++ = EmptyPixel;
-
-                                        X += FactorStep;
-                                    }
-                                }
-                                else
-                                {
-                                    // Clear
-                                    for (int i = DirtyRectX1; i < DirtyRectX2; i++)
-                                        *Data++ = EmptyPixel;
-                                }
-                            });
-                        };
-                }
-                else if (value.Channels == 3)
-                    DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
+                if (value.PixelType.Equals(typeof(BGRA)))
+                    DrawHandler = (FactorStep, DirtyX1, DirtyY1, DirtyX2, DirtyY2) =>
                     {
-                        byte* SourceScanR = (byte*)value.ScanR,
-                              SourceScanG = (byte*)value.ScanG,
-                              SourceScanB = (byte*)value.ScanB,
-                              DisplayScan0 = (byte*)DisplayContext.Scan0;
-                        Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
+                        byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+
+                        int SourceW = value.Width,
+                            SourceH = value.Height,
+                            IntViewportX = (int)Viewport.X,
+                            IntViewportY = (int)Viewport.Y,
+                            ISx = IntViewportX - SourceLocation.X,
+                            ISy = IntViewportY - SourceLocation.Y;
+                        float FracX0 = (float)(Viewport.X - IntViewportX),
+                              FracY0 = (float)(Viewport.Y - IntViewportY),
+                              FracX1 = DirtyX2 * FactorStep + FracX0;
+
+                        FracX0 += DirtyX1 * FactorStep;
+
+                        int IntFracX0 = (int)FracX0,
+                            IntFracY0 = (int)FracY0,
+                            IntFracX1 = (int)FracX1,
+                            Sx = ISx + IntFracX0,
+                            Sy = ISy + IntFracY0,
+                            Ex = ISx + IntFracX1;
+
+                        FracX0 -= IntFracX0;
+                        FracY0 -= IntFracY0;
+                        FracX1 -= IntFracX1;
+
+                        Parallel.For(DirtyY1, DirtyY2, RenderParallelOptions ?? DefaultParallelOptions, j =>
                         {
-                            BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                            long Offset = j * DisplayContext.Stride + DirtyX1 * sizeof(BGRA);
+                            BGRA* Data = (BGRA*)(DisplayScan0 + Offset);
 
-                            int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-                            if (0 <= Y && Y < value.Height)
+                            int Y = Sy + (int)(j * FactorStep + FracY0);
+
+                            if (0 <= Y && Y < SourceH)
                             {
-                                long X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                     MaxX = value.Stride << 7,
-                                     YDataOffset = Y * value.Stride;
+                                int X = Sx;
+                                float FracX = FracX0;
 
-                                byte* sScanB = SourceScanB + YDataOffset,
-                                      sScanG = SourceScanG + YDataOffset,
-                                      sScanR = SourceScanR + YDataOffset;
-
-                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
                                 {
-                                    if (0 <= X && X < MaxX)
+                                    do
                                     {
-                                        long DataOffset = X >> 7;
-                                        Data->B = sScanB[DataOffset];
-                                        Data->G = sScanG[DataOffset];
-                                        Data->R = sScanR[DataOffset];
-                                        Data->A = byte.MaxValue;
-                                        Data++;
-                                    }
-                                    else
                                         *Data++ = EmptyPixel;
 
-                                    X += FactorStep;
+                                        FracX += FactorStep;
+                                        while (FracX >= 1f)
+                                        {
+                                            X++;
+                                            FracX -= 1f;
+                                        }
+
+                                        if (X >= Ex)
+                                            return;
+
+                                    } while (X < 0);
+                                }
+
+                                if (X < Ex || (X == Ex && FracX < FracX1))
+                                {
+                                    byte* pTemp = (byte*)Data;
+                                    value.Operator.ScanLineNearestResizeTo(ref FracX, FactorStep, ref X, Ex, FracX1, Y, ref pTemp);
+                                    Data = (BGRA*)pTemp;
+                                }
+
+                                while (X < Ex || (X == Ex && FracX < FracX1))
+                                {
+                                    *Data++ = EmptyPixel;
+
+                                    FracX += FactorStep;
+                                    while (FracX >= 1f)
+                                    {
+                                        X++;
+                                        FracX -= 1f;
+                                    }
                                 }
                             }
                             else
                             {
                                 // Clear
-                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                for (int i = DirtyX1; i < DirtyX2; i++)
                                     *Data++ = EmptyPixel;
-
                             }
                         });
                     };
-                else if (value.Channels == 4)
-                    DrawHandler = (FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2) =>
+                else
+                    DrawHandler = (FactorStep, DirtyX1, DirtyY1, DirtyX2, DirtyY2) =>
                     {
-                        byte* SourceScanA = (byte*)value.ScanA,
-                              SourceScanR = (byte*)value.ScanR,
-                              SourceScanG = (byte*)value.ScanG,
-                              SourceScanB = (byte*)value.ScanB,
-                              DisplayScan0 = (byte*)DisplayContext.Scan0;
-                        Parallel.For(DirtyRectY1, DirtyRectY2, (j) =>
+                        byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+
+                        int SourceW = value.Width,
+                            SourceH = value.Height,
+                            IntViewportX = (int)Viewport.X,
+                            IntViewportY = (int)Viewport.Y,
+                            ISx = IntViewportX - SourceLocation.X,
+                            ISy = IntViewportY - SourceLocation.Y;
+                        float FracX0 = (float)(Viewport.X - IntViewportX),
+                              FracY0 = (float)(Viewport.Y - IntViewportY),
+                              FracX1 = DirtyX2 * FactorStep + FracX0;
+
+                        FracX0 += DirtyX1 * FactorStep;
+
+                        int IntFracX0 = (int)FracX0,
+                            IntFracY0 = (int)FracY0,
+                            IntFracX1 = (int)FracX1,
+                            Sx = ISx + IntFracX0,
+                            Sy = ISy + IntFracY0,
+                            Ex = ISx + IntFracX1;
+
+                        FracX0 -= IntFracX0;
+                        FracY0 -= IntFracY0;
+                        FracX1 -= IntFracX1;
+
+                        Parallel.For(DirtyY1, DirtyY2, RenderParallelOptions ?? DefaultParallelOptions, j =>
                         {
-                            BGRA* Data = (BGRA*)(DisplayScan0 + j * DisplayContext.Stride + ((DirtyRectX1 * DisplayContext.BitsPerPixel) >> 3));
+                            long Offset = j * DisplayContext.Stride + DirtyX1 * sizeof(BGRA);
+                            BGRA* Data = (BGRA*)(DisplayScan0 + Offset);
 
-                            int Y = Viewport.Y - SourceLocation.Y + ((j * FactorStep) >> 7);
-                            if (0 <= Y && Y < value.Height)
+                            int Y = Sy + (int)(j * FactorStep + FracY0);
+
+                            if (0 <= Y && Y < SourceH)
                             {
-                                long X = ((Viewport.X - SourceLocation.X) << 7) + DirtyRectX1 * FactorStep,
-                                     MaxX = value.Stride << 7,
-                                     YDataOffset = Y * value.Stride;
+                                int X = Sx;
+                                float FracX = FracX0;
 
-                                byte* sScanB = SourceScanB + YDataOffset,
-                                      sScanG = SourceScanG + YDataOffset,
-                                      sScanR = SourceScanR + YDataOffset,
-                                      sScanA = SourceScanA + YDataOffset;
-
-                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
                                 {
-                                    if (0 <= X && X < MaxX)
+                                    do
                                     {
-                                        long DataOffset = X >> 7;
-                                        Data->B = sScanB[DataOffset];
-                                        Data->G = sScanG[DataOffset];
-                                        Data->R = sScanR[DataOffset];
-                                        Data->A = sScanA[DataOffset];
-                                        Data++;
-                                    }
-                                    else
                                         *Data++ = EmptyPixel;
 
-                                    X += FactorStep;
+                                        FracX += FactorStep;
+                                        while (FracX >= 1f)
+                                        {
+                                            X++;
+                                            FracX -= 1f;
+                                        }
+
+                                        if (X >= Ex)
+                                            return;
+
+                                    } while (X < 0);
+                                }
+
+                                if (X < Ex || (X == Ex && FracX < FracX1))
+                                    value.Operator.ScanLineNearestResizeTo(ref FracX, FactorStep, ref X, Ex, FracX1, Y, ref Data);
+
+                                while (X < Ex || (X == Ex && FracX < FracX1))
+                                {
+                                    *Data++ = EmptyPixel;
+
+                                    FracX += FactorStep;
+                                    while (FracX >= 1f)
+                                    {
+                                        X++;
+                                        FracX -= 1f;
+                                    }
                                 }
                             }
                             else
                             {
                                 // Clear
-                                for (int i = DirtyRectX1; i < DirtyRectX2; i++)
+                                for (int i = DirtyX1; i < DirtyX2; i++)
                                     *Data++ = EmptyPixel;
                             }
                         });
@@ -645,47 +221,47 @@ namespace MenthaAssembly.Views.Primitives
 
         protected virtual Int32Size ViewBox { set; get; }
 
-        protected virtual Int32Rect Viewport { set; get; }
+        protected virtual Rect Viewport { set; get; }
 
         protected virtual double Scale { set; get; }
 
-        protected Int32Rect LastImageRect;
+        protected FloatBound LastImageBound;
 
-        private static BGRA EmptyPixel { get; } = new BGRA();
+        protected static readonly BGRA EmptyPixel = new BGRA();
         /// <summary>
-        /// FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2
+        /// FactorStep,IntDirtyX1, IntDirtyY1, IntDirtyX2, IntDirtyY2
         /// </summary>
-        protected Action<int, int, int, int, int> DrawHandler;
-        protected unsafe virtual Int32Rect OnDraw()
+        protected Action<float, int, int, int, int> DrawHandler;
+        protected virtual Int32Rect OnDraw()
         {
             if (SourceContext != null &&
                 SourceContext.Width > 0 && SourceContext.Height > 0 &&
                 Scale > 0)
             {
-                Int32Point SourceEndPoint = new Int32Point(SourceLocation.X + SourceContext.Width,
-                                                           SourceLocation.Y + SourceContext.Height);
                 // Calculate Source's Rect in ImageViewer.
-                int ImageX1 = Math.Max((int)((SourceLocation.X - Viewport.X) * Scale), 0),
-                    ImageY1 = Math.Max((int)((SourceLocation.Y - Viewport.Y) * Scale), 0),
-                    ImageX2 = Math.Min((int)((SourceEndPoint.X - Viewport.X) * Scale) + 1, DisplayContext.Width),
-                    ImageY2 = Math.Min((int)((SourceEndPoint.Y - Viewport.Y) * Scale) + 1, DisplayContext.Height);
+                float SourceEx = SourceLocation.X + SourceContext.Width,
+                      SourceEy = SourceLocation.Y + SourceContext.Height,
+                      ISx = Math.Max((float)((SourceLocation.X - Viewport.X) * Scale), 0f),
+                      ISy = Math.Max((float)((SourceLocation.Y - Viewport.Y) * Scale), 0f),
+                      IEx = Math.Min((float)((SourceEx - Viewport.X) * Scale), DisplayContext.Width),
+                      IEy = Math.Min((float)((SourceEy - Viewport.Y) * Scale), DisplayContext.Height);
 
                 // Calculate DirtyRect (Compare with LastImageRect)
-                int DirtyRectX1 = Math.Min(LastImageRect.X, ImageX1),
-                    DirtyRectX2 = Math.Max(LastImageRect.X + LastImageRect.Width, ImageX2),
-                    DirtyRectY1 = Math.Min(LastImageRect.Y, ImageY1),
-                    DirtyRectY2 = Math.Max(LastImageRect.Y + LastImageRect.Height, ImageY2);
+                float DirtyX1 = Math.Min(LastImageBound.Left, ISx),
+                      DirtyY1 = Math.Min(LastImageBound.Top, ISy),
+                      DirtyX2 = Math.Max(LastImageBound.Right, IEx),
+                      DirtyY2 = Math.Max(LastImageBound.Bottom, IEy);
 
-                LastImageRect = new Int32Rect(ImageX1, ImageY1, ImageX2 - ImageX1, ImageY2 - ImageY1);
-                Int32Rect Result = new Int32Rect(DirtyRectX1,
-                                                 DirtyRectY1,
-                                                 Math.Max(DirtyRectX2 - DirtyRectX1, 0),
-                                                 Math.Max(DirtyRectY2 - DirtyRectY1, 0));
+                int IntDirtyX1 = (int)Math.Ceiling(DirtyX1),
+                    IntDirtyY1 = (int)Math.Floor(DirtyY1),
+                    IntDirtyX2 = (int)Math.Ceiling(DirtyX2),
+                    IntDirtyY2 = (int)Math.Floor(DirtyY2);
 
-                int FactorStep = (int)(1 / Scale * 128);
-                DrawHandler(FactorStep, DirtyRectX1, DirtyRectY1, DirtyRectX2, DirtyRectY2);
+                LastImageBound = new FloatBound(DirtyX1, DirtyY1, DirtyX2, DirtyY2);
 
-                return Result;
+                DrawHandler((float)(1 / Scale), IntDirtyX1, IntDirtyY1, IntDirtyX2, IntDirtyY2);
+
+                return new Int32Rect(IntDirtyX1, IntDirtyY1, IntDirtyX2 - IntDirtyX1, IntDirtyY2 - IntDirtyY1);
             }
             else
             {

@@ -118,7 +118,7 @@ namespace MenthaAssembly.Views
                     {
                         This.BalloonCloseChecker.Cancel();
                         This.BalloonCloseChecker = double.IsInfinity(ShowDuration) ? null :
-                                                                                     TimerHelper.DelayAction(ShowDuration, () => This.IsBalloonShown = false);
+                                                                                     DispatcherHelper.DelayAction(ShowDuration, () => This.IsBalloonShown = false);
                     }
                 },
                 (d, v) =>
@@ -352,7 +352,7 @@ namespace MenthaAssembly.Views
                                     MouseDoubleClick is null)
                                     OnClick();
                                 else
-                                    DoubleClickChecker = TimerHelper.DelayAction(DoubleClickTimeInterval, OnClick);
+                                    DoubleClickChecker = DispatcherHelper.DelayAction(DoubleClickTimeInterval, OnClick);
                             }
                             break;
                         }
@@ -630,7 +630,7 @@ namespace MenthaAssembly.Views
 
             BalloonCloseChecker?.Cancel();
             BalloonCloseChecker = double.IsInfinity(BalloonShowDuration) ? null :
-                                                                           TimerHelper.DelayAction(BalloonShowDuration, () => IsBalloonShown = false);
+                                                                           DispatcherHelper.DelayAction(BalloonShowDuration, () => IsBalloonShown = false);
             // Raise Open Event
             BalloonOpened?.Invoke(this, EventArgs.Empty);
         }

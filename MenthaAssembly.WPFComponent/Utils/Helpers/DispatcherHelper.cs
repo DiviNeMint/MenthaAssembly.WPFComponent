@@ -3,7 +3,7 @@ using System.Windows.Threading;
 
 namespace MenthaAssembly
 {
-    public static class TimerHelper
+    public static class DispatcherHelper
     {
         public static DelayActionToken DelayAction(double Milliseconds, Action Action)
             => DelayAction(Milliseconds, Action, DispatcherPriority.Normal);
@@ -42,6 +42,14 @@ namespace MenthaAssembly
 
                 CancelAction?.Invoke();
             });
+        }
+
+        public static void InvokeSync(this Dispatcher This, Action Action)
+        {
+            if (This.CheckAccess())
+                Action.Invoke();
+            else
+                This.Invoke(Action);
         }
 
         private static void OnTimerTick(object sender, EventArgs e)

@@ -1,6 +1,7 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Views.Primitives;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -85,8 +86,12 @@ namespace MenthaAssembly.Views
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
+
+            this.RenderParallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+
             if (this.GetTemplateChild("PART_Rect") is Rectangle PART_Rect)
                 this.PART_Rect = PART_Rect;
+
             if (this.GetTemplateChild("PART_Container") is Panel PART_Container)
             {
                 this.PART_Container = PART_Container;
@@ -121,7 +126,7 @@ namespace MenthaAssembly.Views
             PART_Container.Height = TargetViewer.DisplayArea.Height * Scale;
 
             this.Scale = PART_Container.Width / base.ViewBox.Width;
-            OnViewportChanged(null, new ChangedEventArgs<Int32Rect>(Int32Rect.Empty, TargetViewer.Viewport));
+            OnViewportChanged(null, new ChangedEventArgs<Rect>(Rect.Empty, TargetViewer.Viewport));
         }
 
         private void OnSourceChanged(object sender, ChangedEventArgs<IImageContext> e)
@@ -148,12 +153,12 @@ namespace MenthaAssembly.Views
             PART_Container.Height = TargetViewer.DisplayArea.Height * Scale;
 
             ViewBox = e.NewValue;
-            Viewport = new Int32Rect(0, 0, ViewBox.Width, ViewBox.Height);
+            Viewport = new Rect(0, 0, ViewBox.Width, ViewBox.Height);
             this.Scale = Viewport.IsEmpty ? -1 : PART_Container.Width / ViewBox.Width;
             OnRenderImage();
         }
 
-        protected virtual void OnViewportChanged(object sender, ChangedEventArgs<Int32Rect> e)
+        protected virtual void OnViewportChanged(object sender, ChangedEventArgs<Rect> e)
         {
             if (double.IsNaN(Scale) || double.IsInfinity(Scale))
                 return;
@@ -166,7 +171,7 @@ namespace MenthaAssembly.Views
                 return;
             }
 
-            if (TargetViewer.IsMinFactor)
+            if (TargetViewer.IsMinScale)
             {
                 PART_Rect.Margin = new Thickness();
                 PART_Rect.Width = PART_Container.Width;
@@ -184,16 +189,16 @@ namespace MenthaAssembly.Views
             PART_Rect.Height = Region.Bottom > PART_Container.ActualHeight ? PART_Container.ActualHeight - Region.Y : Region.Height;
         }
 
-        protected Int32Rect CalculateViewport(Int32Point Position)
+        protected Rect CalculateViewport(Point Position)
         {
-            Int32Rect TargetViewport = TargetViewer.Viewport,
-                      TempViewport = new Int32Rect(Position.X - (TargetViewport.Width >> 1),
-                                                   Position.Y - (TargetViewport.Height >> 1),
-                                                   TargetViewport.Width,
-                                                   TargetViewport.Height);
+            Rect TargetViewport = TargetViewer.Viewport,
+                 TempViewport = new Rect(Position.X - TargetViewport.Width * 0.5,
+                                         Position.Y - TargetViewport.Height * 0.5,
+                                         TargetViewport.Width,
+                                         TargetViewport.Height);
 
-            TempViewport.X = Math.Min(Math.Max(0, TempViewport.X), ViewBox.Width - TempViewport.Width);
-            TempViewport.Y = Math.Min(Math.Max(0, TempViewport.Y), ViewBox.Height - TempViewport.Height);
+            TempViewport.X = MathHelper.Clamp(TempViewport.X, 0, ViewBox.Width - TempViewport.Width);
+            TempViewport.Y = MathHelper.Clamp(TempViewport.Y, 0, ViewBox.Height - TempViewport.Height);
 
             return TempViewport;
         }
@@ -211,7 +216,7 @@ namespace MenthaAssembly.Views
                 DisplayContext.Height != ImageSize.Height)
             {
                 SetDisplayImage(this, new WriteableBitmap(ImageSize.Width, ImageSize.Height, 96, 96, PixelFormats.Bgra32, null));
-                LastImageRect = new Int32Rect(0, 0, ImageSize.Width, ImageSize.Height);
+                LastImageBound = new FloatBound(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
             }
 
             this.Dispatcher.BeginInvoke(new Action(() =>
@@ -243,10 +248,9 @@ namespace MenthaAssembly.Views
                 IsLeftMouseDown = true;
                 Position = e.GetPosition(PART_Container);
 
-                if (!TargetViewer.IsMinFactor)
-                    TargetViewer.Viewport = CalculateViewport(new Int32Point(
-                        Math.Min(Math.Max(0, Position.X), PART_Container.ActualWidth) / Scale,
-                        Math.Min(Math.Max(0, Position.Y), PART_Container.ActualHeight) / Scale));
+                if (!TargetViewer.IsMinScale)
+                    TargetViewer.Viewport = CalculateViewport(new Point(MathHelper.Clamp(Position.X, 0, PART_Container.ActualWidth) / Scale,
+                                                                        MathHelper.Clamp(Position.Y, 0, PART_Container.ActualHeight) / Scale));
             }
         }
         private void OnContainerPreviewMouseMove(object sender, MouseEventArgs e)
@@ -259,10 +263,9 @@ namespace MenthaAssembly.Views
 
                 Position = TempPosition;
 
-                if (!TargetViewer.IsMinFactor)
-                    TargetViewer.Viewport = CalculateViewport(new Int32Point(
-                        Math.Min(Math.Max(0, Position.X), PART_Container.ActualWidth) / Scale,
-                        Math.Min(Math.Max(0, Position.Y), PART_Container.ActualHeight) / Scale));
+                if (!TargetViewer.IsMinScale)
+                    TargetViewer.Viewport = CalculateViewport(new Point(MathHelper.Clamp(Position.X, 0, PART_Container.ActualWidth) / Scale,
+                                                                        MathHelper.Clamp(Position.Y, 0, PART_Container.ActualHeight) / Scale));
             }
         }
         private void OnContainerPreviewMouseUp(object sender, MouseButtonEventArgs e)

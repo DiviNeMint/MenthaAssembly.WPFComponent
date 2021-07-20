@@ -300,7 +300,7 @@ namespace MenthaAssembly
                         This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
                 }
 
-                DelayActionToken Token = TimerHelper.DelayAction(DelayNotifyInterval, DelayTask, () => SetDelayToken(This, null));
+                DelayActionToken Token = DispatcherHelper.DelayAction(DelayNotifyInterval, DelayTask, () => SetDelayToken(This, null));
                 SetDelayToken(This, Token);
             }
         }

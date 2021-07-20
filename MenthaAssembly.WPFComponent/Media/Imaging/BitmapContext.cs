@@ -13,7 +13,8 @@ namespace MenthaAssembly
     {
         public WriteableBitmap Bitmap { get; }
 
-        protected IImageContext Context { get; }
+        internal IImageContext Context { get; }
+        IImageOperator IImageContext.Operator => Context.Operator;
 
         public BitmapContext(string Path) : this(new Uri(Path)) { }
         public BitmapContext(Uri Path) : this(new BitmapImage(Path)) { }
@@ -869,19 +870,6 @@ namespace MenthaAssembly
             Context.ScanLineCopy4(X, Y, Length, DestA, DestR, DestG, DestB);
         }
 
-        public void BlockOverlayTo<T>(int X, int Y, int Width, int Height, byte* Dest0, long DestStride) where T : unmanaged, IPixel
-        {
-            Context.BlockOverlayTo<T>(X, Y, Width, Height, Dest0, DestStride);
-        }
-        public void BlockOverlayTo<T>(int X, int Y, int Width, int Height, byte* DestR, byte* DestG, byte* DestB, long DestStride) where T : unmanaged, IPixel
-        {
-            Context.BlockOverlayTo<T>(X, Y, Width, Height, DestR, DestG, DestB, DestStride);
-        }
-        public void BlockOverlayTo<T>(int X, int Y, int Width, int Height, byte* DestA, byte* DestR, byte* DestG, byte* DestB, long DestStride) where T : unmanaged, IPixel
-        {
-            Context.BlockOverlayTo<T>(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestStride);
-        }
-
         #endregion
 
         protected bool IsLocked { set; get; }
@@ -919,7 +907,7 @@ namespace MenthaAssembly
                 return;
 
             if (IsLocked)
-                Bitmap.Dispatcher.Invoke(() => Bitmap.AddDirtyRect(Rect));
+                Bitmap.Dispatcher.InvokeSync(() => Bitmap.AddDirtyRect(Rect));
         }
         public void AddDirtyRect(int X, int Y, int Width, int Height)
             => AddDirtyRect(new Int32Rect(X, Y, Width, Height));
