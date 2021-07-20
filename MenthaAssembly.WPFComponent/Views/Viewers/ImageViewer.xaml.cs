@@ -276,7 +276,6 @@ namespace MenthaAssembly.Views
             return Result;
         }
 
-        public static List<double> TempData = new List<double>();
         protected void OnRenderImage()
         {
             if (DisplayArea.Width is 0 || ActualHeight is 0)
