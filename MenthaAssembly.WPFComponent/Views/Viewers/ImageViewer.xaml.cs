@@ -21,7 +21,7 @@ namespace MenthaAssembly.Views
 
         public event EventHandler<ChangedEventArgs<IImageContext>> SourceChanged;
 
-        public event EventHandler<ChangedEventArgs<Int32Size>> ViewBoxChanged;
+        public event EventHandler<ChangedEventArgs<Size<int>>> ViewBoxChanged;
 
         public event EventHandler<ChangedEventArgs<Rect>> ViewportChanged;
 
@@ -96,12 +96,12 @@ namespace MenthaAssembly.Views
             set => SetValue(ViewportProperty, value);
         }
 
-        protected override Int32Size ViewBox
+        protected override Size<int> ViewBox
         {
             get => base.ViewBox;
             set
             {
-                ChangedEventArgs<Int32Size> e = new ChangedEventArgs<Int32Size>(base.ViewBox, value);
+                ChangedEventArgs<Size<int>> e = new ChangedEventArgs<Size<int>>(base.ViewBox, value);
                 base.ViewBox = value;
                 OnViewBoxChanged(e);
             }
@@ -142,8 +142,8 @@ namespace MenthaAssembly.Views
                                        this.ActualHeight - (this.BorderThickness.Top + this.BorderThickness.Bottom));
 
                 IsResizeViewer = true;
-                Resize_ViewportCenterInImage = new Int32Point(Viewport.X + Viewport.Width / 2 - SourceLocation.X,
-                                                              Viewport.Y + Viewport.Height / 2 - SourceLocation.Y);
+                Resize_ViewportCenterInImage = new Point(Viewport.X + Viewport.Width / 2 - SourceLocation.X,
+                                                         Viewport.Y + Viewport.Height / 2 - SourceLocation.Y);
                 ViewBox = CalculateViewBox();
                 IsResizeViewer = false;
             }
@@ -153,7 +153,7 @@ namespace MenthaAssembly.Views
         {
             try
             {
-                Int32Size ViewBox = CalculateViewBox();
+                Size<int> ViewBox = CalculateViewBox();
                 if (ViewBox.Equals(this.ViewBox))
                 {
                     OnViewBoxChanged(null);
@@ -168,11 +168,11 @@ namespace MenthaAssembly.Views
             }
         }
 
-        protected virtual void OnViewBoxChanged(ChangedEventArgs<Int32Size> e)
+        protected virtual void OnViewBoxChanged(ChangedEventArgs<Size<int>> e)
         {
             SourceLocation = (base.SourceContext is null || base.SourceContext.Width > ViewBox.Width) ?
-                             new Int32Point() :
-                             new Int32Point((ViewBox.Width - base.SourceContext.Width) >> 1,
+                             new Point<int>() :
+                             new Point<int>((ViewBox.Width - base.SourceContext.Width) >> 1,
                                             (ViewBox.Height - base.SourceContext.Height) >> 1);
 
             if (e != null)
@@ -216,12 +216,12 @@ namespace MenthaAssembly.Views
             OnRenderImage();
         }
 
-        protected Int32Size CalculateViewBox()
+        protected Size<int> CalculateViewBox()
         {
             if (base.SourceContext is null ||
                 base.SourceContext.Width == 0 || base.SourceContext.Height == 0 ||
                 DisplayArea.IsEmpty)
-                return Int32Size.Empty;
+                return Size<int>.Empty;
 
             double Ratio = 1,
                    Scale = Math.Max(base.SourceContext.Width / DisplayArea.Width, base.SourceContext.Height / DisplayArea.Height);
@@ -231,7 +231,7 @@ namespace MenthaAssembly.Views
 
             MinScale = 1d / Ratio;
 
-            return new Int32Size(DisplayArea.Width * Ratio, DisplayArea.Height * Ratio);
+            return new Size<int>((int)(DisplayArea.Width * Ratio), (int)(DisplayArea.Height * Ratio));
         }
 
         protected double CalculateScale()
@@ -249,7 +249,7 @@ namespace MenthaAssembly.Views
         private Point Zoom_MousePosition;
         private Vector Zoom_MouseMoveDelta;
         private bool IsResizeViewer;
-        private Int32Point Resize_ViewportCenterInImage;
+        private Point Resize_ViewportCenterInImage;
         protected Rect CalculateViewport()
         {
             if (base.SourceContext is null || DisplayArea.IsEmpty)
@@ -281,7 +281,7 @@ namespace MenthaAssembly.Views
             if (DisplayArea.Width is 0 || ActualHeight is 0)
                 return;
 
-            Int32Size ImageSize = new Int32Size(DisplayArea.Width, DisplayArea.Height);
+            Size<int> ImageSize = new Size<int>((int)DisplayArea.Width, (int)DisplayArea.Height);
             if (DisplayContext is null ||
                 DisplayContext.Width != ImageSize.Width ||
                 DisplayContext.Height != ImageSize.Height)

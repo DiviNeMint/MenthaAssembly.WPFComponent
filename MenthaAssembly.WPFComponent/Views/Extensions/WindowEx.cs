@@ -93,10 +93,10 @@ namespace MenthaAssembly
                     if (Screen.Current is ScreenInfo Info)
                     {
                         WindowMinMaxInfo* pInfo = (WindowMinMaxInfo*)lParam;
-                        pInfo->ptMaxPosition = new Int32Point(Info.WorkArea.Left - Info.Bound.Left,
+                        pInfo->ptMaxPosition = new Point<int>(Info.WorkArea.Left - Info.Bound.Left,
                                                               Info.WorkArea.Left - Info.Bound.Left);
 
-                        pInfo->ptMaxSize = new Int32Size(Info.WorkArea.Right - Info.WorkArea.Left,
+                        pInfo->ptMaxSize = new Size<int>(Info.WorkArea.Right - Info.WorkArea.Left,
                                                          Info.WorkArea.Bottom - Info.WorkArea.Top);
                     }
                     break;

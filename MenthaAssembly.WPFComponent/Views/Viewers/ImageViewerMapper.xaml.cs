@@ -69,7 +69,7 @@ namespace MenthaAssembly.Views
             set => SetValue(RectFillProperty, value);
         }
 
-        protected internal override Int32Point SourceLocation
+        protected internal override Point<int> SourceLocation
         {
             get => _TargetViewer?.SourceLocation ?? default;
             set { }
@@ -135,7 +135,7 @@ namespace MenthaAssembly.Views
             OnRenderImage();
         }
 
-        protected virtual void OnViewBoxChanged(object sender, ChangedEventArgs<Int32Size> e)
+        protected virtual void OnViewBoxChanged(object sender, ChangedEventArgs<Size<int>> e)
         {
             if (PART_Container is null ||
                 TargetViewer is null ||
@@ -210,7 +210,7 @@ namespace MenthaAssembly.Views
                 PART_Container.ActualHeight is 0)
                 return;
 
-            Int32Size ImageSize = new Int32Size(PART_Container.Width, PART_Container.Height);
+            Size<int> ImageSize = new Size<int>((int)PART_Container.Width, (int)PART_Container.Height);
             if (DisplayContext is null ||
                 DisplayContext.Width != ImageSize.Width ||
                 DisplayContext.Height != ImageSize.Height)

@@ -512,7 +512,7 @@ namespace MenthaAssembly.Views
         private const double AnimationDuration = 150d,
                              AnimationLengthScale = 0.8d;
         private DelayActionToken BalloonCloseChecker;
-        private Int32Bound BalloonPosition;
+        private Bound<int> BalloonPosition;
         private void ShowBalloonPopup()
         {
             if (Balloon is null)
@@ -542,8 +542,8 @@ namespace MenthaAssembly.Views
             if (Info.WorkArea.Bottom < Info.Bound.Bottom)
             {
                 // Real Position
-                BalloonPosition = new Int32Bound(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX,
-                                                 Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY,
+                BalloonPosition = new Bound<int>((int)(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX),
+                                                 (int)(Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY),
                                                  Info.WorkArea.Right,
                                                  Info.WorkArea.Bottom);
 
@@ -562,8 +562,8 @@ namespace MenthaAssembly.Views
             else if (Info.WorkArea.Right < Info.Bound.Right)
             {
                 // Real Position
-                BalloonPosition = new Int32Bound(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX,
-                                                 Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY,
+                BalloonPosition = new Bound<int>((int)(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX),
+                                                 (int)(Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY),
                                                  Info.WorkArea.Right,
                                                  Info.WorkArea.Bottom);
 
@@ -582,10 +582,10 @@ namespace MenthaAssembly.Views
             else if (Info.WorkArea.Top > Info.Bound.Top)
             {
                 // Real Position
-                BalloonPosition = new Int32Bound(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX,
+                BalloonPosition = new Bound<int>((int)(Info.WorkArea.Right - ChildSize.Width * Info.DpiFactorX),
                                                  Info.WorkArea.Top,
                                                  Info.WorkArea.Right,
-                                                 Info.WorkArea.Top + ChildSize.Height * Info.DpiFactorY);
+                                                 (int)(Info.WorkArea.Top + ChildSize.Height * Info.DpiFactorY));
 
                 // Position
                 BalloonPopup.HorizontalOffset = Info.WorkArea.Right / Info.DpiFactorX - ChildSize.Width;
@@ -602,9 +602,9 @@ namespace MenthaAssembly.Views
             else if (Info.WorkArea.Left > Info.Bound.Left)
             {
                 // Real Position
-                BalloonPosition = new Int32Bound(Info.WorkArea.Left,
-                                                 Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY,
-                                                 Info.WorkArea.Left + ChildSize.Width * Info.DpiFactorX,
+                BalloonPosition = new Bound<int>(Info.WorkArea.Left,
+                                                 (int)(Info.WorkArea.Bottom - ChildSize.Height * Info.DpiFactorY),
+                                                 (int)(Info.WorkArea.Left + ChildSize.Width * Info.DpiFactorX),
                                                  Info.WorkArea.Bottom);
 
                 // Position

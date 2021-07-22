@@ -36,7 +36,7 @@ namespace Microsoft.Win32
         /// <param name="fReserved">Reserved. This parameter should always be zero.</param>
         /// <returns>If this method succeeds, it returns S_OK. Otherwise, it returns an HRESULT error code.</returns>
         [PreserveSig]
-        int ResizeBorderDW(Int32Bound prcBorder, [MarshalAs(UnmanagedType.IUnknown)] IntPtr punkToolbarSite, bool fReserved);
+        int ResizeBorderDW(Bound<int> prcBorder, [MarshalAs(UnmanagedType.IUnknown)] IntPtr punkToolbarSite, bool fReserved);
 
     }
 

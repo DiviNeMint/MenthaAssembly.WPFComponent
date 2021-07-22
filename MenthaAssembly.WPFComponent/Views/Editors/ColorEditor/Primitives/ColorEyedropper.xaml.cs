@@ -90,7 +90,7 @@ namespace MenthaAssembly.Views.Primitives
 
         private void OnTimerTick(object sender, EventArgs e)
         {
-            Int32Point Position = GlobalMouse.Position;
+            Point<int> Position = GlobalMouse.Position;
 
             // GetPixel
             int ColorValue = GetPixel(pWindowDC, Position.X, Position.Y);

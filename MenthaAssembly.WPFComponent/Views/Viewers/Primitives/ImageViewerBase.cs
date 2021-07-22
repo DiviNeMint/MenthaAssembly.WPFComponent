@@ -217,9 +217,9 @@ namespace MenthaAssembly.Views.Primitives
                     };
             }
         }
-        internal protected virtual Int32Point SourceLocation { set; get; }
+        internal protected virtual Point<int> SourceLocation { set; get; }
 
-        protected virtual Int32Size ViewBox { set; get; }
+        protected virtual Size<int> ViewBox { set; get; }
 
         protected virtual Rect Viewport { set; get; }
 

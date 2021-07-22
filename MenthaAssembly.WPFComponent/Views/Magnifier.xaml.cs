@@ -116,7 +116,7 @@ namespace MenthaAssembly.Views
                     Screenshot_Height;
         protected virtual void OnRefreshImage()
         {
-            Int32Point Position = GlobalMouse.Position;
+            Point<int> Position = GlobalMouse.Position;
             ImageContext<BGR> Screenshot = Desktop.Screenshot(Position.X - Screenshot_MouseOffsetX, Position.Y - Screenshot_MouseOffsetY, Screenshot_Width, Screenshot_Height);
 
             if (Screenshot is null)

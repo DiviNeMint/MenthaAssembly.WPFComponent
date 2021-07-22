@@ -29,14 +29,14 @@ namespace Microsoft.Win32
         /// The minimum width is placed in the x member and the minimum height 
         /// is placed in the y member. 
         /// </summary>
-        public Int32Point ptMinSize;
+        public Point<int> ptMinSize;
 
         /// <summary>
         /// Point structure that receives the maximum size of the band object. 
         /// The maximum height is placed in the y member and the x member is ignored. 
         /// If there is no limit for the maximum height, (LONG)-1 should be used. 
         /// </summary>
-        public Int32Point ptMaxSize;
+        public Point<int> ptMaxSize;
 
         /// <summary>
         /// Point structure that receives the sizing step value of the band object. 
@@ -46,14 +46,14 @@ namespace Microsoft.Win32
         /// <remarks>
         /// This member is ignored if dwModeFlags does not contain DBIMF_VARIABLEHEIGHT. 
         /// </remarks>
-        public Int32Point ptIntegral;
+        public Point<int> ptIntegral;
 
         /// <summary>
         /// Point structure that receives the ideal size of the band object. 
         /// The ideal width is placed in the x member and the ideal height is placed in the y member. 
         /// The band container will attempt to use these values, but the band is not guaranteed to be this size.
         /// </summary>
-        public Int32Point ptActual;
+        public Point<int> ptActual;
 
         /// <summary>
         /// The title of the band.
