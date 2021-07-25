@@ -417,6 +417,15 @@ namespace MenthaAssembly
         #endregion
 
         #region Transform Processing
+        public ImageContext<T> Rotate<T>(double Angle, bool Crop) where T : unmanaged, IPixel
+        {
+            return Context.Rotate<T>(Angle, Crop);
+        }
+        public ImageContext<T> Rotate<T>(double Angle, bool Crop, ParallelOptions Options) where T : unmanaged, IPixel
+        {
+            return Context.Rotate<T>(Angle, Crop, Options);
+        }
+
         public ImageContext<T> Resize<T>(int Width, int Height, InterpolationTypes Interpolation) where T : unmanaged, IPixel
         {
             return Context.Resize<T>(Width, Height, Interpolation);
@@ -451,21 +460,9 @@ namespace MenthaAssembly
         {
             return Context.Convolute<T>(Kernel);
         }
-        public ImageContext<T> Convolute<T>(int[,] Kernel, int KernelFactorSum, int KernelOffsetSum) where T : unmanaged, IPixel
+        public ImageContext<T> Convolute<T>(ConvoluteKernel Kernel, ParallelOptions Options) where T : unmanaged, IPixel
         {
-            return Context.Convolute<T>(Kernel, KernelFactorSum, KernelOffsetSum);
-        }
-        public ImageContext<T, U> Convolute<T, U>(ConvoluteKernel Kernel)
-            where T : unmanaged, IPixel
-            where U : unmanaged, IPixelIndexed
-        {
-            return Context.Convolute<T, U>(Kernel);
-        }
-        public ImageContext<T, U> Convolute<T, U>(int[,] Kernel, int KernelFactorSum, int KernelOffsetSum)
-            where T : unmanaged, IPixel
-            where U : unmanaged, IPixelIndexed
-        {
-            return Context.Convolute<T, U>(Kernel, KernelFactorSum, KernelOffsetSum);
+            return Context.Convolute<T>(Kernel, Options);
         }
 
         public ImageContext<T> Crop<T>(int X, int Y, int Width, int Height) where T : unmanaged, IPixel
