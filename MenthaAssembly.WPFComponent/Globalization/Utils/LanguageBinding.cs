@@ -43,15 +43,22 @@ namespace MenthaAssembly
                         if (ValueTarget.TargetProperty is DependencyProperty DependencyProperty &&
                             DependencyPropertyDescriptor.FromProperty(FrameworkElement.DataContextProperty, Item.GetType()) is DependencyPropertyDescriptor DPDescriptor)
                         {
-                            DPDescriptor.AddValueChanged(Item,
-                                (s, e) =>
+                            void OnDataContextValueChanged(object s, EventArgs e)
+                            {
+                                if (BindingOperations.GetBindingExpression(Item, DependencyProperty) is null)
                                 {
-                                    if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string NewDataContextString)
-                                        BindingOperations.SetBinding(Item, DependencyProperty, Create(NewDataContextString, NewDataContextString));
-                                });
+                                    DPDescriptor.RemoveValueChanged(Item, OnDataContextValueChanged);
+                                    return;
+                                }
 
-                            if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContextString)
-                                return Create(DataContextString, DataContextString).ProvideValue(Provider);
+                                if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContext)
+                                    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataContext, DataContext));
+                            }
+
+                            DPDescriptor.AddValueChanged(Item, OnDataContextValueChanged);
+
+                            if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContext)
+                                return Create(DataContext, DataContext).ProvideValue(Provider);
                         }
 
                         return new Binding().ProvideValue(Provider);
@@ -115,11 +122,13 @@ namespace MenthaAssembly
 
                         //    return Create(ControlProperty.GetValue(Item)?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
                         //}
+
                         return Create(this.Path, this.Default).ProvideValue(Provider);
                     }
                 }
                 return this;
             }
+
             return Create(this.Path, this.Default).ProvideValue(Provider);
         }
         private bool TryGetValue(object Item, string Path, out object Value)

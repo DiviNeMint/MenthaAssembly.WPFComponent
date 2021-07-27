@@ -287,7 +287,7 @@ namespace MenthaAssembly.Views
                 DisplayContext.Height != ImageSize.Height)
             {
                 SetDisplayImage(this, new WriteableBitmap(ImageSize.Width, ImageSize.Height, 96, 96, PixelFormats.Bgra32, null));
-                LastImageBound = new FloatBound(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+                LastImageBound = new Bound<float>(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
             }
 
             this.Dispatcher.BeginInvoke(new Action(() =>
@@ -455,7 +455,7 @@ namespace MenthaAssembly.Views
             double AreaX = X - BorderThickness.Left,
                    AreaY = Y - BorderThickness.Top;
 
-            if (LastImageBound.Contains(AreaX, AreaY))
+            if (LastImageBound.Contains((float)AreaX, (float)AreaY))
                 return GetPixel(Math.Min((int)Math.Round(Viewport.X + AreaX / Scale - SourceLocation.X), base.SourceContext.Width - 1),
                                 Math.Min((int)Math.Round(Viewport.Y + AreaY / Scale - SourceLocation.Y), base.SourceContext.Height - 1));
 

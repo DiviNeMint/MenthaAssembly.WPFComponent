@@ -216,7 +216,7 @@ namespace MenthaAssembly.Views
                 DisplayContext.Height != ImageSize.Height)
             {
                 SetDisplayImage(this, new WriteableBitmap(ImageSize.Width, ImageSize.Height, 96, 96, PixelFormats.Bgra32, null));
-                LastImageBound = new FloatBound(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+                LastImageBound = new Bound<float>(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
             }
 
             this.Dispatcher.BeginInvoke(new Action(() =>

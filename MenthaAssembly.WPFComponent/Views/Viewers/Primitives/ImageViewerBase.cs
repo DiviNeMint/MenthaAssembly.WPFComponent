@@ -225,7 +225,7 @@ namespace MenthaAssembly.Views.Primitives
 
         protected virtual double Scale { set; get; }
 
-        protected FloatBound LastImageBound;
+        protected Bound<float> LastImageBound;
 
         protected static readonly BGRA EmptyPixel = new BGRA();
         /// <summary>
@@ -257,7 +257,7 @@ namespace MenthaAssembly.Views.Primitives
                     IntDirtyX2 = (int)Math.Ceiling(DirtyX2),
                     IntDirtyY2 = (int)Math.Floor(DirtyY2);
 
-                LastImageBound = new FloatBound(DirtyX1, DirtyY1, DirtyX2, DirtyY2);
+                LastImageBound = new Bound<float>(DirtyX1, DirtyY1, DirtyX2, DirtyY2);
 
                 DrawHandler((float)(1 / Scale), IntDirtyX1, IntDirtyY1, IntDirtyX2, IntDirtyY2);
 
