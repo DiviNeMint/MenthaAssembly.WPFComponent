@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -52,16 +53,17 @@ namespace MenthaAssembly
                                 }
 
                                 if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContext)
-                                    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataContext, DataContext));
+                                    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataContext, string.IsNullOrEmpty(this.Default) ? DataContext : this.Default));
                             }
 
                             DPDescriptor.AddValueChanged(Item, OnDataContextValueChanged);
 
                             if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContext)
-                                return Create(DataContext, DataContext).ProvideValue(Provider);
+                                return Create(DataContext, string.IsNullOrEmpty(this.Default) ? DataContext : this.Default).ProvideValue(Provider);
                         }
 
-                        return new Binding().ProvideValue(Provider);
+                        return string.IsNullOrEmpty(this.Default) ? "Null" :
+                                                                    Create(this.Default, this.Default).ProvideValue(Provider);
                     }
                     else
                     {
@@ -72,17 +74,28 @@ namespace MenthaAssembly
                             // TODO : 
                             // When DataContext's property changed, update binding.
 
-                            //if (DataContext is INotifyPropertyChanged NotifyData &&
+                            //if (DataContext is INotifyPropertyChanged NotifyContext &&
                             //    ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
-                            //    NotifyData.PropertyChanged += (s, e) =>
+                            //{
+                            //    void OnNotifyContextPropertyChanged(object sender, PropertyChangedEventArgs e)
                             //    {
+                            //        if (BindingOperations.GetBindingExpression(Item, DependencyProperty) is null)
+                            //        {
+                            //            NotifyContext.PropertyChanged -= OnNotifyContextPropertyChanged;
+                            //            return;
+                            //        }
+
                             //        //if (GetValue(DataContext, Path)?.ToString() is string DataPath)
                             //        //else
                             //        //BindingOperations.ClearBinding(Item, DependencyProperty);
                             //        //if (e.PropertyName.Equals(DependencyProperty.Name) &&
                             //        //    GetValue(DataContext, Path)?.ToString() is string DataPath)
                             //        //    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataPath, this.Default));
-                            //    };
+                            //    }
+
+
+                            //    NotifyContext.PropertyChanged += OnNotifyContextPropertyChanged;
+                            //}
 
                             string DataPath = DataValue?.ToString();
                             return string.IsNullOrEmpty(DataPath) ? "Null" :
@@ -126,6 +139,7 @@ namespace MenthaAssembly
                         return Create(this.Path, this.Default).ProvideValue(Provider);
                     }
                 }
+
                 return this;
             }
 
@@ -170,7 +184,7 @@ namespace MenthaAssembly
                     {
                         Value = TempProperty.GetValue(Value);
                     }
-                    else if (int.TryParse(m.Groups["Index"].Value, out int Index))
+                    else if (int.TryParse(IndexStr, out int Index))
                     {
                         object Collection = TempProperty.GetValue(Value);
                         if (Collection is IList List)
