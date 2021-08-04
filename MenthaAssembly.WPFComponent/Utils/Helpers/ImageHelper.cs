@@ -1,7 +1,6 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Win32;
 using System;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -10,7 +9,7 @@ namespace MenthaAssembly
 {
     public static class ImageHelper
     {
-        public unsafe static IImageContext ToImageContext(this BitmapSource This)
+        public static unsafe IImageContext ToImageContext(this BitmapSource This)
         {
             if (PixelFormats.Bgr24.Equals(This.Format))
             {
