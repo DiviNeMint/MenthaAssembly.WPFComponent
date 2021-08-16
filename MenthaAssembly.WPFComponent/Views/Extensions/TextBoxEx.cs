@@ -20,36 +20,44 @@ namespace MenthaAssembly
                     if (d is TextBox This &&
                         e.NewValue is Type ValueType)
                     {
-                        switch (ValueType.Name)
+                        bool EnableAttach = false;
+                        KeyboardInputMode InputMode = KeyboardInputMode.All;
+
+                        if (ValueType.IsIntegerType())
                         {
-                            case nameof(SByte):
-                            case nameof(Int16):
-                            case nameof(Int32):
-                            case nameof(Int64):
-                            case nameof(Byte):
-                            case nameof(UInt16):
-                            case nameof(UInt32):
-                            case nameof(UInt64):
-                            case nameof(Decimal):
-                            case nameof(Single):
-                            case nameof(Double):
-                                if (!MaxValues.ContainsKey(ValueType) &&
-                                    ValueType.TryGetConstant("MaxValue", out object Max))
-                                    MaxValues.AddOrUpdate(ValueType, Max, (k, v) => Max);
+                            InputMode = KeyboardInputMode.NegativeNumber;
+                            EnableAttach = true;
+                        }
+                        else if (ValueType.IsPositiveIntegerType())
+                        {
+                            InputMode = KeyboardInputMode.Number;
+                            EnableAttach = true;
+                        }
+                        else if (ValueType.IsDecimalType())
+                        {
+                            InputMode = KeyboardInputMode.NegativeNumberAndDot;
+                            EnableAttach = true;
+                        }
 
-                                if (!MinValues.ContainsKey(ValueType) &&
-                                    ValueType.TryGetConstant("MinValue", out object Min))
-                                    MinValues.AddOrUpdate(ValueType, Min, (k, v) => Min);
+                        if (EnableAttach)
+                        {
+                            if (!MaxValues.ContainsKey(ValueType) &&
+                                ValueType.TryGetConstant("MaxValue", out object Max))
+                                MaxValues.AddOrUpdate(ValueType, Max, (k, v) => Max);
 
-                                SetDefaultInputMode(This, GetDefaultInputMode(ValueType));
-                                This.PreviewMouseWheel += OnPreviewMouseWheel;
-                                This.PreviewKeyDown += OnPreviewKeyDown;
-                                break;
-                            default:
-                                SetInputMode(This, KeyboardInputMode.All);
-                                This.PreviewMouseWheel -= OnPreviewMouseWheel;
-                                This.PreviewKeyDown -= OnPreviewKeyDown;
-                                break;
+                            if (!MinValues.ContainsKey(ValueType) &&
+                                ValueType.TryGetConstant("MinValue", out object Min))
+                                MinValues.AddOrUpdate(ValueType, Min, (k, v) => Min);
+
+                            SetDefaultInputMode(This, InputMode);
+                            This.PreviewMouseWheel += OnPreviewMouseWheel;
+                            This.PreviewKeyDown += OnPreviewKeyDown;
+                        }
+                        else
+                        {
+                            SetInputMode(This, InputMode);
+                            This.PreviewMouseWheel -= OnPreviewMouseWheel;
+                            This.PreviewKeyDown -= OnPreviewKeyDown;
                         }
                     }
                 }));
@@ -313,28 +321,6 @@ namespace MenthaAssembly
 
                 e.Handled = true;
             }
-        }
-
-        private static KeyboardInputMode GetDefaultInputMode(Type ValueType)
-        {
-            switch (ValueType.Name)
-            {
-                case nameof(SByte):
-                case nameof(Int16):
-                case nameof(Int32):
-                case nameof(Int64):
-                    return KeyboardInputMode.NegativeNumber;
-                case nameof(Byte):
-                case nameof(UInt16):
-                case nameof(UInt32):
-                case nameof(UInt64):
-                    return KeyboardInputMode.Number;
-                case nameof(Decimal):
-                case nameof(Single):
-                case nameof(Double):
-                    return KeyboardInputMode.NegativeNumberAndDot;
-            }
-            return KeyboardInputMode.All;
         }
 
         #endregion
