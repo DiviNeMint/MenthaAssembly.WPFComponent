@@ -87,7 +87,7 @@ namespace MenthaAssembly.Devices
         {
             if (Cursor is null)
             {
-                SystemParametersInfo(SystemParameterActionType.SetCursors, 0, IntPtr.Zero, SystemParameterInfoFlags.SendChange);
+                SystemParametersInfo(SystemParameterActionType.SetCursors, 0, IntPtr.Zero, SystemParameterInfoFlag.SendChange);
                 return;
             }
 
