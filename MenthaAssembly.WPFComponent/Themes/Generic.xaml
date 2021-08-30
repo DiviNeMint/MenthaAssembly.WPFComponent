@@ -19,7 +19,12 @@
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/PropertyEditor/PropertyEditorItem.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/PropertyEditor/Primitives/PropertyEditorMenu.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/PropertyEditor/Primitives/PropertyEditorMenuItem.xaml"/>
-        
+
+        <!--LineChart-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Charts/LineChart/LineChart.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Charts/LineChart/LineChartItem.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Charts/LineChart/LineChartDataPoint.xaml"/>
+
         <!--SearchBox-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TextBoxs/SearchBox.xaml"/>
 

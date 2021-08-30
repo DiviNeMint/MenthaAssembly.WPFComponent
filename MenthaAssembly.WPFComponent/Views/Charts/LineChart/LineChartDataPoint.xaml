@@ -1,0 +1,29 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:MenthaAssembly.Views">
+    
+    <Style TargetType="{x:Type local:LineChartDataPoint}">
+        <Setter Property="Height" Value="0"/>
+        <Setter Property="Width" Value="0"/>
+        <Setter Property="ToolTip" Value="{Binding DataContext, RelativeSource={RelativeSource Self}}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:LineChartDataPoint">
+                    <Grid Margin="-5">
+                        <Ellipse Stroke="{TemplateBinding BorderBrush}"
+                                 Fill="{TemplateBinding Background}" />
+                        <Ellipse RenderTransformOrigin="0.661,0.321">
+                            <Ellipse.Fill>
+                                <RadialGradientBrush GradientOrigin="0.681,0.308">
+                                    <GradientStop Color="#00FFFFFF" />
+                                    <GradientStop Color="#FF3D3A3A" Offset="1" />
+                                </RadialGradientBrush>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+</ResourceDictionary>
