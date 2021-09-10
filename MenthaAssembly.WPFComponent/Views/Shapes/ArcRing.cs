@@ -7,123 +7,199 @@ namespace MenthaAssembly.Views
     public class ArcRing : FrameworkElement
     {
         public static readonly DependencyProperty BorderBrushProperty =
-            DependencyProperty.Register("BorderBrush", typeof(Brush), typeof(ArcRing), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0xB4, 0xB4, 0xB4)), (d, e) => (d as UIElement).InvalidateVisual()));
+            DependencyProperty.Register("BorderBrush", typeof(Brush), typeof(ArcRing), new FrameworkPropertyMetadata(new SolidColorBrush(Color.FromRgb(0xB4, 0xB4, 0xB4)),
+                FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender,
+                (d, e) =>
+                {
+                    if (d is ArcRing This)
+                        This.InvalidatePen();
+                }));
         public Brush BorderBrush
         {
-            get { return (Brush)GetValue(BorderBrushProperty); }
-            set { SetValue(BorderBrushProperty, value); }
+            get => (Brush)this.GetValue(BorderBrushProperty);
+            set => this.SetValue(BorderBrushProperty, value);
         }
 
         public static readonly DependencyProperty BorderThicknessProperty =
-            DependencyProperty.Register("BorderThickness", typeof(double), typeof(ArcRing), new PropertyMetadata(1d, (d, e) => (d as UIElement).InvalidateVisual()));
+            DependencyProperty.Register("BorderThickness", typeof(double), typeof(ArcRing), new FrameworkPropertyMetadata(1d,
+                FrameworkPropertyMetadataOptions.AffectsRender,
+                (d, e) =>
+                {
+                    if (d is ArcRing This)
+                        This.InvalidatePen();
+                }));
         public double BorderThickness
         {
-            get { return (double)GetValue(BorderThicknessProperty); }
-            set { SetValue(BorderThicknessProperty, value); }
+            get => (double)this.GetValue(BorderThicknessProperty);
+            set => this.SetValue(BorderThicknessProperty, value);
         }
 
         public static readonly DependencyProperty ArcRingThicknessProperty =
-            DependencyProperty.Register("ArcRingThickness", typeof(double), typeof(ArcRing), new PropertyMetadata(10d, (d, e) => (d as UIElement).InvalidateVisual()));
+            DependencyProperty.Register("ArcRingThickness", typeof(double), typeof(ArcRing), new FrameworkPropertyMetadata(10d,
+                FrameworkPropertyMetadataOptions.AffectsRender,
+                (d, e) =>
+                {
+                    if (d is ArcRing This)
+                        This.InvalidatePen();
+                }));
         public double ArcRingThickness
         {
-            get { return (double)GetValue(ArcRingThicknessProperty); }
-            set { SetValue(ArcRingThicknessProperty, value); }
+            get => (double)this.GetValue(ArcRingThicknessProperty);
+            set => this.SetValue(ArcRingThicknessProperty, value);
         }
 
         public static readonly DependencyProperty FillProperty =
-            DependencyProperty.Register("Fill", typeof(Brush), typeof(ArcRing), new PropertyMetadata(Brushes.LightGray, (d, e) => (d as UIElement).InvalidateVisual()));
+            DependencyProperty.Register("Fill", typeof(Brush), typeof(ArcRing), new FrameworkPropertyMetadata(Brushes.LightGray, FrameworkPropertyMetadataOptions.AffectsRender |
+                                                                                                                                 FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender));
         public Brush Fill
         {
-            get { return (Brush)GetValue(FillProperty); }
-            set { SetValue(FillProperty, value); }
+            get => (Brush)this.GetValue(FillProperty);
+            set => this.SetValue(FillProperty, value);
         }
 
         public static readonly DependencyProperty StartAngleProperty =
-            DependencyProperty.Register("StartAngle", typeof(double), typeof(ArcRing), new PropertyMetadata(0d, (d, e) => (d as UIElement).InvalidateVisual()));
+            DependencyProperty.Register("StartAngle", typeof(double), typeof(ArcRing), new FrameworkPropertyMetadata(0d,
+                FrameworkPropertyMetadataOptions.AffectsRender,
+                (d, e) =>
+                {
+                    if (d is ArcRing This)
+                        This.InvalidatePen();
+                }));
         public double StartAngle
         {
-            get { return (double)GetValue(StartAngleProperty); }
-            set { SetValue(StartAngleProperty, value); }
+            get => (double)this.GetValue(StartAngleProperty);
+            set => this.SetValue(StartAngleProperty, value);
         }
 
-        public static readonly DependencyProperty AngleProperty =
-            DependencyProperty.Register("Angle", typeof(double), typeof(ArcRing), new PropertyMetadata(360d, (d, e) => (d as UIElement).InvalidateVisual()));
-        public double Angle
+        public static readonly DependencyProperty EndAngleProperty =
+            DependencyProperty.Register("EndAngle", typeof(double), typeof(ArcRing), new FrameworkPropertyMetadata(360d,
+                FrameworkPropertyMetadataOptions.AffectsRender,
+                (d, e) =>
+                {
+                    if (d is ArcRing This)
+                        This.InvalidatePen();
+                }));
+        public double EndAngle
         {
-            get { return (double)GetValue(AngleProperty); }
-            set { SetValue(AngleProperty, value); }
+            get => (double)this.GetValue(EndAngleProperty);
+            set => this.SetValue(EndAngleProperty, value);
         }
 
-        private decimal RenderAngle = 0;
         protected override void OnRender(DrawingContext dc)
+            => dc.DrawGeometry(this.Fill, this.GetPen(), this.GetGeometry());
+
+        protected Pen Pen;
+        protected virtual Pen GetPen()
         {
-            base.OnRender(dc);
+            double Thickness = this.BorderThickness;
+            if (double.IsInfinity(Thickness) || Thickness is 0d || double.IsNaN(Thickness))
+                return null;
 
-            // Calculate
-            double Radius = Math.Min(ActualWidth, ActualHeight) / 2,
-                   LargeR = Math.Max(Radius - BorderThickness / 2, 0d),
-                   SmallR = Math.Max(LargeR - ArcRingThickness, 0d);
-            Point CenterPoint = new Point(Radius, Radius);
-            RenderAngle = (decimal)Angle % 360;
+            Brush Brush = this.BorderBrush;
+            if (Brush is null || Brush.Equals(Brushes.Transparent))
+                return null;
 
-            // Draw
-            dc.DrawGeometry(
-                Fill,
-                new Pen(BorderBrush, BorderThickness),
-                Angle != 0 && RenderAngle == 0 ? DrawingRing(CenterPoint, LargeR, SmallR) : DrawingArc(CenterPoint, LargeR, SmallR));
-        }
-
-        protected Geometry DrawingArc(Point _Center, double _LargeR, double _SmallR)
-        {
-            StreamGeometry Result = new StreamGeometry
+            if (Pen == null)
             {
-                FillRule = FillRule.EvenOdd
-            };
+                // This pen is internal to the system and
+                // must not participate in freezable treeness
+                Pen = new Pen
+                {
+                    Thickness = Math.Abs(Thickness),
+                    Brush = Brush,
+                };
 
-            Point P1 = CalculateArcPoint(_Center, _LargeR, StartAngle),
-                  P2 = CalculateArcPoint(_Center, _LargeR, StartAngle + (double)RenderAngle),
-                  P3 = CalculateArcPoint(_Center, _SmallR, StartAngle),
-                  P4 = CalculateArcPoint(_Center, _SmallR, StartAngle + (double)RenderAngle);
+                //// StrokeDashArray is usually going to be its default value and GetValue
+                //// on a mutable default has a per-instance cost associated with it so we'll
+                //// try to avoid caching the default value
+                //DoubleCollection strokeDashArray = null;
+                //bool hasModifiers;
+                //if (GetValueSource(StrokeDashArrayProperty, null, out hasModifiers)
+                //    != BaseValueSourceInternal.Default || hasModifiers)
+                //{
+                //    strokeDashArray = StrokeDashArray;
+                //}
 
-            bool _IsLargeArc = Math.Abs(RenderAngle) > 180;
-            using (StreamGeometryContext ctx = Result.Open())
-            {
-                ctx.BeginFigure(P1, true, true);
-                ctx.ArcTo(P2, new Size(_LargeR, _LargeR), 0, _IsLargeArc, RenderAngle > 0 ? SweepDirection.Clockwise : SweepDirection.Counterclockwise, true, true);
-                ctx.LineTo(P4, true, true);
-                ctx.ArcTo(P3, new Size(_SmallR, _SmallR), 0, _IsLargeArc, RenderAngle > 0 ? SweepDirection.Counterclockwise : SweepDirection.Clockwise, true, true);
+                //// Avoid creating the DashStyle if we can
+                //double strokeDashOffset = StrokeDashOffset;
+                //if (strokeDashArray != null || strokeDashOffset != 0.0)
+                //{
+                //    _Pen.DashStyle = new DashStyle(strokeDashArray, strokeDashOffset);
+                //}
+
             }
-            Result.Freeze();
-            return Result;
-        }
 
-        protected Geometry DrawingRing(Point _Center, double _LargeR, double _SmallR)
+            return Pen;
+        }
+        public void InvalidatePen()
+            => Pen = null;
+
+        private Geometry Geometry;
+        protected virtual Geometry GetGeometry()
         {
-            StreamGeometry Result = new StreamGeometry
-            {
-                FillRule = FillRule.EvenOdd
-            };
+            double Radius = Math.Min(this.ActualWidth, this.ActualHeight) / 2d;
+            if (double.IsInfinity(Radius) || Radius is 0 || double.IsNaN(Radius))
+                return null;
 
-            Point P1 = new Point(_Center.X + _LargeR, _Center.Y),
-                  P2 = new Point(_Center.X - _LargeR, _Center.Y),
-                  P3 = new Point(_Center.X + _SmallR, _Center.Y),
-                  P4 = new Point(_Center.X - _SmallR, _Center.Y);
-
-            using (StreamGeometryContext ctx = Result.Open())
+            if (Geometry is null)
             {
-                ctx.BeginFigure(P2, true, true);
-                ctx.ArcTo(P1, new Size(_LargeR, _LargeR), 0, true, SweepDirection.Clockwise, true, true);
-                ctx.ArcTo(P2, new Size(_LargeR, _LargeR), 0, true, SweepDirection.Clockwise, true, true);
-                ctx.BeginFigure(P4, true, true);
-                ctx.ArcTo(P3, new Size(_SmallR, _SmallR), 0, true, SweepDirection.Clockwise, true, true);
-                ctx.ArcTo(P4, new Size(_SmallR, _SmallR), 0, true, SweepDirection.Clockwise, true, true);
+                double LargeR = Math.Max(Radius - this.BorderThickness / 2, 0d),
+                       SmallR = Math.Max(LargeR - this.ArcRingThickness, 0d),
+                       RenderAngle = (double)((decimal)this.EndAngle % 360);
+
+                StreamGeometry Temp = new StreamGeometry { FillRule = FillRule.EvenOdd };
+                if (this.EndAngle != 0 && RenderAngle == 0)
+                {
+                    // Ring
+                    Point P1 = new Point(Radius + LargeR, Radius),
+                          P2 = new Point(Radius - LargeR, Radius),
+                          P3 = new Point(Radius + SmallR, Radius),
+                          P4 = new Point(Radius - SmallR, Radius);
+                    Size LS = new Size(LargeR, LargeR),
+                         SS = new Size(SmallR, SmallR);
+
+                    using StreamGeometryContext Context = Temp.Open();
+                    Context.BeginFigure(P2, true, true);
+                    Context.ArcTo(P1, LS, 0, true, SweepDirection.Clockwise, true, true);
+                    Context.ArcTo(P2, LS, 0, true, SweepDirection.Clockwise, true, true);
+                    Context.BeginFigure(P4, true, true);
+                    Context.ArcTo(P3, SS, 0, true, SweepDirection.Clockwise, true, true);
+                    Context.ArcTo(P4, SS, 0, true, SweepDirection.Clockwise, true, true);
+                }
+                else
+                {
+                    // Arc
+                    double Theta = this.StartAngle * MathHelper.UnitTheta,
+                           Sin = Math.Sin(Theta),
+                           Cos = Math.Cos(Theta);
+
+                    Point P1 = new Point(LargeR * Sin + Radius, Radius - LargeR * Cos),
+                          P3 = new Point(SmallR * Sin + Radius, Radius - SmallR * Cos);
+
+                    Theta = (this.StartAngle + RenderAngle) * MathHelper.UnitTheta;
+                    Sin = Math.Sin(Theta);
+                    Cos = Math.Cos(Theta);
+
+                    Point P2 = new Point(LargeR * Sin + Radius, Radius - LargeR * Cos),
+                          P4 = new Point(SmallR * Sin + Radius, Radius - SmallR * Cos);
+
+                    bool IsLargeArc = Math.Abs(RenderAngle) > 180;
+
+                    using StreamGeometryContext Context = Temp.Open();
+                    Context.BeginFigure(P1, true, true);
+                    Context.ArcTo(P2, new Size(LargeR, LargeR), 0, IsLargeArc, RenderAngle > 0 ? SweepDirection.Clockwise : SweepDirection.Counterclockwise, true, true);
+                    Context.LineTo(P4, true, true);
+                    Context.ArcTo(P3, new Size(SmallR, SmallR), 0, IsLargeArc, RenderAngle > 0 ? SweepDirection.Counterclockwise : SweepDirection.Clockwise, true, true);
+                }
+
+                Temp.Freeze();
+                Geometry = Temp;
             }
-            Result.Freeze();
-            return Result;
-        }
 
-        public static Point CalculateArcPoint(Point _CenterPoint, double _Radius, double _Angle)
-            => new Point(Math.Sin(_Angle * Math.PI / 180) * _Radius + _CenterPoint.X, _CenterPoint.Y - Math.Cos(_Angle * Math.PI / 180) * _Radius);
+            return Geometry;
+        }
+        public void InvalidateGeometry()
+            => Geometry = null;
 
     }
 }

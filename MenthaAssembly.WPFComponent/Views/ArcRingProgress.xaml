@@ -17,7 +17,7 @@
                                        ArcRingThickness="{TemplateBinding ArcRingThickness}" 
                                        Fill="{TemplateBinding ArcRingBackground}"
                                        StartAngle="{TemplateBinding StartAngle}"
-                                       Angle="{TemplateBinding DisplayMaxAngle}"
+                                       EndAngle="{TemplateBinding DisplayMaxAngle}"
                                        Width="{TemplateBinding ActualWidth}"
                                        Height="{TemplateBinding ActualHeight}"/>
                         <local:ArcRing BorderThickness="{TemplateBinding BorderThickness}"
@@ -25,7 +25,7 @@
                                        ArcRingThickness="{TemplateBinding ArcRingThickness}" 
                                        Fill="{TemplateBinding ArcRingForeground}"
                                        StartAngle="{TemplateBinding StartAngle}"
-                                       Angle="{TemplateBinding DisplayAngle}"
+                                       EndAngle="{TemplateBinding DisplayAngle}"
                                        Width="{TemplateBinding ActualWidth}"
                                        Height="{TemplateBinding ActualHeight}"/>
                     </Canvas>
