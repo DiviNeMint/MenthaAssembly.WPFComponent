@@ -74,13 +74,10 @@ namespace MenthaAssembly.Views
         #endregion
         #region PolyLine
         public static readonly DependencyProperty StrokeProperty =
-              DependencyProperty.Register("Stroke", typeof(Brush), typeof(LineChartItem), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender |
-                                                                                                                              FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender,
-                  (d, e) =>
-                  {
-                      if (d is LineChartItem ThisItem)
-                          ThisItem.InvalidatePen();
-                  }));
+              DependencyProperty.Register("Stroke", typeof(Brush), typeof(LineChartItem), new FrameworkPropertyMetadata(null,
+                                                                                                                        FrameworkPropertyMetadataOptions.AffectsRender |
+                                                                                                                        FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender,
+                                                                                                                        OnPenChanged));
         public Brush Stroke
         {
             get => (Brush)this.GetValue(StrokeProperty);
@@ -88,29 +85,94 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty StrokeThicknessProperty =
-              DependencyProperty.Register("StrokeThickness", typeof(double), typeof(LineChartItem), new FrameworkPropertyMetadata(2d, FrameworkPropertyMetadataOptions.AffectsRender,
-                  (d, e) =>
-                  {
-                      if (d is LineChartItem ThisItem)
-                          ThisItem.InvalidatePen();
-                  }));
+              DependencyProperty.Register("StrokeThickness", typeof(double), typeof(LineChartItem), new FrameworkPropertyMetadata(2d, FrameworkPropertyMetadataOptions.AffectsRender, OnPenChanged));
         public double StrokeThickness
         {
             get => (double)this.GetValue(StrokeThicknessProperty);
             set => this.SetValue(StrokeThicknessProperty, value);
         }
 
+        public static readonly DependencyProperty StrokeStartLineCapProperty =
+              DependencyProperty.Register("StrokeStartLineCap", typeof(PenLineCap), typeof(LineChartItem), new FrameworkPropertyMetadata(PenLineCap.Flat,
+                                                                                                                                         FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                         FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                         OnPenChanged));
+        public PenLineCap StrokeStartLineCap
+        {
+            get => (PenLineCap)this.GetValue(StrokeStartLineCapProperty);
+            set => this.SetValue(StrokeStartLineCapProperty, value);
+        }
+
+        public static readonly DependencyProperty StrokeEndLineCapProperty =
+                DependencyProperty.Register("StrokeEndLineCap", typeof(PenLineCap), typeof(LineChartItem), new FrameworkPropertyMetadata(PenLineCap.Flat,
+                                                                                                                                         FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                         FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                         OnPenChanged));
+        public PenLineCap StrokeEndLineCap
+        {
+            get => (PenLineCap)this.GetValue(StrokeEndLineCapProperty);
+            set => this.SetValue(StrokeEndLineCapProperty, value);
+        }
+
+        public static readonly DependencyProperty StrokeDashCapProperty =
+                DependencyProperty.Register("StrokeDashCap", typeof(PenLineCap), typeof(LineChartItem), new FrameworkPropertyMetadata(PenLineCap.Flat,
+                                                                                                                                      FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                      FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                      OnPenChanged));
+        public PenLineCap StrokeDashCap
+        {
+            get => (PenLineCap)this.GetValue(StrokeDashCapProperty);
+            set => this.SetValue(StrokeDashCapProperty, value);
+        }
+
+        public static readonly DependencyProperty StrokeLineJoinProperty =
+                DependencyProperty.Register("StrokeLineJoin", typeof(PenLineJoin), typeof(LineChartItem), new FrameworkPropertyMetadata(PenLineJoin.Miter,
+                                                                                                                                        FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                        FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                        OnPenChanged));
+        public PenLineJoin StrokeLineJoin
+        {
+            get => (PenLineJoin)this.GetValue(StrokeLineJoinProperty);
+            set => this.SetValue(StrokeLineJoinProperty, value);
+        }
+
         public static readonly DependencyProperty StrokeMiterLimitProperty =
-              DependencyProperty.Register("StrokeMiterLimit", typeof(double), typeof(LineChartItem), new FrameworkPropertyMetadata(1d, FrameworkPropertyMetadataOptions.AffectsRender,
-                  (d, e) =>
-                  {
-                      if (d is LineChartItem ThisItem)
-                          ThisItem.InvalidatePen();
-                  }));
+                DependencyProperty.Register("StrokeMiterLimit", typeof(double), typeof(LineChartItem), new FrameworkPropertyMetadata(10d,
+                                                                                                                                     FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                     FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                     OnPenChanged));
         public double StrokeMiterLimit
         {
             get => (double)this.GetValue(StrokeMiterLimitProperty);
             set => this.SetValue(StrokeMiterLimitProperty, value);
+        }
+
+        public static readonly DependencyProperty StrokeDashOffsetProperty =
+                DependencyProperty.Register("StrokeDashOffset", typeof(double), typeof(LineChartItem), new FrameworkPropertyMetadata(0d,
+                                                                                                                                     FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                     FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                     OnPenChanged));
+        public double StrokeDashOffset
+        {
+            get => (double)this.GetValue(StrokeDashOffsetProperty);
+            set => this.SetValue(StrokeDashOffsetProperty, value);
+        }
+
+        public static readonly DependencyProperty StrokeDashArrayProperty =
+                DependencyProperty.Register("StrokeDashArray", typeof(DoubleCollection), typeof(LineChartItem), new FrameworkPropertyMetadata(null,
+                                                                                                                                              FrameworkPropertyMetadataOptions.AffectsMeasure |
+                                                                                                                                              FrameworkPropertyMetadataOptions.AffectsRender,
+                                                                                                                                              OnPenChanged));
+        public DoubleCollection StrokeDashArray
+        {
+            get => (DoubleCollection)this.GetValue(StrokeDashArrayProperty);
+            set => this.SetValue(StrokeDashArrayProperty, value);
+        }
+
+        private static void OnPenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LineChartItem ThisLine)
+                ThisLine.InvalidatePen();
         }
 
         #endregion
@@ -123,6 +185,8 @@ namespace MenthaAssembly.Views
             get => (Brush)this.GetValue(FillProperty);
             set => this.SetValue(FillProperty, value);
         }
+
+        internal void OnAdornersCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) => throw new NotImplementedException();
 
         public static readonly DependencyProperty AllowFillAreaProperty =
               DependencyProperty.Register("AllowFillArea", typeof(bool), typeof(LineChartItem), new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender |
@@ -562,27 +626,15 @@ namespace MenthaAssembly.Views
                 {
                     Thickness = Math.Abs(Thickness),
                     Brush = Brush,
+                    StartLineCap = StrokeStartLineCap,
+                    EndLineCap = StrokeEndLineCap,
+                    DashCap = StrokeDashCap,
+                    LineJoin = StrokeLineJoin,
                     MiterLimit = Math.Max(Math.Abs(this.StrokeMiterLimit), 1d),
                 };
 
-                //// StrokeDashArray is usually going to be its default value and GetValue
-                //// on a mutable default has a per-instance cost associated with it so we'll
-                //// try to avoid caching the default value
-                //DoubleCollection strokeDashArray = null;
-                //bool hasModifiers;
-                //if (GetValueSource(StrokeDashArrayProperty, null, out hasModifiers)
-                //    != BaseValueSourceInternal.Default || hasModifiers)
-                //{
-                //    strokeDashArray = StrokeDashArray;
-                //}
-
-                //// Avoid creating the DashStyle if we can
-                //double strokeDashOffset = StrokeDashOffset;
-                //if (strokeDashArray != null || strokeDashOffset != 0.0)
-                //{
-                //    _Pen.DashStyle = new DashStyle(strokeDashArray, strokeDashOffset);
-                //}
-
+                if (this.StrokeDashArray is DoubleCollection DashData && DashData.Count > 0)
+                    Pen.DashStyle = new DashStyle(DashData, this.StrokeDashOffset);
             }
 
             return Pen;
@@ -907,7 +959,6 @@ namespace MenthaAssembly.Views
 
         protected virtual void OnDatasUpdate()
             => DatasUpdated?.Invoke(this, EventArgs.Empty);
-
 
     }
 }

@@ -1,6 +1,7 @@
 ﻿using MenthaAssembly.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -16,14 +17,6 @@ namespace MenthaAssembly.Views
     [StyleTypedProperty(Property = "ItemContainerStyle", StyleTargetType = typeof(LineChartItem))]
     public class LineChart : ItemsControl
     {
-        public static readonly DependencyProperty PaletteProperty =
-              DependencyProperty.Register("Palette", typeof(IList<Brush>), typeof(LineChart), new PropertyMetadata(null));
-        public IList<Brush> Palette
-        {
-            get => (IList<Brush>)this.GetValue(PaletteProperty);
-            set => this.SetValue(PaletteProperty, value);
-        }
-
         #region Axises
         public static readonly DependencyProperty XAxisInternalCountProperty =
               DependencyProperty.Register("XAxisInternalCount", typeof(int), typeof(LineChart), new PropertyMetadata(6, (d, e) =>
@@ -104,6 +97,12 @@ namespace MenthaAssembly.Views
                           {
                               Panel.SetZIndex(NewItem, ThisChart.Items.Count);
                               NewItem.ShowClosestDataPoint = ThisChart.ShowClosestDataPoint;
+
+                              if (ThisChart.AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
+                              {
+                                  foreach (LineChartAuxiliaryLine Line in Lines)
+                                      Line.Update(NewItem);
+                              }
                           }
                       }
                   }));
@@ -111,6 +110,106 @@ namespace MenthaAssembly.Views
         {
             get => this.GetValue(SelectedItemProperty);
             set => this.SetValue(SelectedItemProperty, value);
+        }
+
+        public static readonly DependencyProperty PaletteProperty =
+              DependencyProperty.Register("Palette", typeof(IList<Brush>), typeof(LineChart), new PropertyMetadata(null));
+        public IList<Brush> Palette
+        {
+            get => (IList<Brush>)this.GetValue(PaletteProperty);
+            set => this.SetValue(PaletteProperty, value);
+        }
+
+        #endregion
+        #region AuxiliaryLine
+        public static readonly DependencyProperty AuxiliaryLinesProperty =
+              DependencyProperty.Register("AuxiliaryLines", typeof(LineChartAuxiliaryLineCollection), typeof(LineChart), new PropertyMetadata(null,
+                  (d, e) =>
+                  {
+                      if (d is LineChart This)
+                      {
+                          if (e.OldValue is LineChartAuxiliaryLineCollection OldCollection)
+                          {
+                              OldCollection.CollectionChanged -= This.OnAuxiliaryLineCollectionChanged;
+                              foreach (LineChartAuxiliaryLine Line in OldCollection)
+                              {
+                                  This.PART_Studio.Children.Remove(Line);
+                                  Line.Chart = null;
+                              }
+                          }
+
+                          if (e.NewValue is LineChartAuxiliaryLineCollection NewCollection)
+                          {
+                              NewCollection.CollectionChanged += This.OnAuxiliaryLineCollectionChanged;
+
+                              if (This.IsLoaded)
+                              {
+                                  foreach (LineChartAuxiliaryLine Line in NewCollection)
+                                  {
+                                      This.PART_Studio.Children.Add(Line);
+                                      Line.Chart = This;
+                                  }
+                              }
+                          }
+                      }
+                  }));
+        public LineChartAuxiliaryLineCollection AuxiliaryLines
+        {
+            get => (LineChartAuxiliaryLineCollection)this.GetValue(AuxiliaryLinesProperty);
+            set => this.SetValue(AuxiliaryLinesProperty, value);
+        }
+
+        private void OnAuxiliaryLineCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    {
+                        foreach (LineChartAuxiliaryLine Line in e.NewItems.OfType<LineChartAuxiliaryLine>())
+                        {
+                            PART_Studio.Children.Add(Line);
+                            Line.Chart = this;
+                        }
+
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Remove:
+                    {
+                        foreach (LineChartAuxiliaryLine Line in e.OldItems.OfType<LineChartAuxiliaryLine>())
+                        {
+                            PART_Studio.Children.Remove(Line);
+                            Line.Chart = null;
+                        }
+
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Replace:
+                    {
+                        foreach (LineChartAuxiliaryLine Line in e.OldItems.OfType<LineChartAuxiliaryLine>())
+                        {
+                            PART_Studio.Children.Remove(Line);
+                            Line.Chart = null;
+                        }
+
+                        foreach (LineChartAuxiliaryLine Line in e.NewItems.OfType<LineChartAuxiliaryLine>())
+                        {
+                            PART_Studio.Children.Add(Line);
+                            Line.Chart = this;
+                        }
+
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Reset:
+                    {
+                        foreach (LineChartAuxiliaryLine Line in PART_Studio.Children.OfType<LineChartAuxiliaryLine>())
+                        {
+                            PART_Studio.Children.Remove(Line);
+                            Line.Chart = null;
+                        }
+
+                        break;
+                    }
+            }
         }
 
         #endregion
@@ -135,6 +234,7 @@ namespace MenthaAssembly.Views
                     this.UpdateYAxis();
                     this.UpdateXAxis();
                     this.UpdateLines();
+                    this.UpdateAuxiliaryLines();
                 };
 
                 PART_Studio.MouseEnter += (s, e) =>
@@ -155,6 +255,15 @@ namespace MenthaAssembly.Views
                     if (this.SelectedItem is LineChartItem Item)
                         Item.UpdateClosestDataPoint();
                 };
+
+                if (this.AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
+                {
+                    foreach (LineChartAuxiliaryLine Line in Lines)
+                    {
+                        PART_Studio.Children.Add(Line);
+                        Line.Chart = this;
+                    }
+                }
             }
 
             if (this.GetTemplateChild("PART_XAxisStudio") is Canvas PART_XAxisStudio)
@@ -292,6 +401,15 @@ namespace MenthaAssembly.Views
                 Item.InvalidatePolyLine();
                 Item.InvalidateFillArea();
                 Item.InvalidateVisual();
+            }
+        }
+        protected virtual void UpdateAuxiliaryLines()
+        {
+            if (this.SelectedItem is LineChartItem Item &&
+                this.AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
+            {
+                foreach (LineChartAuxiliaryLine Line in Lines)
+                    Line.Update(Item);
             }
         }
 
@@ -454,7 +572,11 @@ namespace MenthaAssembly.Views
             this.UpdateMaxAndMinValue();
 
             UpdateToken?.Cancel();
-            UpdateToken = DispatcherHelper.DelayAction(100d, () => this.UpdateLines(this.GetLineChartItems().Where(i => !i.Equals(sender))));
+            UpdateToken = DispatcherHelper.DelayAction(100d, () =>
+            {
+                this.UpdateLines(this.GetLineChartItems().Where(i => !i.Equals(sender)));
+                this.UpdateAuxiliaryLines();
+            });
         }
         protected virtual void OnItemPreviewMouseDown(object sender, MouseButtonEventArgs e)
             => this.SelectedItem = sender;
