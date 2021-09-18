@@ -465,6 +465,11 @@ namespace MenthaAssembly
             return Context.Convolute<T>(Kernel, Options);
         }
 
+        public ImageContext<T> Filter<T>(ImageFilter Filter) where T : unmanaged, IPixel 
+            => Context.Filter<T>(Filter);
+        public ImageContext<T> Filter<T>(ImageFilter Filter, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.Filter<T>(Filter, Options);
+
         public ImageContext<T> Crop<T>(int X, int Y, int Width, int Height) where T : unmanaged, IPixel
         {
             return Context.Crop<T>(X, Y, Width, Height);
