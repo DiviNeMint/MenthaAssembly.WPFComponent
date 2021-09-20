@@ -382,11 +382,11 @@ namespace MenthaAssembly
             Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Contour, Fill, StartAngle);
         }
 
-        public void FillPolygon(IList<Point<int>> Vertices, IPixel Fill, int OffsetX, int OffsetY)
+        public void FillPolygon(IEnumerable<Point<int>> Vertices, IPixel Fill, int OffsetX, int OffsetY)
         {
             Context.FillPolygon(Vertices, Fill, OffsetX, OffsetY);
         }
-        public void FillPolygon(IList<int> VerticeDatas, IPixel Fill, int OffsetX, int OffsetY)
+        public void FillPolygon(IEnumerable<int> VerticeDatas, IPixel Fill, int OffsetX, int OffsetY)
         {
             Context.FillPolygon(VerticeDatas, Fill, OffsetX, OffsetY);
         }
