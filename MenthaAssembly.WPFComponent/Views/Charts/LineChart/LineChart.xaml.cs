@@ -539,7 +539,7 @@ namespace MenthaAssembly.Views
 
             if (Item.ItemsSource is null &&
                 Item.GetBindingExpression(LineChartItem.ItemsSourceProperty) is null)
-                Item.SetBinding(LineChartItem.ItemsSourceProperty, new Binding(nameof(this.DataContext)) { Source = Item });
+                Item.SetBinding(LineChartItem.ItemsSourceProperty, new Binding(DisplayMemberPath) { Source = Data });
             else
                 this.OnItemDatasUpdated();
 
