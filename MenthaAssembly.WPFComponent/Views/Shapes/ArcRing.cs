@@ -16,8 +16,8 @@ namespace MenthaAssembly.Views
                 }));
         public Brush BorderBrush
         {
-            get => (Brush)this.GetValue(BorderBrushProperty);
-            set => this.SetValue(BorderBrushProperty, value);
+            get => (Brush)GetValue(BorderBrushProperty);
+            set => SetValue(BorderBrushProperty, value);
         }
 
         public static readonly DependencyProperty BorderThicknessProperty =
@@ -30,8 +30,8 @@ namespace MenthaAssembly.Views
                 }));
         public double BorderThickness
         {
-            get => (double)this.GetValue(BorderThicknessProperty);
-            set => this.SetValue(BorderThicknessProperty, value);
+            get => (double)GetValue(BorderThicknessProperty);
+            set => SetValue(BorderThicknessProperty, value);
         }
 
         public static readonly DependencyProperty ArcRingThicknessProperty =
@@ -44,8 +44,8 @@ namespace MenthaAssembly.Views
                 }));
         public double ArcRingThickness
         {
-            get => (double)this.GetValue(ArcRingThicknessProperty);
-            set => this.SetValue(ArcRingThicknessProperty, value);
+            get => (double)GetValue(ArcRingThicknessProperty);
+            set => SetValue(ArcRingThicknessProperty, value);
         }
 
         public static readonly DependencyProperty FillProperty =
@@ -53,8 +53,8 @@ namespace MenthaAssembly.Views
                                                                                                                                  FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender));
         public Brush Fill
         {
-            get => (Brush)this.GetValue(FillProperty);
-            set => this.SetValue(FillProperty, value);
+            get => (Brush)GetValue(FillProperty);
+            set => SetValue(FillProperty, value);
         }
 
         public static readonly DependencyProperty StartAngleProperty =
@@ -63,12 +63,12 @@ namespace MenthaAssembly.Views
                 (d, e) =>
                 {
                     if (d is ArcRing This)
-                        This.InvalidatePen();
+                        This.InvalidateGeometry();
                 }));
         public double StartAngle
         {
-            get => (double)this.GetValue(StartAngleProperty);
-            set => this.SetValue(StartAngleProperty, value);
+            get => (double)GetValue(StartAngleProperty);
+            set => SetValue(StartAngleProperty, value);
         }
 
         public static readonly DependencyProperty EndAngleProperty =
@@ -77,25 +77,25 @@ namespace MenthaAssembly.Views
                 (d, e) =>
                 {
                     if (d is ArcRing This)
-                        This.InvalidatePen();
+                        This.InvalidateGeometry();
                 }));
         public double EndAngle
         {
-            get => (double)this.GetValue(EndAngleProperty);
-            set => this.SetValue(EndAngleProperty, value);
+            get => (double)GetValue(EndAngleProperty);
+            set => SetValue(EndAngleProperty, value);
         }
 
         protected override void OnRender(DrawingContext dc)
-            => dc.DrawGeometry(this.Fill, this.GetPen(), this.GetGeometry());
+            => dc.DrawGeometry(Fill, GetPen(), GetGeometry());
 
         protected Pen Pen;
         protected virtual Pen GetPen()
         {
-            double Thickness = this.BorderThickness;
+            double Thickness = BorderThickness;
             if (double.IsInfinity(Thickness) || Thickness is 0d || double.IsNaN(Thickness))
                 return null;
 
-            Brush Brush = this.BorderBrush;
+            Brush Brush = BorderBrush;
             if (Brush is null || Brush.Equals(Brushes.Transparent))
                 return null;
 
@@ -137,18 +137,18 @@ namespace MenthaAssembly.Views
         private Geometry Geometry;
         protected virtual Geometry GetGeometry()
         {
-            double Radius = Math.Min(this.ActualWidth, this.ActualHeight) / 2d;
+            double Radius = Math.Min(ActualWidth, ActualHeight) / 2d;
             if (double.IsInfinity(Radius) || Radius is 0 || double.IsNaN(Radius))
                 return null;
 
             if (Geometry is null)
             {
-                double LargeR = Math.Max(Radius - this.BorderThickness / 2, 0d),
-                       SmallR = Math.Max(LargeR - this.ArcRingThickness, 0d),
-                       RenderAngle = (double)((decimal)this.EndAngle % 360);
+                double LargeR = Math.Max(Radius - BorderThickness / 2, 0d),
+                       SmallR = Math.Max(LargeR - ArcRingThickness, 0d),
+                       RenderAngle = (double)((decimal)(EndAngle - StartAngle) % 360);
 
                 StreamGeometry Temp = new StreamGeometry { FillRule = FillRule.EvenOdd };
-                if (this.EndAngle != 0 && RenderAngle == 0)
+                if (EndAngle != 0 && RenderAngle == 0)
                 {
                     // Ring
                     Point P1 = new Point(Radius + LargeR, Radius),
@@ -169,14 +169,14 @@ namespace MenthaAssembly.Views
                 else
                 {
                     // Arc
-                    double Theta = this.StartAngle * MathHelper.UnitTheta,
+                    double Theta = StartAngle * MathHelper.UnitTheta,
                            Sin = Math.Sin(Theta),
                            Cos = Math.Cos(Theta);
 
                     Point P1 = new Point(LargeR * Sin + Radius, Radius - LargeR * Cos),
                           P3 = new Point(SmallR * Sin + Radius, Radius - SmallR * Cos);
 
-                    Theta = (this.StartAngle + RenderAngle) * MathHelper.UnitTheta;
+                    Theta = (StartAngle + RenderAngle) * MathHelper.UnitTheta;
                     Sin = Math.Sin(Theta);
                     Cos = Math.Cos(Theta);
 

@@ -56,11 +56,9 @@ namespace MenthaAssembly.Views
                                 Property.SetValue(Target, FileDialog.FileName);
                             break;
                         case ExploreType.Folder:
-                            //FolderBrowserDialog FolderDialog = new FolderBrowserDialog();
-                            //if (FolderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                            //    Data.Property.SetValue(This.TargetObject, FolderDialog.SelectedPath);
-
-                            //FolderDialog.Dispose();
+                            FolderBrowserDialog FolderDialog = new FolderBrowserDialog();
+                            if (FolderDialog.ShowDialog() is true)
+                                Property.SetValue(Target, FolderDialog.SelectedPath);
                             break;
                     }
                 }
