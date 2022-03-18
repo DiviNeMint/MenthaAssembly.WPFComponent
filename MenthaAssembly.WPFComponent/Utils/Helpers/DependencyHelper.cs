@@ -142,6 +142,11 @@ namespace System.Windows
             => new ChangedEventArgs<T>(e.OldValue is T New ? New : default,
                                        e.NewValue is T Old ? Old : default);
 
+        public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this ChangedEventArgs<T> e)
+            => new RoutedPropertyChangedEventArgs<T>(e.OldValue, e.NewValue);
+        public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this ChangedEventArgs<T> e, RoutedEvent Event)
+            => new RoutedPropertyChangedEventArgs<T>(e.OldValue, e.NewValue, Event);
+
         public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName] string PropertyName = null)
         {
             if (PropertyName is null)
@@ -155,7 +160,7 @@ namespace System.Windows
                     PropertyChangedEventArgs e = new PropertyChangedEventArgs(PropertyName);
                     foreach (Delegate Event in Invocations)
                     {
-                        if (Event.Target is DispatcherObject DispObj && 
+                        if (Event.Target is DispatcherObject DispObj &&
                             !DispObj.CheckAccess())
                         {
                             // Invoke handler in the target dispatcher's thread

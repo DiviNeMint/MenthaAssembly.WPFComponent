@@ -117,6 +117,10 @@ namespace MenthaAssembly
                 }
 
                 AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
+
+                if (!GetEnableDelayNotifyText(This))
+                    This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
                 e.Handled = true;
             }
         }
@@ -158,6 +162,10 @@ namespace MenthaAssembly
                         Temp = Max;
 
                     AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
+
+                    if (!GetEnableDelayNotifyText(This))
+                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
                     e.Handled = true;
                 }
 
@@ -174,6 +182,10 @@ namespace MenthaAssembly
                         Temp = Min;
 
                     AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
+
+                    if (!GetEnableDelayNotifyText(This))
+                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
                     e.Handled = true;
                 }
 
@@ -189,6 +201,10 @@ namespace MenthaAssembly
                         Temp = Max;
 
                     AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
+
+                    if (!GetEnableDelayNotifyText(This))
+                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
                     e.Handled = true;
                 }
 
@@ -204,6 +220,10 @@ namespace MenthaAssembly
                         Temp = Min;
 
                     AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
+
+                    if (!GetEnableDelayNotifyText(This))
+                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
                     e.Handled = true;
                 }
             }
@@ -380,9 +400,10 @@ namespace MenthaAssembly
                             AvoidDelayNotifyBlock(This, () => This.Text = Min.ToString());
                         else if (Max < Value)
                             AvoidDelayNotifyBlock(This, () => This.Text = Max.ToString());
+
+                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
                     }
                 }
-                This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
 
                 DelayActionToken Token = DispatcherHelper.DelayAction(DelayNotifyInterval, DelayTask, () => SetDelayToken(This, null));
                 SetDelayToken(This, Token);

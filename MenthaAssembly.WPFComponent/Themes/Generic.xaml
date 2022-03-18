@@ -30,10 +30,10 @@
 
         <!--PasswordBox-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TextBoxs/PasswordBox.xaml"/>
-        
+
         <!--ConsoleBox-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TextBoxs/ConsoleBox.xaml"/>
-        
+
         <!--Popup-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Popups/PopupMenu.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Popups/PopupMenuItem.xaml"/>
@@ -42,14 +42,17 @@
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Containers/TitleContainer.xaml"/>
 
         <!--ArcRingProgress-->
-		<ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/ArcRingProgress.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/ArcRingProgress.xaml"/>
 
         <!--SwitchView-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/SwitchView.xaml"/>
-        
+
         <!--Magnifier-->
-		<ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Magnifier.xaml"/>
-        
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Magnifier.xaml"/>
+
+        <!--DualSlider-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DualSlider.xaml"/>
+
     </ResourceDictionary.MergedDictionaries>
 
     <DrawingImage x:Key="Icon_Explore">
