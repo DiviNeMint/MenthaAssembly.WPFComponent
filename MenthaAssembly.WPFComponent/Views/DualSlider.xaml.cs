@@ -202,20 +202,22 @@ namespace MenthaAssembly.Views
                 PART_RightThumb.DragDelta += OnRightThumbDragDelta;
                 this.PART_RightThumb = PART_RightThumb;
             }
+        }
 
-            Loaded += (s, e) =>
-            {
-                double Temp = LeftValue;
-                if (Temp != 0)
-                    OnLeftValueChanged(new ChangedEventArgs<double>(0d, Temp));
+        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+        {
+            base.OnRenderSizeChanged(sizeInfo);
 
-                Temp = RightValue;
-                if (Temp != 1d)
-                    OnRightValueChanged(new ChangedEventArgs<double>(1d, Temp));
+            double Temp = LeftValue;
+            if (Temp != 0)
+                OnLeftValueChanged(new ChangedEventArgs<double>(0d, Temp));
 
-                if (IsSelectionRangeEnabled)
-                    UpdateSelectionRange();
-            };
+            Temp = RightValue;
+            if (Temp != 1d)
+                OnRightValueChanged(new ChangedEventArgs<double>(1d, Temp));
+
+            if (IsSelectionRangeEnabled)
+                UpdateSelectionRange();
         }
 
         private bool IsLeftMouseDown = false;

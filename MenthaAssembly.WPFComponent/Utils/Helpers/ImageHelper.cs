@@ -9,56 +9,59 @@ namespace MenthaAssembly
 {
     public static class ImageHelper
     {
-        public static unsafe IImageContext ToImageContext(this BitmapSource This)
+        public static IImageContext ToImageContext(this BitmapSource This)
         {
-            if (PixelFormats.Bgr24.Equals(This.Format))
-            {
-                int Stride = This.PixelWidth * sizeof(BGR);
-                byte[] Datas = new byte[Stride * This.PixelHeight];
-                This.CopyPixels(Datas, Stride, 0);
-                return new ImageContext<BGR>(This.PixelWidth,
-                                             This.PixelHeight,
-                                             Datas);
-            }
-            else if (PixelFormats.Bgr32.Equals(This.Format))
-            {
-                int Stride = This.PixelWidth * sizeof(BGRA);
-                byte[] Datas = new byte[Stride * This.PixelHeight];
-                This.CopyPixels(Datas, Stride, 0);
-                return new ImageContext<BGRA>(This.PixelWidth,
-                                              This.PixelHeight,
-                                              Datas);
-            }
-            else if (PixelFormats.Bgra32.Equals(This.Format) ||
-                     PixelFormats.Pbgra32.Equals(This.Format))
-            {
-                int Stride = This.PixelWidth * sizeof(BGRA);
-                byte[] Datas = new byte[Stride * This.PixelHeight];
-                This.CopyPixels(Datas, Stride, 0);
-                return new ImageContext<BGRA>(This.PixelWidth,
-                                              This.PixelHeight,
-                                              Datas);
-            }
-            else if (PixelFormats.Rgb24.Equals(This.Format))
-            {
-                int Stride = This.PixelWidth * sizeof(BGRA);
-                byte[] Datas = new byte[Stride * This.PixelHeight];
-                This.CopyPixels(Datas, Stride, 0);
-                return new ImageContext<RGB>(This.PixelWidth,
-                                             This.PixelHeight,
-                                             Datas);
-            }
-            else if (PixelFormats.Gray8.Equals(This.Format))
-            {
-                int Stride = This.PixelWidth * sizeof(BGRA);
-                byte[] Datas = new byte[Stride * This.PixelHeight];
-                This.CopyPixels(Datas, Stride, 0);
-                return new ImageContext<Gray8>(This.PixelWidth,
-                                               This.PixelHeight,
-                                               Datas);
-            }
+            if (This is WriteableBitmap bmp)
+                return ToImageContext(bmp);
 
-            throw new NotImplementedException();
+            IImageContext Image;
+            int Width = This.PixelWidth,
+                Height = This.PixelHeight;
+
+            if (PixelFormats.Bgr24.Equals(This.Format))
+                Image = new ImageContext<BGR>(Width, Height);
+            else if (PixelFormats.Bgr32.Equals(This.Format) ||
+                     PixelFormats.Bgra32.Equals(This.Format) ||
+                     PixelFormats.Pbgra32.Equals(This.Format))
+                Image = new ImageContext<BGRA>(Width, Height);
+            else if (PixelFormats.Rgb24.Equals(This.Format))
+                Image = new ImageContext<RGB>(Width, Height);
+            else if (PixelFormats.Gray8.Equals(This.Format))
+                Image = new ImageContext<Gray8>(Width, Height);
+            else
+                throw new NotImplementedException();
+
+            int Stride = (int)Image.Stride;
+            This.CopyPixels(Int32Rect.Empty, Image.Scan0, Stride * Image.Height, Stride);
+            return Image;
+        }
+        private static IImageContext ToImageContext(WriteableBitmap This)
+        {
+            int Width = This.PixelWidth,
+                Height = This.PixelHeight,
+                Stride = This.BackBufferStride;
+
+            try
+            {
+                This.Lock();
+
+                if (PixelFormats.Bgr24.Equals(This.Format))
+                    return new ImageContext<BGR>(Width, Height, This.BackBuffer, Stride).Clone();
+                else if (PixelFormats.Bgr32.Equals(This.Format) ||
+                         PixelFormats.Bgra32.Equals(This.Format) ||
+                         PixelFormats.Pbgra32.Equals(This.Format))
+                    return new ImageContext<BGRA>(Width, Height, This.BackBuffer, Stride).Clone();
+                else if (PixelFormats.Rgb24.Equals(This.Format))
+                    return new ImageContext<RGB>(Width, Height, This.BackBuffer, Stride).Clone();
+                else if (PixelFormats.Gray8.Equals(This.Format))
+                    return new ImageContext<Gray8>(Width, Height, This.BackBuffer, Stride).Clone();
+
+                throw new NotImplementedException();
+            }
+            finally
+            {
+                This.Unlock();
+            }
         }
 
         public static IntPtr CreateHBitmap(this UIElement This, int Width, int Height)
