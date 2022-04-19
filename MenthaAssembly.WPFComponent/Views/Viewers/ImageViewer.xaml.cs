@@ -1,8 +1,9 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Views.Primitives;
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -25,16 +26,18 @@ namespace MenthaAssembly.Views
 
         public event EventHandler<ChangedEventArgs<Rect>> ViewportChanged;
 
+        public event EventHandler<ChangedEventArgs<ImageChannel>> ChannelChanged;
+
         public static readonly DependencyProperty SourceProperty =
-              DependencyProperty.Register("Source", typeof(BitmapSource), typeof(ImageViewer), new PropertyMetadata(default,
+              Image.SourceProperty.AddOwner(typeof(ImageViewer), new PropertyMetadata(null,
                   (d, e) =>
                   {
                       if (d is ImageViewer This)
-                          This.SourceContext = (BitmapContext)(e.NewValue as BitmapSource);
+                          This.SourceContext = (e.NewValue as ImageSource)?.ToImageContext();
                   }));
-        public BitmapSource Source
+        public ImageSource Source
         {
-            get => (BitmapSource)GetValue(SourceProperty);
+            get => (ImageSource)GetValue(SourceProperty);
             set => SetValue(SourceProperty, value);
         }
 
@@ -96,6 +99,19 @@ namespace MenthaAssembly.Views
             set => SetValue(ViewportProperty, value);
         }
 
+        public static readonly DependencyProperty ChannelProperty =
+              DependencyProperty.Register("Channel", typeof(ImageChannel), typeof(ImageViewer), new PropertyMetadata(ImageChannel.All,
+                  (d, e) =>
+                  {
+                      if (d is ImageViewer This)
+                          This.OnChannelChanged(new ChangedEventArgs<ImageChannel>(e.OldValue, e.NewValue));
+                  }));
+        public new ImageChannel Channel
+        {
+            get => (ImageChannel)GetValue(ChannelProperty);
+            set => SetValue(ChannelProperty, value);
+        }
+
         protected override Size<int> ViewBox
         {
             get => base.ViewBox;
@@ -107,9 +123,7 @@ namespace MenthaAssembly.Views
             }
         }
 
-        public new BitmapContext DisplayContext
-            => base.DisplayContext;
-        public new IImageContext SourceContext
+        public override IImageContext SourceContext
         {
             get => base.SourceContext;
             set
@@ -121,7 +135,7 @@ namespace MenthaAssembly.Views
                 ChangedEventArgs<IImageContext> e = new ChangedEventArgs<IImageContext>(base.SourceContext, value);
                 base.SourceContext = value;
 
-                this.Dispatcher.InvokeSync(() => OnSourceChanged(e));
+                Dispatcher.InvokeSync(() => OnSourceChanged(e));
             }
         }
 
@@ -132,21 +146,26 @@ namespace MenthaAssembly.Views
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ImageViewer), new FrameworkPropertyMetadata(typeof(ImageViewer)));
         }
 
+        protected DelayActionToken SizeChangedUpdateToken;
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
             base.OnRenderSizeChanged(sizeInfo);
 
-            if (ActualHeight > 0 && ActualWidth > 0)
+            SizeChangedUpdateToken?.Cancel();
+            SizeChangedUpdateToken = DispatcherHelper.DelayAction(250d, () =>
             {
-                DisplayArea = new Size(this.ActualWidth - (this.BorderThickness.Left + this.BorderThickness.Right),
-                                       this.ActualHeight - (this.BorderThickness.Top + this.BorderThickness.Bottom));
+                if (ActualHeight > 0 && ActualWidth > 0)
+                {
+                    DisplayArea = new Size(ActualWidth - (BorderThickness.Left + BorderThickness.Right),
+                                           ActualHeight - (BorderThickness.Top + BorderThickness.Bottom));
 
-                IsResizeViewer = true;
-                Resize_ViewportCenterInImage = new Point(Viewport.X + Viewport.Width / 2 - SourceLocation.X,
-                                                         Viewport.Y + Viewport.Height / 2 - SourceLocation.Y);
-                ViewBox = CalculateViewBox();
-                IsResizeViewer = false;
-            }
+                    IsResizeViewer = true;
+                    Resize_ViewportCenterInImage = new Point(Viewport.X + Viewport.Width / 2 - SourceLocation.X,
+                                                             Viewport.Y + Viewport.Height / 2 - SourceLocation.Y);
+                    ViewBox = CalculateViewBox();
+                    IsResizeViewer = false;
+                }
+            });
         }
 
         protected virtual void OnSourceChanged(ChangedEventArgs<IImageContext> e)
@@ -179,15 +198,15 @@ namespace MenthaAssembly.Views
                 ViewBoxChanged?.Invoke(this, e);
 
             double NewScale = CalculateScale();
-            if (NewScale.Equals(this.Scale))
+            if (NewScale.Equals(Scale))
             {
                 OnScaleChanged(null);
                 return;
             }
-            this.Scale = NewScale;
+            Scale = NewScale;
         }
 
-        internal protected bool IsMinScale = true;
+        protected internal bool IsMinScale = true;
         protected virtual void OnScaleChanged(ChangedEventArgs<double> e)
         {
             if (e != null)
@@ -211,6 +230,17 @@ namespace MenthaAssembly.Views
             {
                 base.Viewport = e.NewValue;
                 ViewportChanged?.Invoke(this, e);
+            }
+
+            OnRenderImage();
+        }
+
+        protected virtual void OnChannelChanged(ChangedEventArgs<ImageChannel> e)
+        {
+            if (e != null)
+            {
+                base.Channel = e.NewValue;
+                ChannelChanged?.Invoke(this, e);
             }
 
             OnRenderImage();
@@ -290,7 +320,7 @@ namespace MenthaAssembly.Views
                 LastImageBound = new Bound<float>(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
             }
 
-            this.Dispatcher.BeginInvoke(new Action(() =>
+            Dispatcher.BeginInvoke(new Action(() =>
             {
                 BitmapContext Display = DisplayContext;
                 if (Display.TryLock(1))
@@ -316,7 +346,7 @@ namespace MenthaAssembly.Views
         {
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                this.CaptureMouse();
+                CaptureMouse();
                 IsLeftMouseDown = true;
                 MousePosition = e.GetPosition(this);
                 MouseMoveDelta = new Vector();
@@ -346,7 +376,7 @@ namespace MenthaAssembly.Views
         {
             if (IsLeftMouseDown)
             {
-                this.ReleaseMouseCapture();
+                ReleaseMouseCapture();
                 IsLeftMouseDown = false;
 
                 if (MouseMoveDelta.LengthSquared <= 25)

@@ -156,7 +156,7 @@ namespace MenthaAssembly
             DrawTopBorder = 64,
             DrawRightBorder = 128,
             DrawBottomBorder = 256,
-            DrawAllBorders = (DrawLeftBorder | DrawTopBorder | DrawRightBorder | DrawBottomBorder),
+            DrawAllBorders = DrawLeftBorder | DrawTopBorder | DrawRightBorder | DrawBottomBorder,
         }
 
         private enum AccentState

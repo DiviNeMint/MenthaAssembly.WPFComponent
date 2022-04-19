@@ -15,9 +15,12 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             SnapsToDevicePixels="True">
-                        <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
-                               RenderOptions.BitmapScalingMode="LowQuality"
-                               Stretch="None"/>
+                        <Grid x:Name="PART_Container"
+                              UseLayoutRounding="True">
+                            <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
+                                   RenderOptions.BitmapScalingMode="LowQuality"
+                                   Stretch="None"/>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

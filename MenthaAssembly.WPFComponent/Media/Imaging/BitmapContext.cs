@@ -16,9 +16,6 @@ namespace MenthaAssembly
         internal IImageContext Context { get; }
         IImageOperator IImageContext.Operator => Context.Operator;
 
-        public BitmapContext(string Path) : this(new Uri(Path)) { }
-        public BitmapContext(Uri Path) : this(new BitmapImage(Path)) { }
-        public BitmapContext(BitmapSource Source) : this(new WriteableBitmap(Source)) { }
         public BitmapContext(WriteableBitmap Bitmap)
         {
             this.Bitmap = Bitmap;
@@ -29,14 +26,8 @@ namespace MenthaAssembly
                                                 Bitmap.BackBuffer,
                                                 Bitmap.BackBufferStride);
             }
-            else if (PixelFormats.Bgr32.Equals(Bitmap.Format))
-            {
-                Context = new ImageContext<BGRA>(Bitmap.PixelWidth,
-                                                 Bitmap.PixelHeight,
-                                                 Bitmap.BackBuffer,
-                                                 Bitmap.BackBufferStride);
-            }
-            else if (PixelFormats.Bgra32.Equals(Bitmap.Format) ||
+            else if (PixelFormats.Bgr32.Equals(Bitmap.Format) ||
+                     PixelFormats.Bgra32.Equals(Bitmap.Format) ||
                      PixelFormats.Pbgra32.Equals(Bitmap.Format))
             {
                 Context = new ImageContext<BGRA>(Bitmap.PixelWidth,
@@ -58,6 +49,10 @@ namespace MenthaAssembly
                                                   Bitmap.BackBuffer,
                                                   Bitmap.BackBufferStride);
             }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         public int Width => Context.Width;
@@ -75,10 +70,10 @@ namespace MenthaAssembly
         Type IImageContext.StructType => Context.StructType;
 
         public IntPtr Scan0 => Context.Scan0;
-        IntPtr IImageContext.ScanA => throw new NotImplementedException();
-        IntPtr IImageContext.ScanR => throw new NotImplementedException();
-        IntPtr IImageContext.ScanG => throw new NotImplementedException();
-        IntPtr IImageContext.ScanB => throw new NotImplementedException();
+        IntPtr IImageContext.ScanA => throw new NotSupportedException();
+        IntPtr IImageContext.ScanR => throw new NotSupportedException();
+        IntPtr IImageContext.ScanG => throw new NotSupportedException();
+        IntPtr IImageContext.ScanB => throw new NotSupportedException();
 
         public IImagePalette Palette => Context.Palette;
 
@@ -465,7 +460,7 @@ namespace MenthaAssembly
             return Context.Convolute<T>(Kernel, Options);
         }
 
-        public ImageContext<T> Filter<T>(ImageFilter Filter) where T : unmanaged, IPixel 
+        public ImageContext<T> Filter<T>(ImageFilter Filter) where T : unmanaged, IPixel
             => Context.Filter<T>(Filter);
         public ImageContext<T> Filter<T>(ImageFilter Filter, ParallelOptions Options) where T : unmanaged, IPixel
             => Context.Filter<T>(Filter, Options);
@@ -524,63 +519,6 @@ namespace MenthaAssembly
         #endregion
 
         #region Buffer Processing
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, Options);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, long DestStride)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, long DestStride, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride, Options);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, int DestOffset, long DestStride)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestOffset, DestStride);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte[] Dest0, int DestOffset, long DestStride, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestOffset, DestStride, Options);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, IntPtr Dest0)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, IntPtr Dest0, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, Options);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, IntPtr Dest0, long DestStride)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, IntPtr Dest0, long DestStride, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride, Options);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte* Dest0)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte* Dest0, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, Options);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte* Dest0, long DestStride)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride);
-        }
-        public void BlockCopy(int X, int Y, int Width, int Height, byte* Dest0, long DestStride, ParallelOptions Options)
-        {
-            Context.BlockCopy(X, Y, Width, Height, Dest0, DestStride, Options);
-        }
-
         public void BlockCopy<T>(int X, int Y, int Width, int Height, T[] Dest0) where T : unmanaged, IPixel
         {
             Context.BlockCopy(X, Y, Width, Height, Dest0);
@@ -792,23 +730,6 @@ namespace MenthaAssembly
             Context.BlockCopy4(X, Y, Width, Height, DestA, DestR, DestG, DestB, DestStride, Options);
         }
 
-        public void ScanLineCopy(int X, int Y, int Length, byte[] Dest0)
-        {
-            Context.ScanLineCopy(X, Y, Length, Dest0);
-        }
-        public void ScanLineCopy(int X, int Y, int Length, byte[] Dest0, int DestOffset)
-        {
-            Context.ScanLineCopy(X, Y, Length, Dest0, DestOffset);
-        }
-        public void ScanLineCopy(int X, int Y, int Length, IntPtr Dest0)
-        {
-            Context.ScanLineCopy(X, Y, Length, Dest0);
-        }
-        public void ScanLineCopy(int X, int Y, int Length, byte* Dest0)
-        {
-            Context.ScanLineCopy(X, Y, Length, Dest0);
-        }
-
         public void ScanLineCopy<T>(int X, int Y, int Length, T* Dest0) where T : unmanaged, IPixel
         {
             Context.ScanLineCopy(X, Y, Length, Dest0);
@@ -921,7 +842,6 @@ namespace MenthaAssembly
             => AddDirtyRect(new Int32Rect(Point.X, Point.Y, Size.Width, Size.Height));
 
         public static implicit operator ImageSource(BitmapContext Target) => Target?.Bitmap;
-        public static implicit operator BitmapContext(BitmapSource Target) => Target is null ? null : new BitmapContext(Target);
         public static implicit operator BitmapContext(WriteableBitmap Target) => Target is null ? null : new BitmapContext(Target);
 
     }

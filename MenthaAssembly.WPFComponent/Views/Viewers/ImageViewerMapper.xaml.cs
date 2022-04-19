@@ -26,6 +26,7 @@ namespace MenthaAssembly.Views
                               OldViewer.SourceChanged -= This.OnSourceChanged;
                               OldViewer.ViewBoxChanged -= This.OnViewBoxChanged;
                               OldViewer.ViewportChanged -= This.OnViewportChanged;
+                              OldViewer.ChannelChanged -= This.OnChannelChanged;
                           }
 
                           ImageViewer NewViewer = e.NewValue as ImageViewer;
@@ -40,6 +41,7 @@ namespace MenthaAssembly.Views
                               NewViewer.SourceChanged += This.OnSourceChanged;
                               NewViewer.ViewBoxChanged += This.OnViewBoxChanged;
                               NewViewer.ViewportChanged += This.OnViewportChanged;
+                              NewViewer.ChannelChanged += This.OnChannelChanged;
 
                               This.OnRenderSizeChanged(new SizeChangedInfo(This, This.RenderSize, true, true));
                           }
@@ -201,6 +203,12 @@ namespace MenthaAssembly.Views
             TempViewport.Y = MathHelper.Clamp(TempViewport.Y, 0, ViewBox.Height - TempViewport.Height);
 
             return TempViewport;
+        }
+
+        private void OnChannelChanged(object sender, ChangedEventArgs<ImageChannel> e)
+        {
+            Channel = e.NewValue;
+            OnRenderImage();
         }
 
         protected void OnRenderImage()

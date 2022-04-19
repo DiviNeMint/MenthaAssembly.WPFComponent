@@ -9,68 +9,154 @@ namespace MenthaAssembly
 {
     public static class ImageHelper
     {
-        public static IImageContext ToImageContext(this BitmapSource This)
+        public static IImageContext ToImageContext(this ImageSource This)
         {
-            if (This is WriteableBitmap bmp)
-                return ToImageContext(bmp);
+            if (This is WriteableBitmap SharedBmp)
+                return new BitmapContext(SharedBmp);
 
-            IImageContext Image;
-            int Width = This.PixelWidth,
-                Height = This.PixelHeight;
+            if (This is BitmapSource Bmp)
+            {
+                IImageContext Image;
+                int Width = Bmp.PixelWidth,
+                    Height = Bmp.PixelHeight;
 
-            if (PixelFormats.Bgr24.Equals(This.Format))
-                Image = new ImageContext<BGR>(Width, Height);
-            else if (PixelFormats.Bgr32.Equals(This.Format) ||
-                     PixelFormats.Bgra32.Equals(This.Format) ||
-                     PixelFormats.Pbgra32.Equals(This.Format))
-                Image = new ImageContext<BGRA>(Width, Height);
-            else if (PixelFormats.Rgb24.Equals(This.Format))
-                Image = new ImageContext<RGB>(Width, Height);
-            else if (PixelFormats.Gray8.Equals(This.Format))
-                Image = new ImageContext<Gray8>(Width, Height);
-            else
-                throw new NotImplementedException();
+                if (PixelFormats.Bgr24.Equals(Bmp.Format))
+                    Image = new ImageContext<BGR>(Width, Height);
+                else if (PixelFormats.Bgr32.Equals(Bmp.Format) ||
+                         PixelFormats.Bgra32.Equals(Bmp.Format) ||
+                         PixelFormats.Pbgra32.Equals(Bmp.Format))
+                    Image = new ImageContext<BGRA>(Width, Height);
+                else if (PixelFormats.Rgb24.Equals(Bmp.Format))
+                    Image = new ImageContext<RGB>(Width, Height);
+                else if (PixelFormats.Gray8.Equals(Bmp.Format))
+                    Image = new ImageContext<Gray8>(Width, Height);
+                else
+                    throw new NotImplementedException();
 
-            int Stride = (int)Image.Stride;
-            This.CopyPixels(Int32Rect.Empty, Image.Scan0, Stride * Image.Height, Stride);
-            return Image;
+                int Stride = (int)Image.Stride;
+                Bmp.CopyPixels(Int32Rect.Empty, Image.Scan0, Stride * Image.Height, Stride);
+                return Image;
+            }
+
+            if (This is DrawingImage Drawing)
+            {
+                int Width = (int)Drawing.Width,
+                    Height = (int)Drawing.Height;
+                IImageContext Image = new ImageContext<BGRA>(Width, Height);
+
+                DrawingVisual Visual = new DrawingVisual();
+                using (DrawingContext Context = Visual.RenderOpen())
+                {
+                    Context.DrawDrawing(Drawing.Drawing);
+                    Context.Pop();
+                }
+
+                RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
+                RenderBitmap.Render(Visual);
+
+                int Stride = (int)Image.Stride;
+                RenderBitmap.CopyPixels(Int32Rect.Empty, Image.Scan0, Stride * Height, Stride);
+                return Image;
+            }
+
+            throw new NotSupportedException();
         }
-        private static IImageContext ToImageContext(WriteableBitmap This)
+
+        public static RenderTargetBitmap ToBitmapSource(this UIElement This)
         {
-            int Width = This.PixelWidth,
-                Height = This.PixelHeight,
-                Stride = This.BackBufferStride;
+            bool IsCalculate = false;
+            if (!This.IsMeasureValid ||
+                !This.IsArrangeValid)
+            {
+                This.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                This.Arrange(new Rect(This.DesiredSize));
+                IsCalculate = true;
+            }
 
             try
             {
-                This.Lock();
+                Rect Bound = VisualTreeHelper.GetDescendantBounds(This);
 
-                if (PixelFormats.Bgr24.Equals(This.Format))
-                    return new ImageContext<BGR>(Width, Height, This.BackBuffer, Stride).Clone();
-                else if (PixelFormats.Bgr32.Equals(This.Format) ||
-                         PixelFormats.Bgra32.Equals(This.Format) ||
-                         PixelFormats.Pbgra32.Equals(This.Format))
-                    return new ImageContext<BGRA>(Width, Height, This.BackBuffer, Stride).Clone();
-                else if (PixelFormats.Rgb24.Equals(This.Format))
-                    return new ImageContext<RGB>(Width, Height, This.BackBuffer, Stride).Clone();
-                else if (PixelFormats.Gray8.Equals(This.Format))
-                    return new ImageContext<Gray8>(Width, Height, This.BackBuffer, Stride).Clone();
+                DrawingVisual Drawing = new DrawingVisual();
+                using (DrawingContext Context = Drawing.RenderOpen())
+                {
+                    Context.DrawRectangle(new VisualBrush(This), null, Bound);
+                }
 
-                throw new NotImplementedException();
+                RenderTargetBitmap Image = new RenderTargetBitmap((int)Math.Round(Bound.Right, MidpointRounding.AwayFromZero),
+                                                                  (int)Math.Round(Bound.Bottom, MidpointRounding.AwayFromZero),
+                                                                  96d, 96d, PixelFormats.Pbgra32);
+
+                Image.Render(Drawing);
+                return Image;
             }
             finally
             {
-                This.Unlock();
+                if (IsCalculate)
+                {
+                    This.InvalidateMeasure();
+                    This.InvalidateArrange();
+                }
+            }
+        }
+        public static RenderTargetBitmap ToBitmapSource(UIElement Element, double Dpi)
+        {
+            bool IsCalculate = false;
+            if (!Element.IsMeasureValid ||
+                !Element.IsArrangeValid)
+            {
+                Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                Element.Arrange(new Rect(Element.DesiredSize));
+                IsCalculate = true;
+            }
+
+            try
+            {
+                Rect Bound = VisualTreeHelper.GetDescendantBounds(Element);
+
+                double Scale = Dpi / 96d,
+                       Width = Bound.Right * Scale,
+                       Height = Bound.Bottom * Scale;
+
+                DrawingVisual Drawing = new DrawingVisual();
+                using (DrawingContext Context = Drawing.RenderOpen())
+                {
+                    Context.DrawRectangle(new VisualBrush(Element), null, new Rect(Bound.TopLeft, new Point(Width / Scale, Height / Scale)));
+                }
+
+                RenderTargetBitmap Bitmap = new RenderTargetBitmap((int)Math.Round(Width, MidpointRounding.AwayFromZero),
+                                                                   (int)Math.Round(Height, MidpointRounding.AwayFromZero),
+                                                                   Dpi, Dpi, PixelFormats.Pbgra32);
+
+                Bitmap.Render(Drawing);
+                return Bitmap;
+            }
+            finally
+            {
+                if (IsCalculate)
+                {
+                    Element.InvalidateMeasure();
+                    Element.InvalidateArrange();
+                }
             }
         }
 
         public static IntPtr CreateHBitmap(this UIElement This, int Width, int Height)
         {
-            This.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            This.Arrange(new Rect(new Point(), This.DesiredSize));
+            Rect Bound = VisualTreeHelper.GetDescendantBounds(This);
 
-            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
-            RenderBitmap.Render(This);
+            DrawingVisual Drawing = new DrawingVisual();
+            using (DrawingContext Context = Drawing.RenderOpen())
+            {
+                double Sx = Width / Bound.Width,
+                       Sy = Height / Bound.Height;
+                Context.PushTransform(new ScaleTransform(Sx, Sy, 0, 0));
+                Context.DrawRectangle(new VisualBrush(This), null, Bound);
+                Context.Pop();
+            }
+
+            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96d, 96d, PixelFormats.Pbgra32);
+            RenderBitmap.Render(Drawing);
 
             return RenderBitmap.ToImageContext().CreateHBitmap();
         }

@@ -1,4 +1,5 @@
 ﻿using MenthaAssembly.Media.Imaging;
+using MenthaAssembly.Media.Imaging.Utils;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -18,206 +19,45 @@ namespace MenthaAssembly.Views.Primitives
     /// <legacyCorruptedStateExceptionsPolicy enabled = "true" />
     /// </ runtime >
     /// </summary>
-    public unsafe abstract class ImageViewerBase : Control
+    public abstract unsafe class ImageViewerBase : Control
     {
-        private static readonly ParallelOptions DefaultParallelOptions = new ParallelOptions();
+        private delegate void DrawAction(IPixelAdapter<BGRA> Adapter, BGRA* pDisplay);
+        private static readonly ParallelOptions DefaultParallelOptions = new();
 
         public ParallelOptions RenderParallelOptions { set; get; }
 
         public static readonly DependencyProperty DisplayImageProperty =
-            DependencyProperty.RegisterAttached("DisplayImage", typeof(WriteableBitmap), typeof(ImageViewerBase), new PropertyMetadata(default,
+            DependencyProperty.RegisterAttached("DisplayImage", typeof(WriteableBitmap), typeof(ImageViewerBase), new PropertyMetadata(null,
                 (d, e) =>
                 {
                     if (d is ImageViewerBase This &&
                         e.NewValue is WriteableBitmap Bitmap)
                         This.DisplayContext = new BitmapContext(Bitmap);
                 }));
-        protected static void SetDisplayImage(DependencyObject obj, WriteableBitmap value)
+        protected static void SetDisplayImage(ImageViewerBase obj, WriteableBitmap value)
             => obj.SetValue(DisplayImageProperty, value);
-        internal protected static WriteableBitmap GetDisplayImage(DependencyObject obj)
+        protected internal static WriteableBitmap GetDisplayImage(ImageViewerBase obj)
             => (WriteableBitmap)obj.GetValue(DisplayImageProperty);
 
-        internal protected virtual BitmapContext DisplayContext { set; get; }
+        public static readonly DependencyProperty ItemsLayerImageProperty =
+            DependencyProperty.RegisterAttached("ItemsLayerImage", typeof(WriteableBitmap), typeof(ImageViewerBase), new PropertyMetadata(null,
+                (d, e) =>
+                {
+                    if (d is ImageViewerBase This &&
+                        e.NewValue is WriteableBitmap Bitmap)
+                        This.ItemsLayerContext = new BitmapContext(Bitmap);
+                }));
+        protected static void SetItemsLayerImage(ImageViewerBase obj, WriteableBitmap value)
+            => obj.SetValue(ItemsLayerImageProperty, value);
+        protected internal static WriteableBitmap GetItemsLayerImage(ImageViewerBase obj)
+            => (WriteableBitmap)obj.GetValue(ItemsLayerImageProperty);
 
-        private IImageContext _SourceContext;
-        internal protected virtual IImageContext SourceContext
-        {
-            get => _SourceContext;
-            set
-            {
-                _SourceContext = value;
+        protected internal virtual BitmapContext DisplayContext { set; get; }
 
-                if (value.PixelType.Equals(typeof(BGRA)))
-                    DrawHandler = (FactorStep, DirtyX1, DirtyY1, DirtyX2, DirtyY2) =>
-                    {
-                        byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+        protected internal virtual BitmapContext ItemsLayerContext { set; get; }
 
-                        int SourceW = value.Width,
-                            SourceH = value.Height,
-                            IntViewportX = (int)Viewport.X,
-                            IntViewportY = (int)Viewport.Y,
-                            ISx = IntViewportX - SourceLocation.X,
-                            ISy = IntViewportY - SourceLocation.Y;
-                        float FracX0 = (float)(Viewport.X - IntViewportX),
-                              FracY0 = (float)(Viewport.Y - IntViewportY),
-                              FracX1 = DirtyX2 * FactorStep + FracX0;
-
-                        FracX0 += DirtyX1 * FactorStep;
-
-                        int IntFracX0 = (int)FracX0,
-                            IntFracY0 = (int)FracY0,
-                            IntFracX1 = (int)FracX1,
-                            Sx = ISx + IntFracX0,
-                            Sy = ISy + IntFracY0,
-                            Ex = ISx + IntFracX1;
-
-                        FracX0 -= IntFracX0;
-                        FracY0 -= IntFracY0;
-                        FracX1 -= IntFracX1;
-
-                        Parallel.For(DirtyY1, DirtyY2, RenderParallelOptions ?? DefaultParallelOptions, j =>
-                        {
-                            long Offset = j * DisplayContext.Stride + DirtyX1 * sizeof(BGRA);
-                            BGRA* Data = (BGRA*)(DisplayScan0 + Offset);
-
-                            int Y = Sy + (int)(j * FactorStep + FracY0);
-
-                            if (0 <= Y && Y < SourceH)
-                            {
-                                int X = Sx;
-                                float FracX = FracX0;
-
-                                if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
-                                {
-                                    do
-                                    {
-                                        *Data++ = EmptyPixel;
-
-                                        FracX += FactorStep;
-                                        while (FracX >= 1f)
-                                        {
-                                            X++;
-                                            FracX -= 1f;
-                                        }
-
-                                        if (X >= Ex)
-                                            return;
-
-                                    } while (X < 0);
-                                }
-
-                                if (X < Ex || (X == Ex && FracX < FracX1))
-                                {
-                                    byte* pTemp = (byte*)Data;
-                                    value.Operator.ScanLineNearestResizeTo(ref FracX, FactorStep, ref X, Ex, FracX1, Y, ref pTemp);
-                                    Data = (BGRA*)pTemp;
-                                }
-
-                                while (X < Ex || (X == Ex && FracX < FracX1))
-                                {
-                                    *Data++ = EmptyPixel;
-
-                                    FracX += FactorStep;
-                                    while (FracX >= 1f)
-                                    {
-                                        X++;
-                                        FracX -= 1f;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // Clear
-                                for (int i = DirtyX1; i < DirtyX2; i++)
-                                    *Data++ = EmptyPixel;
-                            }
-                        });
-                    };
-                else
-                    DrawHandler = (FactorStep, DirtyX1, DirtyY1, DirtyX2, DirtyY2) =>
-                    {
-                        byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-
-                        int SourceW = value.Width,
-                            SourceH = value.Height,
-                            IntViewportX = (int)Viewport.X,
-                            IntViewportY = (int)Viewport.Y,
-                            ISx = IntViewportX - SourceLocation.X,
-                            ISy = IntViewportY - SourceLocation.Y;
-                        float FracX0 = (float)(Viewport.X - IntViewportX),
-                              FracY0 = (float)(Viewport.Y - IntViewportY),
-                              FracX1 = DirtyX2 * FactorStep + FracX0;
-
-                        FracX0 += DirtyX1 * FactorStep;
-
-                        int IntFracX0 = (int)FracX0,
-                            IntFracY0 = (int)FracY0,
-                            IntFracX1 = (int)FracX1,
-                            Sx = ISx + IntFracX0,
-                            Sy = ISy + IntFracY0,
-                            Ex = ISx + IntFracX1;
-
-                        FracX0 -= IntFracX0;
-                        FracY0 -= IntFracY0;
-                        FracX1 -= IntFracX1;
-
-                        Parallel.For(DirtyY1, DirtyY2, RenderParallelOptions ?? DefaultParallelOptions, j =>
-                        {
-                            long Offset = j * DisplayContext.Stride + DirtyX1 * sizeof(BGRA);
-                            BGRA* Data = (BGRA*)(DisplayScan0 + Offset);
-
-                            int Y = Sy + (int)(j * FactorStep + FracY0);
-
-                            if (0 <= Y && Y < SourceH)
-                            {
-                                int X = Sx;
-                                float FracX = FracX0;
-
-                                if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
-                                {
-                                    do
-                                    {
-                                        *Data++ = EmptyPixel;
-
-                                        FracX += FactorStep;
-                                        while (FracX >= 1f)
-                                        {
-                                            X++;
-                                            FracX -= 1f;
-                                        }
-
-                                        if (X >= Ex)
-                                            return;
-
-                                    } while (X < 0);
-                                }
-
-                                if (X < Ex || (X == Ex && FracX < FracX1))
-                                    value.Operator.ScanLineNearestResizeTo(ref FracX, FactorStep, ref X, Ex, FracX1, Y, ref Data);
-
-                                while (X < Ex || (X == Ex && FracX < FracX1))
-                                {
-                                    *Data++ = EmptyPixel;
-
-                                    FracX += FactorStep;
-                                    while (FracX >= 1f)
-                                    {
-                                        X++;
-                                        FracX -= 1f;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // Clear
-                                for (int i = DirtyX1; i < DirtyX2; i++)
-                                    *Data++ = EmptyPixel;
-                            }
-                        });
-                    };
-            }
-        }
-        internal protected virtual Point<int> SourceLocation { set; get; }
+        public virtual IImageContext SourceContext { set; get; }
+        protected internal virtual Point<int> SourceLocation { set; get; }
 
         protected virtual Size<int> ViewBox { set; get; }
 
@@ -225,13 +65,51 @@ namespace MenthaAssembly.Views.Primitives
 
         protected virtual double Scale { set; get; }
 
+        private ImageChannel _Channel;
+        protected virtual ImageChannel Channel
+        {
+            get => _Channel;
+            set
+            {
+                _Channel = value;
+                DrawHandler = value switch
+                {
+                    ImageChannel.R => (Adapter, pDisplay) =>
+                    {
+                        byte R = Adapter.R;
+                        pDisplay->A = byte.MaxValue;
+                        pDisplay->R = R;
+                        pDisplay->G = R;
+                        pDisplay->B = R;
+                    }
+                    ,
+                    ImageChannel.G => (Adapter, pDisplay) =>
+                    {
+                        byte G = Adapter.G;
+                        pDisplay->A = byte.MaxValue;
+                        pDisplay->R = G;
+                        pDisplay->G = G;
+                        pDisplay->B = G;
+                    }
+                    ,
+                    ImageChannel.B => (Adapter, pDisplay) =>
+                    {
+                        byte B = Adapter.B;
+                        pDisplay->A = byte.MaxValue;
+                        pDisplay->R = B;
+                        pDisplay->G = B;
+                        pDisplay->B = B;
+                    }
+                    ,
+                    _ => (Adapter, pDisplay) => Adapter.OverrideTo(pDisplay),
+                };
+            }
+        }
+
         protected Bound<float> LastImageBound;
 
-        protected static readonly BGRA EmptyPixel = new BGRA();
-        /// <summary>
-        /// FactorStep,IntDirtyX1, IntDirtyY1, IntDirtyX2, IntDirtyY2
-        /// </summary>
-        protected Action<float, int, int, int, int> DrawHandler;
+        protected static readonly BGRA EmptyPixel = new();
+        private DrawAction DrawHandler = (Adapter, pDisplay) => Adapter.OverrideTo(pDisplay);
         protected virtual Int32Rect OnDraw()
         {
             if (SourceContext != null &&
@@ -259,7 +137,103 @@ namespace MenthaAssembly.Views.Primitives
 
                 LastImageBound = new Bound<float>(DirtyX1, DirtyY1, DirtyX2, DirtyY2);
 
-                DrawHandler((float)(1 / Scale), IntDirtyX1, IntDirtyY1, IntDirtyX2, IntDirtyY2);
+                #region Draw
+                float FactorStep = (float)(1 / Scale);
+                byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+
+                int SourceW = SourceContext.Width,
+                    SourceH = SourceContext.Height,
+                    IntViewportX = (int)Viewport.X,
+                    IntViewportY = (int)Viewport.Y,
+                    IntISx = IntViewportX - SourceLocation.X,
+                    IntISy = IntViewportY - SourceLocation.Y;
+                float FracX0 = (float)(Viewport.X - IntViewportX),
+                      FracY0 = (float)(Viewport.Y - IntViewportY),
+                      FracX1 = IntDirtyX2 * FactorStep + FracX0;
+
+                FracX0 += IntDirtyX1 * FactorStep;
+
+                int IntFracX0 = (int)FracX0,
+                    IntFracY0 = (int)FracY0,
+                    IntFracX1 = (int)FracX1,
+                    Sx = IntISx + IntFracX0,
+                    Sy = IntISy + IntFracY0,
+                    Ex = IntISx + IntFracX1;
+
+                FracX0 -= IntFracX0;
+                FracY0 -= IntFracY0;
+                FracX1 -= IntFracX1;
+
+                Parallel.For(IntDirtyY1, IntDirtyY2, RenderParallelOptions ?? DefaultParallelOptions, j =>
+                {
+                    long Offset = j * DisplayContext.Stride + IntDirtyX1 * sizeof(BGRA);
+                    BGRA* pData = (BGRA*)(DisplayScan0 + Offset);
+
+                    int Y = Sy + (int)(j * FactorStep + FracY0);
+
+                    if (0 <= Y && Y < SourceH)
+                    {
+                        int X = Sx;
+                        float FracX = FracX0;
+
+                        if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
+                        {
+                            do
+                            {
+                                *pData++ = EmptyPixel;
+
+                                FracX += FactorStep;
+                                while (FracX >= 1f)
+                                {
+                                    X++;
+                                    FracX -= 1f;
+                                }
+
+                                if (X >= Ex)
+                                    return;
+
+                            } while (X < 0);
+                        }
+
+                        if (X < Ex || (X == Ex && FracX < FracX1))
+                        {
+                            IPixelAdapter<BGRA> Adapter = SourceContext.Operator.GetAdapter<BGRA>(X, Y);
+
+                            while (X < SourceW && (X < Ex || (X == Ex && FracX < FracX1)))
+                            {
+                                DrawHandler(Adapter, pData++);
+
+                                FracX += FactorStep;
+                                while (FracX >= 1f)
+                                {
+                                    FracX -= 1f;
+                                    Adapter.MoveNext();
+                                    X++;
+                                }
+                            }
+                        }
+
+                        while (X < Ex || (X == Ex && FracX < FracX1))
+                        {
+                            *pData++ = EmptyPixel;
+
+                            FracX += FactorStep;
+                            while (FracX >= 1f)
+                            {
+                                X++;
+                                FracX -= 1f;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Clear
+                        for (int i = IntDirtyX1; i < IntDirtyX2; i++)
+                            *pData++ = EmptyPixel;
+                    }
+                });
+
+                #endregion
 
                 return new Int32Rect(IntDirtyX1, IntDirtyY1, IntDirtyX2 - IntDirtyX1, IntDirtyY2 - IntDirtyY1);
             }

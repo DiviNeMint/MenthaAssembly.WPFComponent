@@ -2,6 +2,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:MenthaAssembly.Views"
+    xmlns:Sys="clr-namespace:System;assembly=mscorlib"
     xmlns:Primitives="clr-namespace:MenthaAssembly.Views.Primitives">
 
     <Style TargetType="{x:Type local:ImageViewerMapper}">
@@ -20,14 +21,15 @@
                               UseLayoutRounding="True"
                               HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
-                                   Stretch="None"
-                                   RenderOptions.BitmapScalingMode="LowQuality"/>
+                                   RenderOptions.BitmapScalingMode="LowQuality"
+                                   Stretch="None"/>
                             <Rectangle x:Name="PART_Rect"
                                        Fill="{TemplateBinding RectFill}" 
                                        Stroke="{TemplateBinding RectStroke}"
                                        StrokeThickness="1"
                                        Width="0" Height="0"
-                                       HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                       HorizontalAlignment="Left" VerticalAlignment="Top"
+                                       Panel.ZIndex="{x:Static Sys:Int32.MaxValue}"/>
                         </Grid>
                     </Border>
                 </ControlTemplate>
