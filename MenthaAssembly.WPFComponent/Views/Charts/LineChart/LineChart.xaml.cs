@@ -26,8 +26,8 @@ namespace MenthaAssembly.Views
               }));
         public int XAxisInternalCount
         {
-            get => (int)this.GetValue(XAxisInternalCountProperty);
-            set => this.SetValue(XAxisInternalCountProperty, value);
+            get => (int)GetValue(XAxisInternalCountProperty);
+            set => SetValue(XAxisInternalCountProperty, value);
         }
 
         public static readonly DependencyProperty YAxisInternalCountProperty =
@@ -38,24 +38,24 @@ namespace MenthaAssembly.Views
               }));
         public int YAxisInternalCount
         {
-            get => (int)this.GetValue(YAxisInternalCountProperty);
-            set => this.SetValue(YAxisInternalCountProperty, value);
+            get => (int)GetValue(YAxisInternalCountProperty);
+            set => SetValue(YAxisInternalCountProperty, value);
         }
 
         public static readonly DependencyProperty XAxisLabelStyleProperty =
               DependencyProperty.Register("XAxisLabelStyle", typeof(Style), typeof(LineChart), new PropertyMetadata(null));
         public Style XAxisLabelStyle
         {
-            get => (Style)this.GetValue(XAxisLabelStyleProperty);
-            set => this.SetValue(XAxisLabelStyleProperty, value);
+            get => (Style)GetValue(XAxisLabelStyleProperty);
+            set => SetValue(XAxisLabelStyleProperty, value);
         }
 
         public static readonly DependencyProperty YAxisLabelStyleProperty =
               DependencyProperty.Register("YAxisLabelStyle", typeof(Style), typeof(LineChart), new PropertyMetadata(null));
         public Style YAxisLabelStyle
         {
-            get => (Style)this.GetValue(YAxisLabelStyleProperty);
-            set => this.SetValue(YAxisLabelStyleProperty, value);
+            get => (Style)GetValue(YAxisLabelStyleProperty);
+            set => SetValue(YAxisLabelStyleProperty, value);
         }
 
         #endregion
@@ -74,8 +74,8 @@ namespace MenthaAssembly.Views
                   }));
         public bool ShowClosestDataPoint
         {
-            get => (bool)this.GetValue(ShowClosestDataPointProperty);
-            set => this.SetValue(ShowClosestDataPointProperty, value);
+            get => (bool)GetValue(ShowClosestDataPointProperty);
+            set => SetValue(ShowClosestDataPointProperty, value);
         }
 
         public static readonly DependencyProperty SelectedItemProperty =
@@ -108,16 +108,16 @@ namespace MenthaAssembly.Views
                   }));
         public object SelectedItem
         {
-            get => this.GetValue(SelectedItemProperty);
-            set => this.SetValue(SelectedItemProperty, value);
+            get => GetValue(SelectedItemProperty);
+            set => SetValue(SelectedItemProperty, value);
         }
 
         public static readonly DependencyProperty PaletteProperty =
               DependencyProperty.Register("Palette", typeof(IList<Brush>), typeof(LineChart), new PropertyMetadata(null));
         public IList<Brush> Palette
         {
-            get => (IList<Brush>)this.GetValue(PaletteProperty);
-            set => this.SetValue(PaletteProperty, value);
+            get => (IList<Brush>)GetValue(PaletteProperty);
+            set => SetValue(PaletteProperty, value);
         }
 
         #endregion
@@ -155,8 +155,8 @@ namespace MenthaAssembly.Views
                   }));
         public LineChartAuxiliaryLineCollection AuxiliaryLines
         {
-            get => (LineChartAuxiliaryLineCollection)this.GetValue(AuxiliaryLinesProperty);
-            set => this.SetValue(AuxiliaryLinesProperty, value);
+            get => (LineChartAuxiliaryLineCollection)GetValue(AuxiliaryLinesProperty);
+            set => SetValue(AuxiliaryLinesProperty, value);
         }
 
         private void OnAuxiliaryLineCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -226,37 +226,37 @@ namespace MenthaAssembly.Views
         {
             base.OnApplyTemplate();
 
-            if (this.GetTemplateChild("PART_Studio") is Grid PART_Studio)
+            if (GetTemplateChild("PART_Studio") is Grid PART_Studio)
             {
                 this.PART_Studio = PART_Studio;
                 PART_Studio.SizeChanged += (s, e) =>
                 {
-                    this.UpdateYAxis();
-                    this.UpdateXAxis();
-                    this.UpdateLines();
-                    this.UpdateAuxiliaryLines();
+                    UpdateYAxis();
+                    UpdateXAxis();
+                    UpdateLines();
+                    UpdateAuxiliaryLines();
                 };
 
                 PART_Studio.MouseEnter += (s, e) =>
                 {
-                    if (this.ShowClosestDataPoint &&
-                        this.SelectedItem is LineChartItem Item)
+                    if (ShowClosestDataPoint &&
+                        SelectedItem is LineChartItem Item)
                         Item.ShowClosestDataPoint = true;
                 };
                 PART_Studio.MouseLeave += (s, e) =>
                 {
 
-                    if (this.ShowClosestDataPoint &&
-                        this.SelectedItem is LineChartItem Item)
+                    if (ShowClosestDataPoint &&
+                        SelectedItem is LineChartItem Item)
                         Item.ShowClosestDataPoint = false;
                 };
                 PART_Studio.MouseMove += (s, e) =>
                 {
-                    if (this.SelectedItem is LineChartItem Item)
+                    if (SelectedItem is LineChartItem Item)
                         Item.UpdateClosestDataPoint();
                 };
 
-                if (this.AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
+                if (AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
                 {
                     foreach (LineChartAuxiliaryLine Line in Lines)
                     {
@@ -266,10 +266,10 @@ namespace MenthaAssembly.Views
                 }
             }
 
-            if (this.GetTemplateChild("PART_XAxisStudio") is Canvas PART_XAxisStudio)
+            if (GetTemplateChild("PART_XAxisStudio") is Canvas PART_XAxisStudio)
                 this.PART_XAxisStudio = PART_XAxisStudio;
 
-            if (this.GetTemplateChild("PART_YAxisStudio") is Grid PART_YAxisStudio)
+            if (GetTemplateChild("PART_YAxisStudio") is Grid PART_YAxisStudio)
                 this.PART_YAxisStudio = PART_YAxisStudio;
         }
 
@@ -283,7 +283,7 @@ namespace MenthaAssembly.Views
                                          CurrentYLabels = new List<TextBlock>();
         protected virtual void UpdateXAxis()
         {
-            int Count = this.XAxisInternalCount;
+            int Count = XAxisInternalCount;
             TextBlock Label;
             for (int i = CurrentXLabels.Count; i < Count; i++)
             {
@@ -291,7 +291,7 @@ namespace MenthaAssembly.Views
                 if (!CacheLabelQueue.TryDequeue(out Label))
                     Label = new TextBlock();
 
-                this.PrepareXAxisLabel(Label);
+                PrepareXAxisLabel(Label);
 
                 CurrentXLabels.Add(Label);
                 PART_XAxisStudio.Children.Add(Label);
@@ -305,7 +305,7 @@ namespace MenthaAssembly.Views
                 PART_XAxisStudio.Children.Remove(Label);
 
                 BindingOperations.ClearAllBindings(Label);
-                CacheLabelQueue.Enqueue(ref Label);
+                CacheLabelQueue.Enqueue(Label);
             }
 
             Typeface Typeface = null;
@@ -327,14 +327,14 @@ namespace MenthaAssembly.Views
                 FormattedText TextData = new FormattedText(Label.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface, Label.FontSize, Brushes.Black, 1);
 
                 Label.Width = TextData.Width;
-                Label.Margin = new Thickness(this.CalcuateVisualCoordinateX(RealValue) - TextData.Width * 0.5d, 0, 0, 0);
+                Label.Margin = new Thickness(CalcuateVisualCoordinateX(RealValue) - TextData.Width * 0.5d, 0, 0, 0);
 
                 Value += Dx;
             }
         }
         protected virtual void UpdateYAxis()
         {
-            int Count = this.YAxisInternalCount;
+            int Count = YAxisInternalCount;
             TextBlock Label;
             for (int i = CurrentYLabels.Count; i < Count; i++)
             {
@@ -342,7 +342,7 @@ namespace MenthaAssembly.Views
                 if (!CacheLabelQueue.TryDequeue(out Label))
                     Label = new TextBlock();
 
-                this.PrepareYAxisLabel(Label);
+                PrepareYAxisLabel(Label);
 
                 CurrentYLabels.Add(Label);
                 PART_YAxisStudio.Children.Add(Label);
@@ -356,7 +356,7 @@ namespace MenthaAssembly.Views
                 PART_YAxisStudio.Children.Remove(Label);
 
                 BindingOperations.ClearAllBindings(Label);
-                CacheLabelQueue.Enqueue(ref Label);
+                CacheLabelQueue.Enqueue(Label);
             }
 
             Typeface Typeface = null;
@@ -377,7 +377,7 @@ namespace MenthaAssembly.Views
 
                 FormattedText TextData = new FormattedText(Label.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface, Label.FontSize, Brushes.Black, 1);
 
-                Label.Margin = new Thickness(0, this.CalcuateVisualCoordinateY(RealValue) - TextData.Height / 2d, 0, 0);
+                Label.Margin = new Thickness(0, CalcuateVisualCoordinateY(RealValue) - TextData.Height / 2d, 0, 0);
 
                 Value += Dy;
             }
@@ -385,18 +385,18 @@ namespace MenthaAssembly.Views
 
         protected virtual void PrepareXAxisLabel(TextBlock Label)
         {
-            Label.SetBinding(StyleProperty, new Binding(nameof(this.XAxisLabelStyle)) { Source = this });
+            Label.SetBinding(StyleProperty, new Binding(nameof(XAxisLabelStyle)) { Source = this });
             Label.VerticalAlignment = VerticalAlignment.Top;
         }
         protected virtual void PrepareYAxisLabel(TextBlock Label)
         {
-            Label.SetBinding(StyleProperty, new Binding(nameof(this.YAxisLabelStyle)) { Source = this });
+            Label.SetBinding(StyleProperty, new Binding(nameof(YAxisLabelStyle)) { Source = this });
             Label.VerticalAlignment = VerticalAlignment.Top;
         }
 
         protected virtual void UpdateLines(IEnumerable<LineChartItem> Items = null)
         {
-            foreach (LineChartItem Item in Items ?? this.GetLineChartItems())
+            foreach (LineChartItem Item in Items ?? GetLineChartItems())
             {
                 Item.InvalidatePolyLine();
                 Item.InvalidateFillArea();
@@ -405,8 +405,8 @@ namespace MenthaAssembly.Views
         }
         protected virtual void UpdateAuxiliaryLines()
         {
-            if (this.SelectedItem is LineChartItem Item &&
-                this.AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
+            if (SelectedItem is LineChartItem Item &&
+                AuxiliaryLines is LineChartAuxiliaryLineCollection Lines)
             {
                 foreach (LineChartAuxiliaryLine Line in Lines)
                     Line.Update(Item);
@@ -414,9 +414,9 @@ namespace MenthaAssembly.Views
         }
 
         protected internal Point CalcuateVisualCoordinate(Point DataPoint)
-            => new Point(this.CalcuateVisualCoordinateX(DataPoint.X), this.CalcuateVisualCoordinateY(DataPoint.Y));
+            => new Point(CalcuateVisualCoordinateX(DataPoint.X), CalcuateVisualCoordinateY(DataPoint.Y));
         protected internal Point CalcuateVisualCoordinate(double DataPointX, double DataPointY)
-            => new Point(this.CalcuateVisualCoordinateX(DataPointX), this.CalcuateVisualCoordinateY(DataPointY));
+            => new Point(CalcuateVisualCoordinateX(DataPointX), CalcuateVisualCoordinateY(DataPointY));
         protected internal virtual double CalcuateVisualCoordinateX(double DataPointX)
         {
             if (double.IsNegativeInfinity(DataPointX))
@@ -441,9 +441,9 @@ namespace MenthaAssembly.Views
         }
 
         protected internal Point CalcuateDataCoordinate(Point VisualPoint)
-            => new Point(this.CalcuateDataCoordinateX(VisualPoint.X), this.CalcuateDataCoordinateY(VisualPoint.Y));
+            => new Point(CalcuateDataCoordinateX(VisualPoint.X), CalcuateDataCoordinateY(VisualPoint.Y));
         protected internal Point CalcuateDataCoordinate(double VisualPointX, double VisualPointY)
-            => new Point(this.CalcuateDataCoordinateX(VisualPointX), this.CalcuateDataCoordinateY(VisualPointY));
+            => new Point(CalcuateDataCoordinateX(VisualPointX), CalcuateDataCoordinateY(VisualPointY));
         protected internal virtual double CalcuateDataCoordinateX(double VisualPointX)
         {
             double MaxWidth = PART_Studio.ActualWidth;
@@ -465,7 +465,7 @@ namespace MenthaAssembly.Views
                    MaxY = double.NegativeInfinity,
                    Temp;
 
-            foreach (LineChartItem Item in this.GetLineChartItems())
+            foreach (LineChartItem Item in GetLineChartItems())
             {
                 Temp = Item.MinY;
                 if (!double.IsNaN(Temp) && Temp < MinY)
@@ -515,8 +515,8 @@ namespace MenthaAssembly.Views
                 }
             }
 
-            this.UpdateXAxis();
-            this.UpdateYAxis();
+            UpdateXAxis();
+            UpdateYAxis();
         }
 
         protected override bool IsItemItsOwnContainerOverride(object item)
@@ -529,19 +529,19 @@ namespace MenthaAssembly.Views
             base.PrepareContainerForItemOverride(element, item);
 
             if (element is LineChartItem LineChartItem)
-                this.PrepareLineChartItem(LineChartItem, item);
+                PrepareLineChartItem(LineChartItem, item);
         }
         private void PrepareLineChartItem(LineChartItem Item, object Data)
         {
             Item.Chart = this;
-            Item.DatasUpdated += this.OnItemDatasUpdated;
-            Item.PreviewMouseDown += this.OnItemPreviewMouseDown;
+            Item.DatasUpdated += OnItemDatasUpdated;
+            Item.PreviewMouseDown += OnItemPreviewMouseDown;
 
             if (Item.ItemsSource is null &&
                 Item.GetBindingExpression(LineChartItem.ItemsSourceProperty) is null)
                 Item.SetBinding(LineChartItem.ItemsSourceProperty, new Binding(DisplayMemberPath) { Source = Data });
             else
-                this.OnItemDatasUpdated();
+                OnItemDatasUpdated();
 
             if (Item.Stroke is null)
             {
@@ -549,7 +549,7 @@ namespace MenthaAssembly.Views
                 Brush Color = null;
                 if (Palette != null)
                 {
-                    int Index = this.ItemContainerGenerator.IndexFromContainer(Item);
+                    int Index = ItemContainerGenerator.IndexFromContainer(Item);
                     if (-1 < Index && Index < Palette.Count)
                         Color = Palette[Index];
                 }
@@ -563,28 +563,47 @@ namespace MenthaAssembly.Views
                     Item.Fill = Color;
             }
 
-            this.SelectedItem = Item;
+            SelectedItem = Item;
+        }
+
+        protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+        {
+            base.ClearContainerForItemOverride(element, item);
+            if (element is LineChartItem LineChartItem)
+                ResetLineChartItem(LineChartItem, item);
+        }
+        private void ResetLineChartItem(LineChartItem Item, object Data)
+        {
+            Item.Chart = null;
+            Item.DatasUpdated -= OnItemDatasUpdated;
+            Item.PreviewMouseDown -= OnItemPreviewMouseDown;
+
+            if (Data is not LineChartItem)
+            {
+                Item.ClearValue(LineChartItem.ItemsSourceProperty);
+                Item.ClearValue(LineChartItem.StrokeProperty);
+            }
         }
 
         private DelayActionToken UpdateToken;
         protected virtual void OnItemDatasUpdated(object sender = null, EventArgs e = null)
         {
-            this.UpdateMaxAndMinValue();
+            UpdateMaxAndMinValue();
 
             UpdateToken?.Cancel();
             UpdateToken = DispatcherHelper.DelayAction(100d, () =>
             {
-                this.UpdateLines(this.GetLineChartItems().Where(i => !i.Equals(sender)));
-                this.UpdateAuxiliaryLines();
+                UpdateLines(GetLineChartItems().Where(i => !i.Equals(sender)));
+                UpdateAuxiliaryLines();
             });
         }
         protected virtual void OnItemPreviewMouseDown(object sender, MouseButtonEventArgs e)
-            => this.SelectedItem = sender;
+            => SelectedItem = sender;
 
         protected IEnumerable<LineChartItem> GetLineChartItems()
         {
-            for (int i = 0; i < this.Items.Count; i++)
-                if (this.ItemContainerGenerator.ContainerFromIndex(i) is LineChartItem Item)
+            for (int i = 0; i < Items.Count; i++)
+                if (ItemContainerGenerator.ContainerFromIndex(i) is LineChartItem Item)
                     yield return Item;
         }
 

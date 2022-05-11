@@ -785,7 +785,7 @@ namespace MenthaAssembly.Views
             // Notify Icon
             Data.Flags = NotifyIconFlags.Message;
             Shell_NotifyIcon(NotifyCommand.Delete, ref Data);
-            Uids.Enqueue(ref Data.TaskbarIconId);
+            Uids.Enqueue(Data.TaskbarIconId);
 
             // Release HIcon
             if (Data.HIcon != IntPtr.Zero)

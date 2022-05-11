@@ -15,16 +15,38 @@ namespace MenthaAssembly.Views.Primitives
             set => SetValue(EnableMenuProperty, value);
         }
 
-        protected override DependencyObject GetContainerForItemOverride()
-        {
-            PropertyEditorItem Item = new PropertyEditorItem();
-            Item.SetBinding(PropertyEditorItem.EnableMenuProperty, new Binding(nameof(EnableMenu)) { Source = this });
-            Item.SetBinding(PropertyEditorItem.TargetObjectProperty, new Binding("Content") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(PropertyEditor), 1) });
-            return Item;
-        }
-
         protected override bool IsItemItsOwnContainerOverride(object item)
             => item is PropertyEditorItem;
+        protected override DependencyObject GetContainerForItemOverride()
+            => new PropertyEditorItem();
+
+        protected override void PrepareContainerForItemOverride(DependencyObject element, object item)
+        {
+            base.PrepareContainerForItemOverride(element, item);
+
+            if (element is PropertyEditorItem Layer)
+                PreparePropertyEditorItem(Layer, item);
+        }
+        private void PreparePropertyEditorItem(PropertyEditorItem Item, object Data)
+        {
+            Item.DataContext = Data;
+            Item.SetBinding(PropertyEditorItem.EnableMenuProperty, new Binding(nameof(EnableMenu)) { Source = this });
+            Item.SetBinding(PropertyEditorItem.TargetObjectProperty, new Binding("Content") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(PropertyEditor), 1) });
+        }
+
+        protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+        {
+            base.ClearContainerForItemOverride(element, item);
+
+            if (element is PropertyEditorItem Layer)
+                ResetPropertyEditorItem(Layer, item);
+        }
+        private void ResetPropertyEditorItem(PropertyEditorItem Item, object Data)
+        {
+            Item.DataContext = null;
+            Item.ClearValue(PropertyEditorItem.EnableMenuProperty);
+            Item.ClearValue(PropertyEditorItem.TargetObjectProperty);
+        }
 
         public override void OnApplyTemplate()
         {

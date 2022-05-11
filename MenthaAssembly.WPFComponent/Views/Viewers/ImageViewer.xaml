@@ -14,18 +14,13 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            SnapsToDevicePixels="True">
-                        <Grid x:Name="PART_Container"
-                              UseLayoutRounding="True">
-                            <Image Source="{TemplateBinding Primitives:ImageViewerBase.DisplayImage}"
-                                   RenderOptions.BitmapScalingMode="LowQuality"
-                                   Stretch="None"/>
-                        </Grid>
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True">
+                        <Grid x:Name="PART_Container"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
 
 </ResourceDictionary>

@@ -37,8 +37,8 @@ namespace MenthaAssembly.Views
               }));
         public IEnumerable ItemsSource
         {
-            get => (IEnumerable)this.GetValue(ItemsSourceProperty);
-            set => this.SetValue(ItemsSourceProperty, value);
+            get => (IEnumerable)GetValue(ItemsSourceProperty);
+            set => SetValue(ItemsSourceProperty, value);
         }
 
         public static readonly DependencyProperty XValuePathProperty =
@@ -52,8 +52,8 @@ namespace MenthaAssembly.Views
               }));
         public string XValuePath
         {
-            get => (string)this.GetValue(XValuePathProperty);
-            set => this.SetValue(XValuePathProperty, value);
+            get => (string)GetValue(XValuePathProperty);
+            set => SetValue(XValuePathProperty, value);
         }
 
         public static readonly DependencyProperty YValuePathProperty =
@@ -67,8 +67,8 @@ namespace MenthaAssembly.Views
               }));
         public string YValuePath
         {
-            get => (string)this.GetValue(YValuePathProperty);
-            set => this.SetValue(YValuePathProperty, value);
+            get => (string)GetValue(YValuePathProperty);
+            set => SetValue(YValuePathProperty, value);
         }
 
         #endregion
@@ -80,16 +80,16 @@ namespace MenthaAssembly.Views
                                                                                                                         OnPenChanged));
         public Brush Stroke
         {
-            get => (Brush)this.GetValue(StrokeProperty);
-            set => this.SetValue(StrokeProperty, value);
+            get => (Brush)GetValue(StrokeProperty);
+            set => SetValue(StrokeProperty, value);
         }
 
         public static readonly DependencyProperty StrokeThicknessProperty =
               DependencyProperty.Register("StrokeThickness", typeof(double), typeof(LineChartItem), new FrameworkPropertyMetadata(2d, FrameworkPropertyMetadataOptions.AffectsRender, OnPenChanged));
         public double StrokeThickness
         {
-            get => (double)this.GetValue(StrokeThicknessProperty);
-            set => this.SetValue(StrokeThicknessProperty, value);
+            get => (double)GetValue(StrokeThicknessProperty);
+            set => SetValue(StrokeThicknessProperty, value);
         }
 
         public static readonly DependencyProperty StrokeStartLineCapProperty =
@@ -99,8 +99,8 @@ namespace MenthaAssembly.Views
                                                                                                                                          OnPenChanged));
         public PenLineCap StrokeStartLineCap
         {
-            get => (PenLineCap)this.GetValue(StrokeStartLineCapProperty);
-            set => this.SetValue(StrokeStartLineCapProperty, value);
+            get => (PenLineCap)GetValue(StrokeStartLineCapProperty);
+            set => SetValue(StrokeStartLineCapProperty, value);
         }
 
         public static readonly DependencyProperty StrokeEndLineCapProperty =
@@ -110,8 +110,8 @@ namespace MenthaAssembly.Views
                                                                                                                                          OnPenChanged));
         public PenLineCap StrokeEndLineCap
         {
-            get => (PenLineCap)this.GetValue(StrokeEndLineCapProperty);
-            set => this.SetValue(StrokeEndLineCapProperty, value);
+            get => (PenLineCap)GetValue(StrokeEndLineCapProperty);
+            set => SetValue(StrokeEndLineCapProperty, value);
         }
 
         public static readonly DependencyProperty StrokeDashCapProperty =
@@ -121,8 +121,8 @@ namespace MenthaAssembly.Views
                                                                                                                                       OnPenChanged));
         public PenLineCap StrokeDashCap
         {
-            get => (PenLineCap)this.GetValue(StrokeDashCapProperty);
-            set => this.SetValue(StrokeDashCapProperty, value);
+            get => (PenLineCap)GetValue(StrokeDashCapProperty);
+            set => SetValue(StrokeDashCapProperty, value);
         }
 
         public static readonly DependencyProperty StrokeLineJoinProperty =
@@ -132,8 +132,8 @@ namespace MenthaAssembly.Views
                                                                                                                                         OnPenChanged));
         public PenLineJoin StrokeLineJoin
         {
-            get => (PenLineJoin)this.GetValue(StrokeLineJoinProperty);
-            set => this.SetValue(StrokeLineJoinProperty, value);
+            get => (PenLineJoin)GetValue(StrokeLineJoinProperty);
+            set => SetValue(StrokeLineJoinProperty, value);
         }
 
         public static readonly DependencyProperty StrokeMiterLimitProperty =
@@ -143,8 +143,8 @@ namespace MenthaAssembly.Views
                                                                                                                                      OnPenChanged));
         public double StrokeMiterLimit
         {
-            get => (double)this.GetValue(StrokeMiterLimitProperty);
-            set => this.SetValue(StrokeMiterLimitProperty, value);
+            get => (double)GetValue(StrokeMiterLimitProperty);
+            set => SetValue(StrokeMiterLimitProperty, value);
         }
 
         public static readonly DependencyProperty StrokeDashOffsetProperty =
@@ -154,8 +154,8 @@ namespace MenthaAssembly.Views
                                                                                                                                      OnPenChanged));
         public double StrokeDashOffset
         {
-            get => (double)this.GetValue(StrokeDashOffsetProperty);
-            set => this.SetValue(StrokeDashOffsetProperty, value);
+            get => (double)GetValue(StrokeDashOffsetProperty);
+            set => SetValue(StrokeDashOffsetProperty, value);
         }
 
         public static readonly DependencyProperty StrokeDashArrayProperty =
@@ -165,8 +165,8 @@ namespace MenthaAssembly.Views
                                                                                                                                               OnPenChanged));
         public DoubleCollection StrokeDashArray
         {
-            get => (DoubleCollection)this.GetValue(StrokeDashArrayProperty);
-            set => this.SetValue(StrokeDashArrayProperty, value);
+            get => (DoubleCollection)GetValue(StrokeDashArrayProperty);
+            set => SetValue(StrokeDashArrayProperty, value);
         }
 
         private static void OnPenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -182,8 +182,8 @@ namespace MenthaAssembly.Views
                                                                                                                             FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender));
         public Brush Fill
         {
-            get => (Brush)this.GetValue(FillProperty);
-            set => this.SetValue(FillProperty, value);
+            get => (Brush)GetValue(FillProperty);
+            set => SetValue(FillProperty, value);
         }
 
         internal void OnAdornersCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) => throw new NotImplementedException();
@@ -193,8 +193,8 @@ namespace MenthaAssembly.Views
                                                                                                                                     FrameworkPropertyMetadataOptions.SubPropertiesDoNotAffectRender));
         public bool AllowFillArea
         {
-            get => (bool)this.GetValue(AllowFillAreaProperty);
-            set => this.SetValue(AllowFillAreaProperty, value);
+            get => (bool)GetValue(AllowFillAreaProperty);
+            set => SetValue(AllowFillAreaProperty, value);
         }
 
         public static readonly DependencyProperty AllowDragAreaBoundProperty =
@@ -211,16 +211,16 @@ namespace MenthaAssembly.Views
               }));
         public bool AllowDragAreaBound
         {
-            get => (bool)this.GetValue(AllowDragAreaBoundProperty);
-            set => this.SetValue(AllowDragAreaBoundProperty, value);
+            get => (bool)GetValue(AllowDragAreaBoundProperty);
+            set => SetValue(AllowDragAreaBoundProperty, value);
         }
 
         public static readonly DependencyProperty DragThumbStyleProperty =
               DependencyProperty.Register("DragThumbStyle", typeof(Style), typeof(LineChartItem), new PropertyMetadata(null));
         public Style DragThumbStyle
         {
-            get => (Style)this.GetValue(DragThumbStyleProperty);
-            set => this.SetValue(DragThumbStyleProperty, value);
+            get => (Style)GetValue(DragThumbStyleProperty);
+            set => SetValue(DragThumbStyleProperty, value);
         }
 
         public static readonly DependencyProperty LeftAreaBoundProperty =
@@ -240,8 +240,8 @@ namespace MenthaAssembly.Views
                   CoerceBoundValue));
         public double LeftAreaBound
         {
-            get => (double)this.GetValue(LeftAreaBoundProperty);
-            set => this.SetValue(LeftAreaBoundProperty, value);
+            get => (double)GetValue(LeftAreaBoundProperty);
+            set => SetValue(LeftAreaBoundProperty, value);
         }
 
         public static readonly DependencyProperty RightAreaBoundProperty =
@@ -261,8 +261,8 @@ namespace MenthaAssembly.Views
                   CoerceBoundValue));
         public double RightAreaBound
         {
-            get => (double)this.GetValue(RightAreaBoundProperty);
-            set => this.SetValue(RightAreaBoundProperty, value);
+            get => (double)GetValue(RightAreaBoundProperty);
+            set => SetValue(RightAreaBoundProperty, value);
         }
 
         private static object CoerceBoundValue(DependencyObject sender, object value)
@@ -294,8 +294,8 @@ namespace MenthaAssembly.Views
               }));
         public bool ShowDataPoints
         {
-            get => (bool)this.GetValue(ShowDataPointsProperty);
-            set => this.SetValue(ShowDataPointsProperty, value);
+            get => (bool)GetValue(ShowDataPointsProperty);
+            set => SetValue(ShowDataPointsProperty, value);
         }
 
         internal static readonly DependencyProperty ShowClosestDataPointProperty =
@@ -307,16 +307,16 @@ namespace MenthaAssembly.Views
               }));
         internal bool ShowClosestDataPoint
         {
-            get => (bool)this.GetValue(ShowClosestDataPointProperty);
-            set => this.SetValue(ShowClosestDataPointProperty, value);
+            get => (bool)GetValue(ShowClosestDataPointProperty);
+            set => SetValue(ShowClosestDataPointProperty, value);
         }
 
         public static readonly DependencyProperty DataPointStyleProperty =
               DependencyProperty.Register("DataPointStyle", typeof(Style), typeof(LineChartItem), new PropertyMetadata(null));
         public Style DataPointStyle
         {
-            get => (Style)this.GetValue(DataPointStyleProperty);
-            set => this.SetValue(DataPointStyleProperty, value);
+            get => (Style)GetValue(DataPointStyleProperty);
+            set => SetValue(DataPointStyleProperty, value);
         }
 
         #endregion
@@ -339,13 +339,13 @@ namespace MenthaAssembly.Views
             for (int i = 0; i < Thumbs.Length; i++)
             {
                 Thumb Child = new Thumb { Visibility = Visibility.Collapsed };
-                Child.SetBinding(StyleProperty, new Binding(nameof(this.DragThumbStyle)) { Source = this });
+                Child.SetBinding(StyleProperty, new Binding(nameof(DragThumbStyle)) { Source = this });
 
                 if (Child.BorderBrush is null)
-                    Child.SetBinding(Thumb.BorderBrushProperty, new Binding(nameof(this.Stroke)) { Source = this });
+                    Child.SetBinding(Thumb.BorderBrushProperty, new Binding(nameof(Stroke)) { Source = this });
 
-                this.AddVisualChild(Child);
-                this.AddLogicalChild(Child);
+                AddVisualChild(Child);
+                AddLogicalChild(Child);
 
                 Thumbs[i] = Child;
             }
@@ -353,12 +353,12 @@ namespace MenthaAssembly.Views
             Thumbs[0].DragDelta += (s, arg) =>
             {
                 if (Chart != null)
-                    this.LeftAreaBound = Chart.CalcuateDataCoordinateX(Thumbs[0].Margin.Left + arg.HorizontalChange);
+                    LeftAreaBound = Chart.CalcuateDataCoordinateX(Thumbs[0].Margin.Left + arg.HorizontalChange);
             };
             Thumbs[1].DragDelta += (s, arg) =>
             {
                 if (Chart != null)
-                    this.RightAreaBound = Chart.CalcuateDataCoordinateX(Thumbs[1].Margin.Left + arg.HorizontalChange);
+                    RightAreaBound = Chart.CalcuateDataCoordinateX(Thumbs[1].Margin.Left + arg.HorizontalChange);
             };
         }
 
@@ -412,7 +412,7 @@ namespace MenthaAssembly.Views
         }
         protected override Size ArrangeOverride(Size FinalSize)
         {
-            Rect FinalRect = new Rect(new Point(0d, 0d), FinalSize);
+            Rect FinalRect = new Rect(FinalSize);
 
             if (Thumbs != null)
                 foreach (Thumb Child in Thumbs)
@@ -435,29 +435,29 @@ namespace MenthaAssembly.Views
             if (!Chart.IsLoaded)
             {
                 UpdateToken?.Cancel();
-                UpdateToken = DispatcherHelper.DelayAction(100d, () => this.InvalidateVisual());
+                UpdateToken = DispatcherHelper.DelayAction(100d, () => InvalidateVisual());
                 return;
             }
 
             // Fill Area
             Brush Fill = this.Fill;
             bool CanDragThumb = false;
-            if (this.AllowFillArea & Fill != null & Fill != Brushes.Transparent &&
-                this.GetFillGeometry() is Geometry FillGeometry)
+            if (AllowFillArea & Fill != null & Fill != Brushes.Transparent &&
+                GetFillGeometry() is Geometry FillGeometry)
             {
                 CanDragThumb = true;
                 DrawingContext.DrawGeometry(Fill, null, FillGeometry);
             }
 
             // Poly Line
-            DrawingContext.DrawGeometry(null, this.GetPen(), this.GetLineGeometry());
+            DrawingContext.DrawGeometry(null, GetPen(), GetLineGeometry());
 
             // Drag Thumbs
-            this.UpdateDragThumbs(CanDragThumb & this.AllowDragAreaBound ? Visibility.Visible : Visibility.Collapsed);
+            UpdateDragThumbs(CanDragThumb & AllowDragAreaBound ? Visibility.Visible : Visibility.Collapsed);
 
             // DataPoints
-            this.UpdateDataPoints();
-            this.UpdateClosestDataPoint();
+            UpdateDataPoints();
+            UpdateClosestDataPoint();
         }
 
         private readonly Pool<LineChartDataPoint> CacheDataPointQueue = new Pool<LineChartDataPoint>();
@@ -465,22 +465,22 @@ namespace MenthaAssembly.Views
         private LineChartDataPoint ClosestDataPoint;
         protected void UpdateDataPoints()
         {
-            int Count = this.ShowDataPoints ? Datas.Count : 0;
+            int Count = ShowDataPoints ? Datas.Count : 0;
             LineChartDataPoint DataPoint;
             for (int i = CurrentDataPoints.Count; i < Count; i++)
             {
                 if (!CacheDataPointQueue.TryDequeue(out DataPoint))
                 {
                     DataPoint = new LineChartDataPoint();
-                    this.PrepareDataPoint(DataPoint);
+                    PrepareDataPoint(DataPoint);
                 }
 
                 CurrentDataPoints.Add(DataPoint);
 
-                this.AddVisualChild(DataPoint);
-                this.AddLogicalChild(DataPoint);
+                AddVisualChild(DataPoint);
+                AddLogicalChild(DataPoint);
 
-                DataPoint.Measure(this.RenderSize);
+                DataPoint.Measure(RenderSize);
             }
 
             for (int i = CurrentDataPoints.Count - 1; i >= Count; i--)
@@ -489,10 +489,10 @@ namespace MenthaAssembly.Views
 
                 CurrentDataPoints.RemoveAt(i);
 
-                this.RemoveVisualChild(DataPoint);
-                this.RemoveLogicalChild(DataPoint);
+                RemoveVisualChild(DataPoint);
+                RemoveLogicalChild(DataPoint);
 
-                CacheDataPointQueue.Enqueue(ref DataPoint);
+                CacheDataPointQueue.Enqueue(DataPoint);
             }
 
             if (Count > 0 &&
@@ -525,33 +525,33 @@ namespace MenthaAssembly.Views
                 if (ClosestDataPoint is null)
                     return;
 
-                this.RemoveVisualChild(ClosestDataPoint);
-                this.RemoveLogicalChild(ClosestDataPoint);
+                RemoveVisualChild(ClosestDataPoint);
+                RemoveLogicalChild(ClosestDataPoint);
 
-                CacheDataPointQueue.Enqueue(ref ClosestDataPoint);
+                CacheDataPointQueue.Enqueue(ClosestDataPoint);
                 ClosestDataPoint = null;
             }
 
             // Show Closest DataPoint
             int Length = Datas.Count;
-            if (Length > 0 && this.ShowClosestDataPoint & !this.ShowDataPoints & Chart != null)
+            if (Length > 0 && ShowClosestDataPoint & !ShowDataPoints & Chart != null)
             {
                 if (ClosestDataPoint is null)
                 {
                     if (!CacheDataPointQueue.TryDequeue(out ClosestDataPoint))
                     {
                         ClosestDataPoint = new LineChartDataPoint();
-                        this.PrepareDataPoint(ClosestDataPoint);
+                        PrepareDataPoint(ClosestDataPoint);
                     }
 
-                    this.AddVisualChild(ClosestDataPoint);
-                    this.AddLogicalChild(ClosestDataPoint);
+                    AddVisualChild(ClosestDataPoint);
+                    AddLogicalChild(ClosestDataPoint);
 
-                    ClosestDataPoint.Measure(this.RenderSize);
+                    ClosestDataPoint.Measure(RenderSize);
                 }
 
                 double VisualX = Mouse.GetPosition(this).X;
-                if (VisualX < 0d || this.ActualWidth < VisualX)
+                if (VisualX < 0d || ActualWidth < VisualX)
                 {
                     RemoveDataPoint();
                     return;
@@ -589,32 +589,32 @@ namespace MenthaAssembly.Views
         }
         protected virtual void PrepareDataPoint(LineChartDataPoint DataPoint)
         {
-            DataPoint.SetBinding(StyleProperty, new Binding(nameof(this.DataPointStyle)) { Source = this });
+            DataPoint.SetBinding(StyleProperty, new Binding(nameof(DataPointStyle)) { Source = this });
 
             if (DataPoint.BorderBrush is null &&
                 DataPoint.GetBindingExpression(LineChartDataPoint.BorderBrushProperty) is null)
-                DataPoint.SetBinding(LineChartDataPoint.BorderBrushProperty, new Binding(nameof(this.Stroke)) { Source = this });
+                DataPoint.SetBinding(LineChartDataPoint.BorderBrushProperty, new Binding(nameof(Stroke)) { Source = this });
 
             if (DataPoint.Background is null &&
                 DataPoint.GetBindingExpression(LineChartDataPoint.BackgroundProperty) is null)
-                DataPoint.SetBinding(LineChartDataPoint.BackgroundProperty, new Binding(nameof(this.Stroke)) { Source = this });
+                DataPoint.SetBinding(LineChartDataPoint.BackgroundProperty, new Binding(nameof(Stroke)) { Source = this });
 
             DataPoint.VerticalAlignment = VerticalAlignment.Top;
             DataPoint.HorizontalAlignment = HorizontalAlignment.Left;
 
-            DataPoint.Click += this.OnDataPointClick;
+            DataPoint.Click += OnDataPointClick;
         }
         protected virtual void OnDataPointClick(object sender, EventArgs e)
-            => this.DataPointClick?.Invoke(sender, e);
+            => DataPointClick?.Invoke(sender, e);
 
         protected Pen Pen;
         protected virtual Pen GetPen()
         {
-            double Thickness = this.StrokeThickness;
+            double Thickness = StrokeThickness;
             if (double.IsInfinity(Thickness) || Thickness is 0d || double.IsNaN(Thickness))
                 return null;
 
-            Brush Brush = this.Stroke;
+            Brush Brush = Stroke;
             if (Brush is null || Brush.Equals(Brushes.Transparent))
                 return null;
 
@@ -630,11 +630,11 @@ namespace MenthaAssembly.Views
                     EndLineCap = StrokeEndLineCap,
                     DashCap = StrokeDashCap,
                     LineJoin = StrokeLineJoin,
-                    MiterLimit = Math.Max(Math.Abs(this.StrokeMiterLimit), 1d),
+                    MiterLimit = Math.Max(Math.Abs(StrokeMiterLimit), 1d),
                 };
 
-                if (this.StrokeDashArray is DoubleCollection DashData && DashData.Count > 0)
-                    Pen.DashStyle = new DashStyle(DashData, this.StrokeDashOffset);
+                if (StrokeDashArray is DoubleCollection DashData && DashData.Count > 0)
+                    Pen.DashStyle = new DashStyle(DashData, StrokeDashOffset);
             }
 
             return Pen;
@@ -678,8 +678,8 @@ namespace MenthaAssembly.Views
             if (DatasCount < 2)
                 return null;
 
-            double Lx = this.LeftAreaBound,
-                   Rx = this.RightAreaBound;
+            double Lx = LeftAreaBound,
+                   Rx = RightAreaBound;
 
             IEnumerable<Point> GetAreaPoints()
             {
@@ -767,12 +767,12 @@ namespace MenthaAssembly.Views
 
         private void OnItemsSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            this.InvalidatePolyLine();
-            this.InvalidateFillArea();
+            InvalidatePolyLine();
+            InvalidateFillArea();
 
             if (DataExtractor is null)
             {
-                this.UpdateDatas();
+                UpdateDatas();
             }
             else
             {
@@ -808,7 +808,7 @@ namespace MenthaAssembly.Views
                                 MathHelper.MinAndMax(out MinY, out MaxY, MinY, MaxY, NewPoint.Y);
                             }
 
-                            this.OnDatasUpdate();
+                            OnDatasUpdate();
                             break;
                         }
                     case NotifyCollectionChangedAction.Remove:
@@ -833,11 +833,11 @@ namespace MenthaAssembly.Views
                                 }
                                 else
                                 {
-                                    this.ResetMaxAndMin();
+                                    ResetMaxAndMin();
                                 }
                             }
 
-                            this.OnDatasUpdate();
+                            OnDatasUpdate();
                             break;
                         }
                     case NotifyCollectionChangedAction.Replace:
@@ -852,25 +852,25 @@ namespace MenthaAssembly.Views
                             MaxX = Datas[Datas.Count - 1].X;
                             MathHelper.MinAndMax(Datas.Select(i => i.Y), out MinY, out MaxY);
 
-                            this.OnDatasUpdate();
+                            OnDatasUpdate();
                             break;
                         }
                     case NotifyCollectionChangedAction.Reset:
                         {
                             Datas.Clear();
-                            this.ResetMaxAndMin();
-                            this.OnDatasUpdate();
+                            ResetMaxAndMin();
+                            OnDatasUpdate();
                             break;
                         }
                     case NotifyCollectionChangedAction.Move:
                     default:
-                        this.UpdateDatas();
+                        UpdateDatas();
                         break;
                 }
             }
 
             UpdateToken?.Cancel();
-            UpdateToken = DispatcherHelper.DelayAction(100d, () => this.InvalidateVisual());
+            UpdateToken = DispatcherHelper.DelayAction(100d, () => InvalidateVisual());
         }
 
         protected virtual void UpdateDragThumbs(Visibility State)
@@ -902,10 +902,10 @@ namespace MenthaAssembly.Views
         {
             Datas.Clear();
 
-            IEnumerable Source = this.ItemsSource?.Where(i => i != null);
+            IEnumerable Source = ItemsSource?.Where(i => i != null);
             if (Source is null)
             {
-                this.ResetMaxAndMin();
+                ResetMaxAndMin();
             }
             else
             {
@@ -914,7 +914,7 @@ namespace MenthaAssembly.Views
                 if (CurrentData != null)
                 {
                     if (DataExtractor is null)
-                        DataExtractor = this.ParseDataExtractor(CurrentData.GetType());
+                        DataExtractor = ParseDataExtractor(CurrentData.GetType());
 
                     Datas.AddRange(Source.Select(i => DataExtractor(i)).OrderBy(i => i.X));
 
@@ -924,11 +924,11 @@ namespace MenthaAssembly.Views
                 }
                 else
                 {
-                    this.ResetMaxAndMin();
+                    ResetMaxAndMin();
                 }
             }
 
-            this.OnDatasUpdate();
+            OnDatasUpdate();
         }
         protected void ResetMaxAndMin()
         {
@@ -942,8 +942,8 @@ namespace MenthaAssembly.Views
             if (typeof(Point).Equals(DataType))
                 return i => (Point)i;
 
-            string XPath = this.XValuePath,
-                   YPath = this.YValuePath;
+            string XPath = XValuePath,
+                   YPath = YValuePath;
 
             if (string.IsNullOrEmpty(XPath) && DataType.Name.StartsWith("KeyValuePair"))
                 XPath = "Key";

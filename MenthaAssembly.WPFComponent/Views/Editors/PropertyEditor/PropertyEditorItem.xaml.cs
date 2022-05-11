@@ -59,191 +59,8 @@ namespace MenthaAssembly.Views
               DependencyProperty.Register("TargetObject", typeof(object), typeof(PropertyEditorItem), new PropertyMetadata(null,
                   (d, e) =>
                   {
-                      if (d is PropertyEditorItem This &&
-                          This.DataContext is PropertyEditorData Data &&
-                          e.NewValue is object Target)
-                      {
-                          if (Target.GetType().Equals(e.OldValue?.GetType()) &&
-                              This.Content is FrameworkElement Content &&
-                              This.BindingDependencyProperty is DependencyProperty dp &&
-                              This.BindingContent is Binding)
-                          {
-                              Binding bd = new Binding
-                              {
-                                  Path = This.BindingContent.Path,
-                                  Source = This.TargetObject,
-                                  Mode = This.BindingContent.Mode,
-                                  Converter = This.BindingContent.Converter,
-                                  ConverterParameter = This.BindingContent.ConverterParameter
-                              };
-
-                              Content.ClearValue(dp);
-                              Content.SetBinding(dp, bd);
-                              This.BindingContent = bd;
-                              return;
-                          }
-
-                          #region PropertyName
-                          if (string.IsNullOrEmpty(Data.Display?.DisplayPath))
-                              This.PropertyName = Data.Display?.Display ?? Data.Property.Name;
-                          else
-                              This.SetBinding(PropertyNameProperty, LanguageBinding.Create(Data.Display.DisplayPath, Data.Property.Name));
-
-                          #endregion
-                          #region PropertyValue
-                          if (Data.Display?.IsReadOnly ?? false)
-                          {
-                              TextBlock PART_ValueTextBlock = new TextBlock();
-                              This.BindingDependencyProperty = TextBlock.TextProperty;
-                              This.BindingContent = new Binding
-                              {
-                                  Path = new PropertyPath(Data.Property.Name),
-                                  Source = This.TargetObject
-                              };
-                              PART_ValueTextBlock.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                              PART_ValueTextBlock.Style = This.TryFindResource("PART_ValueTextBlockStyle") as Style;
-                              This.Content = PART_ValueTextBlock;
-                          }
-                          else if (string.IsNullOrEmpty(Data.Option?.Source))
-                          {
-                              if (Data.Converter is BooleanConverter ||
-                                  Data.Converter is NullableBoolConverter)
-                              {
-                                  CheckBox PART_CheckBox = new CheckBox();
-                                  This.BindingDependencyProperty = CheckBox.IsCheckedProperty;
-                                  This.BindingContent = new Binding
-                                  {
-                                      Path = new PropertyPath(Data.Property.Name),
-                                      Source = This.TargetObject
-                                  };
-                                  PART_CheckBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                  PART_CheckBox.Style = This.TryFindResource("PART_CheckBoxStyle") as Style;
-                                  This.Content = PART_CheckBox;
-                              }
-                              else if (Data.Converter is ColorConverter || Data.Converter is BrushConverter)
-                              {
-                                  ColorBox PART_ColorBox = new ColorBox();
-                                  This.BindingDependencyProperty = ColorBox.ColorProperty;
-                                  This.BindingContent = new Binding
-                                  {
-                                      Path = new PropertyPath(Data.Property.Name),
-                                      Source = This.TargetObject,
-                                      Mode = BindingMode.TwoWay,
-                                      Converter = PropertyValueConverter.Instance,
-                                      ConverterParameter = Data.Converter
-                                  };
-
-                                  PART_ColorBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                  PART_ColorBox.Style = This.TryFindResource("PART_ColorBoxStyle") as Style;
-                                  This.Content = PART_ColorBox;
-                              }
-                              else if (Data.Converter is EnumConverter)
-                              {
-                                  Array ItemsSource = Enum.GetValues(Data.Property.PropertyType);
-                                  ComboBox PART_ComboBox = new ComboBox
-                                  {
-                                      ItemsSource = ItemsSource,
-                                      IsEditable = ItemsSource.Length > 5
-                                  };
-                                  This.BindingDependencyProperty = ComboBox.TextProperty;
-                                  This.BindingContent = new Binding
-                                  {
-                                      Path = new PropertyPath(Data.Property.Name),
-                                      Source = This.TargetObject
-                                  };
-                                  PART_ComboBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                  if (Data.Option?.IsEnumLanguageBinding ?? false)
-                                  {
-                                      FrameworkElementFactory TemplateTextBlock = new FrameworkElementFactory(typeof(TextBlock));
-                                      TemplateTextBlock.SetValue(TextBlock.TextProperty, new LanguageBinding());
-
-                                      PART_ComboBox.ItemTemplate = new DataTemplate
-                                      {
-                                          VisualTree = TemplateTextBlock
-                                      };
-                                  }
-                                  PART_ComboBox.Style = This.TryFindResource("PART_ComboBoxStyle") as Style;
-                                  This.Content = PART_ComboBox;
-                              }
-                              else if (Data.Converter is SByteConverter || Data.Converter is ByteConverter ||
-                                       Data.Converter is Int16Converter || Data.Converter is Int32Converter || Data.Converter is Int64Converter ||
-                                       Data.Converter is UInt16Converter || Data.Converter is UInt32Converter || Data.Converter is UInt64Converter ||
-                                       Data.Converter is SingleConverter || Data.Converter is DoubleConverter || Data.Converter is DecimalConverter)
-                              {
-                                  TextBox PART_ValueTextBox = new TextBox();
-                                  This.BindingDependencyProperty = TextBox.TextProperty;
-                                  This.BindingContent = new Binding
-                                  {
-                                      Path = new PropertyPath(Data.Property.Name),
-                                      Source = This.TargetObject
-                                  };
-                                  PART_ValueTextBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                  TextBoxEx.SetValueType(PART_ValueTextBox, Data.Property.PropertyType);
-                                  if (Data.Option != null)
-                                  {
-                                      if (Data.Option.Delta != null)
-                                          TextBoxEx.SetDelta(PART_ValueTextBox, Data.Option.Delta);
-                                      if (Data.Option.CombineDelta != null)
-                                          TextBoxEx.SetCombineDelta(PART_ValueTextBox, Data.Option.CombineDelta);
-                                      if (Data.Option.Minimum != null)
-                                          TextBoxEx.SetMinimum(PART_ValueTextBox, Data.Option.Minimum);
-                                      if (Data.Option.Maximum != null)
-                                          TextBoxEx.SetMaximum(PART_ValueTextBox, Data.Option.Maximum);
-                                  }
-                                  PART_ValueTextBox.Style = This.TryFindResource("PART_ValueTextBoxStyle") as Style;
-                                  This.Content = PART_ValueTextBox;
-                              }
-                              else
-                              {
-                                  TextBox PART_TextBox = new TextBox();
-                                  if (Data.Converter is CharConverter)
-                                      PART_TextBox.MaxLength = 1;
-
-                                  if (Data.CanConvertString)
-                                  {
-                                      This.BindingDependencyProperty = TextBox.TextProperty;
-                                      This.BindingContent = new Binding
-                                      {
-                                          Path = new PropertyPath(Data.Property.Name),
-                                          Source = This.TargetObject,
-
-                                      };
-                                      PART_TextBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                                      PART_TextBox.PreviewKeyDown += TextBoxEx.UpdateTextBindingWhenEnterKeyDown;
-                                  }
-                                  else
-                                  {
-                                      PART_TextBox.Text = Data.Property.GetValue(Target)?.ToString() ?? Data.Property.PropertyType.FullName;
-                                      PART_TextBox.IsReadOnly = true;
-                                      PART_TextBox.IsReadOnlyCaretVisible = false;
-                                  }
-
-                                  PART_TextBox.Style = This.TryFindResource("PART_TextBoxStyle") as Style;
-                                  This.Content = PART_TextBox;
-                              }
-                          }
-                          else
-                          {
-                              ComboBox PART_ComboBox = new ComboBox
-                              {
-                                  ItemsSource = Data.Option.Source.ParseStaticObject() as IEnumerable,
-                                  DisplayMemberPath = Data.Option.DisplayMemberPath,
-                                  SelectedValuePath = Data.Option.SelectedValuePath
-                              };
-                              This.BindingDependencyProperty = ComboBox.SelectedItemProperty;
-                              This.BindingContent = new Binding
-                              {
-                                  Path = new PropertyPath(Data.Property.Name),
-                                  Source = This.TargetObject
-                              };
-                              PART_ComboBox.SetBinding(This.BindingDependencyProperty, This.BindingContent);
-                              PART_ComboBox.Style = This.TryFindResource("PART_ComboBoxStyle") as Style;
-                              This.Content = PART_ComboBox;
-                          }
-
-                          #endregion
-
-                      }
+                      if (d is PropertyEditorItem This)
+                          This.OnTargetObjectChanged(e.OldValue, e.NewValue);
                   }));
         public object TargetObject
         {
@@ -256,21 +73,225 @@ namespace MenthaAssembly.Views
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PropertyEditorItem), new FrameworkPropertyMetadata(typeof(PropertyEditorItem)));
         }
 
+        protected virtual void OnTargetObjectChanged(object OldValue, object NewValue)
+        {
+            if (DataContext is PropertyEditorData Data)
+            {
+                if (NewValue is object Target)
+                {
+                    if (Target.GetType().Equals(OldValue?.GetType()) &&
+                        this.Content is FrameworkElement Content &&
+                        BindingDependencyProperty is DependencyProperty dp &&
+                        BindingContent is Binding)
+                    {
+                        Binding bd = new Binding
+                        {
+                            Path = BindingContent.Path,
+                            Source = TargetObject,
+                            Mode = BindingContent.Mode,
+                            Converter = BindingContent.Converter,
+                            ConverterParameter = BindingContent.ConverterParameter
+                        };
+
+                        Content.ClearValue(dp);
+                        Content.SetBinding(dp, bd);
+                        BindingContent = bd;
+                        return;
+                    }
+
+                    #region PropertyName
+                    if (string.IsNullOrEmpty(Data.Display?.DisplayPath))
+                        PropertyName = Data.Display?.Display ?? Data.Property.Name;
+                    else
+                        SetBinding(PropertyNameProperty, LanguageBinding.Create(Data.Display.DisplayPath, Data.Property.Name));
+
+                    #endregion
+                    #region PropertyValue
+                    if (Data.Display?.IsReadOnly ?? false)
+                    {
+                        TextBlock PART_ValueTextBlock = new TextBlock();
+                        BindingDependencyProperty = TextBlock.TextProperty;
+                        BindingContent = new Binding
+                        {
+                            Path = new PropertyPath(Data.Property.Name),
+                            Source = TargetObject
+                        };
+                        PART_ValueTextBlock.SetBinding(BindingDependencyProperty, BindingContent);
+                        PART_ValueTextBlock.Style = TryFindResource("PART_ValueTextBlockStyle") as Style;
+                        this.Content = PART_ValueTextBlock;
+                    }
+                    else if (string.IsNullOrEmpty(Data.Option?.Source))
+                    {
+                        if (Data.Converter is BooleanConverter ||
+                            Data.Converter is NullableBoolConverter)
+                        {
+                            CheckBox PART_CheckBox = new CheckBox();
+                            BindingDependencyProperty = CheckBox.IsCheckedProperty;
+                            BindingContent = new Binding
+                            {
+                                Path = new PropertyPath(Data.Property.Name),
+                                Source = TargetObject
+                            };
+                            PART_CheckBox.SetBinding(BindingDependencyProperty, BindingContent);
+                            PART_CheckBox.Style = TryFindResource("PART_CheckBoxStyle") as Style;
+                            this.Content = PART_CheckBox;
+                        }
+                        else if (Data.Converter is ColorConverter || Data.Converter is BrushConverter)
+                        {
+                            ColorBox PART_ColorBox = new ColorBox();
+                            BindingDependencyProperty = ColorBox.ColorProperty;
+                            BindingContent = new Binding
+                            {
+                                Path = new PropertyPath(Data.Property.Name),
+                                Source = TargetObject,
+                                Mode = BindingMode.TwoWay,
+                                Converter = PropertyValueConverter.Instance,
+                                ConverterParameter = Data.Converter
+                            };
+
+                            PART_ColorBox.SetBinding(BindingDependencyProperty, BindingContent);
+                            PART_ColorBox.Style = TryFindResource("PART_ColorBoxStyle") as Style;
+                            this.Content = PART_ColorBox;
+                        }
+                        else if (Data.Converter is EnumConverter)
+                        {
+                            Array ItemsSource = Enum.GetValues(Data.Property.PropertyType);
+                            ComboBox PART_ComboBox = new ComboBox
+                            {
+                                ItemsSource = ItemsSource,
+                                IsEditable = ItemsSource.Length > 5
+                            };
+                            BindingDependencyProperty = ComboBox.TextProperty;
+                            BindingContent = new Binding
+                            {
+                                Path = new PropertyPath(Data.Property.Name),
+                                Source = TargetObject
+                            };
+                            PART_ComboBox.SetBinding(BindingDependencyProperty, BindingContent);
+                            if (Data.Option?.IsEnumLanguageBinding ?? false)
+                            {
+                                FrameworkElementFactory TemplateTextBlock = new FrameworkElementFactory(typeof(TextBlock));
+                                TemplateTextBlock.SetValue(TextBlock.TextProperty, new LanguageBinding());
+
+                                PART_ComboBox.ItemTemplate = new DataTemplate
+                                {
+                                    VisualTree = TemplateTextBlock
+                                };
+                            }
+                            PART_ComboBox.Style = TryFindResource("PART_ComboBoxStyle") as Style;
+                            this.Content = PART_ComboBox;
+                        }
+                        else if (Data.Converter is SByteConverter || Data.Converter is ByteConverter ||
+                                 Data.Converter is Int16Converter || Data.Converter is Int32Converter || Data.Converter is Int64Converter ||
+                                 Data.Converter is UInt16Converter || Data.Converter is UInt32Converter || Data.Converter is UInt64Converter ||
+                                 Data.Converter is SingleConverter || Data.Converter is DoubleConverter || Data.Converter is DecimalConverter)
+                        {
+                            TextBox PART_ValueTextBox = new TextBox();
+                            BindingDependencyProperty = TextBox.TextProperty;
+                            BindingContent = new Binding
+                            {
+                                Path = new PropertyPath(Data.Property.Name),
+                                Source = TargetObject
+                            };
+                            PART_ValueTextBox.SetBinding(BindingDependencyProperty, BindingContent);
+                            TextBoxEx.SetValueType(PART_ValueTextBox, Data.Property.PropertyType);
+                            if (Data.Option != null)
+                            {
+                                if (Data.Option.Delta != null)
+                                    TextBoxEx.SetDelta(PART_ValueTextBox, Data.Option.Delta);
+                                if (Data.Option.CombineDelta != null)
+                                    TextBoxEx.SetCombineDelta(PART_ValueTextBox, Data.Option.CombineDelta);
+                                if (Data.Option.Minimum != null)
+                                    TextBoxEx.SetMinimum(PART_ValueTextBox, Data.Option.Minimum);
+                                if (Data.Option.Maximum != null)
+                                    TextBoxEx.SetMaximum(PART_ValueTextBox, Data.Option.Maximum);
+                            }
+                            PART_ValueTextBox.Style = TryFindResource("PART_ValueTextBoxStyle") as Style;
+                            this.Content = PART_ValueTextBox;
+                        }
+                        else
+                        {
+                            TextBox PART_TextBox = new TextBox();
+                            if (Data.Converter is CharConverter)
+                                PART_TextBox.MaxLength = 1;
+
+                            if (Data.CanConvertString)
+                            {
+                                BindingDependencyProperty = TextBox.TextProperty;
+                                BindingContent = new Binding
+                                {
+                                    Path = new PropertyPath(Data.Property.Name),
+                                    Source = TargetObject,
+
+                                };
+                                PART_TextBox.SetBinding(BindingDependencyProperty, BindingContent);
+                                PART_TextBox.PreviewKeyDown += TextBoxEx.UpdateTextBindingWhenEnterKeyDown;
+                            }
+                            else
+                            {
+                                PART_TextBox.Text = Data.Property.GetValue(Target)?.ToString() ?? Data.Property.PropertyType.FullName;
+                                PART_TextBox.IsReadOnly = true;
+                                PART_TextBox.IsReadOnlyCaretVisible = false;
+                            }
+
+                            PART_TextBox.Style = TryFindResource("PART_TextBoxStyle") as Style;
+                            this.Content = PART_TextBox;
+                        }
+                    }
+                    else
+                    {
+                        ComboBox PART_ComboBox = new ComboBox
+                        {
+                            ItemsSource = Data.Option.Source.ParseStaticObject() as IEnumerable,
+                            DisplayMemberPath = Data.Option.DisplayMemberPath,
+                            SelectedValuePath = Data.Option.SelectedValuePath
+                        };
+                        BindingDependencyProperty = ComboBox.SelectedItemProperty;
+                        BindingContent = new Binding
+                        {
+                            Path = new PropertyPath(Data.Property.Name),
+                            Source = TargetObject
+                        };
+                        PART_ComboBox.SetBinding(BindingDependencyProperty, BindingContent);
+                        PART_ComboBox.Style = TryFindResource("PART_ComboBoxStyle") as Style;
+                        this.Content = PART_ComboBox;
+                    }
+
+                    #endregion
+
+                    return;
+                }
+            }
+            else
+            {
+                ClearValue(PropertyNameProperty);
+            }
+
+            {
+                if (this.Content is FrameworkElement Content &&
+                    BindingDependencyProperty is DependencyProperty dp &&
+                    BindingContent is Binding)
+                    Content.ClearValue(dp);
+            }
+
+            Content = null;
+        }
+
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
             // Menu
-            if (this.GetTemplateChild("PART_PopupMenu") is PopupMenu PART_PopupMenu)
+            if (GetTemplateChild("PART_PopupMenu") is PopupMenu PART_PopupMenu)
                 PART_PopupMenu.Opened += OnMenuOpened;
         }
 
         private void OnMenuOpened(object sender, RoutedEventArgs e)
         {
-            if (this.MenuItemsSource is null &&
+            if (MenuItemsSource is null &&
                 sender is PopupMenu PART_PopupMenu &&
-                this.DataContext is PropertyEditorData Data)
-                this.MenuItemsSource = Data.MenuProvider.CreateMenuDatas(PART_PopupMenu, Data.Property, Data.Display, Data.Option).ToList();
+                DataContext is PropertyEditorData Data)
+                MenuItemsSource = Data.MenuProvider.CreateMenuDatas(PART_PopupMenu, Data.Property, Data.Display, Data.Option).ToList();
         }
 
         private class PropertyValueConverter : IValueConverter
