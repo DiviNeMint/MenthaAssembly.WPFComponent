@@ -2,17 +2,20 @@
 using MenthaAssembly.Media.Imaging.Utils;
 using MenthaAssembly.Views.Primitives;
 using System;
-using System.Diagnostics;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly.Views
 {
+    [ContentProperty(nameof(Marks))]
     public unsafe class ImageViewerLayer : FrameworkElement
     {
         private delegate void DrawAction(IPixelAdapter<BGRA> Adapter, BGRA* pDisplay);
@@ -33,6 +36,7 @@ namespace MenthaAssembly.Views
                               DetachLayer.SourceChanged -= This.OnAttachLayerSourceChanged;
                               This.ClearValue(ChannelProperty);
                               This.ClearValue(VisibilityProperty);
+                              This.Marks = new ImageViewerLayerMarkCollection();
                               This.SourceContext = null;
                           }
 
@@ -41,6 +45,7 @@ namespace MenthaAssembly.Views
                               AttachLayer.SourceChanged += This.OnAttachLayerSourceChanged;
                               This.SetBinding(ChannelProperty, new Binding(nameof(Channel)) { Source = AttachLayer });
                               This.SetBinding(VisibilityProperty, new Binding(nameof(Visibility)) { Source = AttachLayer });
+                              This.Marks = AttachLayer.Marks;
                               This.SourceContext = AttachLayer.SourceContext;
                           }
                       }
@@ -101,7 +106,7 @@ namespace MenthaAssembly.Views
                   (d, e) =>
                   {
                       if (d is ImageViewerLayer This)
-                          This.OnChannelChanged(new ChangedEventArgs<ImageChannel>(e.OldValue, e.NewValue));
+                          This.OnChannelChanged(e.ToChangedEventArgs<ImageChannel>());
                   }));
         public ImageChannel Channel
         {
@@ -109,12 +114,33 @@ namespace MenthaAssembly.Views
             set => SetValue(ChannelProperty, value);
         }
 
+        public static readonly DependencyProperty EnableLayerMarksProperty =
+              DependencyProperty.Register("EnableLayerMarks", typeof(bool), typeof(ImageViewerLayer), new PropertyMetadata(true,
+                  (d, e) =>
+                  {
+                      if (d is ImageViewerLayer This)
+                          This.OnEnableLayerMarksChanged(e.ToChangedEventArgs<bool>());
+                  }));
+        public bool EnableLayerMarks
+        {
+            get => (bool)GetValue(EnableLayerMarksProperty);
+            set => SetValue(EnableLayerMarksProperty, value);
+        }
+
+        public ImageViewerLayerMarkCollection Marks { get; private set; }
+
         internal bool IsGeneratedFromSystem = false;
 
         protected internal ImageViewerBase Viewer;
         static ImageViewerLayer()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ImageViewerLayer), new FrameworkPropertyMetadata(typeof(ImageViewerLayer)));
+        }
+
+        public ImageViewerLayer()
+        {
+            Marks = new ImageViewerLayerMarkCollection();
+            Marks.MarkChanged += OnMarkDataChanged;
         }
 
         private void OnAttachLayerSourceChanged(object sender, ChangedEventArgs<IImageContext> e)
@@ -164,6 +190,11 @@ namespace MenthaAssembly.Views
             UpdateCanvas();
         }
 
+        private void OnEnableLayerMarksChanged(ChangedEventArgs<bool> e)
+            => UpdateCanvas();
+        private void OnMarkDataChanged(object sender, EventArgs e)
+            => UpdateCanvas();
+
         protected int DisplayAreaWidth = 0,
                       DisplayAreaHeight = 0;
         protected override Size MeasureOverride(Size AvailableSize)
@@ -183,16 +214,21 @@ namespace MenthaAssembly.Views
             Context.DrawImage(Image, new Rect(RenderSize));
         }
 
-        protected Bound<float> LastImageBound;
+        protected Bound<float> LastImageBound, LastMarksBound;
         private DelayActionToken UpdateCanvasToken;
         public virtual void UpdateCanvas()
         {
             UpdateCanvasToken?.Cancel();
 
-            if (Viewer is null ||
-                _SourceContext is null ||
-                _SourceContext.Width is 0 ||
-                _SourceContext.Height is 0)
+            if (Viewer is null)
+            {
+                DisplayImage = null;
+                return;
+            }
+
+            bool HasImage = _SourceContext != null && _SourceContext.Width > 0 && _SourceContext.Height > 0,
+                 HasMarks = Marks.Count > 0;
+            if (!(HasImage || HasMarks))
             {
                 DisplayImage = null;
                 return;
@@ -212,17 +248,36 @@ namespace MenthaAssembly.Views
                 DisplayContext.Height != DisplayAreaHeight)
             {
                 DisplayImage = new WriteableBitmap(DisplayAreaWidth, DisplayAreaHeight, 96, 96, PixelFormats.Bgra32, null);
-                LastImageBound = new Bound<float>(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+
+                // Reset LastImageBound
+                LastImageBound.Left = float.MaxValue;
+                LastImageBound.Top = float.MaxValue;
+                LastImageBound.Right = float.MinValue;
+                LastImageBound.Bottom = float.MinValue;
+
+                // Reset LastMarksBound
+                LastMarksBound.Left = float.MaxValue;
+                LastMarksBound.Top = float.MaxValue;
+                LastMarksBound.Right = float.MinValue;
+                LastMarksBound.Bottom = float.MinValue;
             }
 
-            Dispatcher.BeginInvoke(new Action(() =>
+            _ = Dispatcher.BeginInvoke(new Action(() =>
             {
                 BitmapContext Display = DisplayContext;
                 if (Display.TryLock(1))
                 {
                     try
                     {
-                        Int32Rect DirtyRect = OnDraw();
+                        Bound<int> DirtyBound = OnDrawImage();
+
+                        if (EnableLayerMarks && HasMarks)
+                        {
+                            Bound<int> DirtyMarksBound = OnDrawMarks();
+                            DirtyBound.Union(DirtyMarksBound);
+                        }
+
+                        Int32Rect DirtyRect = new Int32Rect(DirtyBound.Left, DirtyBound.Top, DirtyBound.Width, DirtyBound.Height);
                         Display.AddDirtyRect(DirtyRect);
                     }
                     catch { }
@@ -249,145 +304,373 @@ namespace MenthaAssembly.Views
         /// <legacyCorruptedStateExceptionsPolicy enabled = "true" />
         /// </ runtime >
         /// </summary>
-        protected virtual Int32Rect OnDraw()
+        protected virtual Bound<int> OnDrawImage()
         {
+            // Check Image
+            if (_SourceContext != null &&
+                _SourceContext.Width > 0 &&
+                _SourceContext.Height > 0)
+            {
+                // Check Scale
+                double Scale = Viewer.InternalScale;
+                if (Scale > 0d)
+                {
+                    Rect Viewport = Viewer.InternalViewport;
+                    int SourceW = _SourceContext.Width,
+                        SourceH = _SourceContext.Height,
+                        ContextX = Viewer.ContextX,
+                        ContextY = Viewer.ContextY,
+                        ContextW = Viewer.ContextWidth,
+                        ContextH = Viewer.ContextHeight;
+
+                    // Align
+                    AlignContextLocation(SourceW, SourceH, ContextW, ContextH, ref ContextX, ref ContextY);
+
+                    // Calculate Source's Rect in ImageViewer.
+                    float SourceEx = ContextX + SourceW,
+                          SourceEy = ContextY + SourceH,
+                          ISx = (float)((ContextX - Viewport.X) * Scale),
+                          ISy = (float)((ContextY - Viewport.Y) * Scale),
+                          IEx = (float)((SourceEx - Viewport.X) * Scale),
+                          IEy = (float)((SourceEy - Viewport.Y) * Scale);
+
+                    // Calculate DirtyRect (Compare with LastImageRect)
+                    float DirtyX1 = Math.Max(MathHelper.Min(LastImageBound.Left, LastMarksBound.Left, ISx), 0f),
+                          DirtyY1 = Math.Max(MathHelper.Min(LastImageBound.Top, LastMarksBound.Top, ISy), 0f),
+                          DirtyX2 = Math.Min(MathHelper.Max(LastImageBound.Right, LastMarksBound.Right, IEx), DisplayContext.Width),
+                          DirtyY2 = Math.Min(MathHelper.Max(LastImageBound.Bottom, LastMarksBound.Bottom, IEy), DisplayContext.Height);
+
+                    int IntDirtyX1 = (int)Math.Ceiling(DirtyX1),
+                        IntDirtyY1 = (int)Math.Ceiling(DirtyY1),
+                        IntDirtyX2 = (int)Math.Floor(DirtyX2),
+                        IntDirtyY2 = (int)Math.Floor(DirtyY2);
+
+                    // Set LastImageBound
+                    LastImageBound.Left = DirtyX1;
+                    LastImageBound.Top = DirtyY1;
+                    LastImageBound.Right = DirtyX2;
+                    LastImageBound.Bottom = DirtyY2;
+
+                    #region Draw
+                    float FactorStep = (float)(1 / Scale);
+                    byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+
+                    int IntViewportX = (int)Viewport.X,
+                        IntViewportY = (int)Viewport.Y,
+                        IntISx = IntViewportX - ContextX,
+                        IntISy = IntViewportY - ContextY;
+                    float FracX0 = (float)(Viewport.X - IntViewportX),
+                          FracY0 = (float)(Viewport.Y - IntViewportY),
+                          FracX1 = IntDirtyX2 * FactorStep + FracX0;
+
+                    FracX0 += IntDirtyX1 * FactorStep;
+
+                    int IntFracX0 = (int)FracX0,
+                        IntFracY0 = (int)FracY0,
+                        IntFracX1 = (int)FracX1,
+                        Sx = IntISx + IntFracX0,
+                        Sy = IntISy + IntFracY0,
+                        Ex = IntISx + IntFracX1;
+
+                    FracX0 -= IntFracX0;
+                    FracY0 -= IntFracY0;
+                    FracX1 -= IntFracX1;
+
+                    _ = Parallel.For(IntDirtyY1, IntDirtyY2, Viewer.RenderParallelOptions ?? DefaultParallelOptions, j =>
+                    {
+                        long Offset = j * DisplayContext.Stride + IntDirtyX1 * sizeof(BGRA);
+                        BGRA* pData = (BGRA*)(DisplayScan0 + Offset);
+
+                        int Y = Sy + (int)(j * FactorStep + FracY0);
+
+                        if (0 <= Y && Y < SourceH)
+                        {
+                            int X = Sx;
+                            float FracX = FracX0;
+
+                            if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
+                            {
+                                do
+                                {
+                                    *pData++ = EmptyPixel;
+
+                                    FracX += FactorStep;
+                                    while (FracX >= 1f)
+                                    {
+                                        X++;
+                                        FracX -= 1f;
+                                    }
+
+                                    if (X >= Ex)
+                                        return;
+
+                                } while (X < 0);
+                            }
+
+                            if (X < Ex || (X == Ex && FracX < FracX1))
+                            {
+                                IPixelAdapter<BGRA> Adapter = _SourceContext.Operator.GetAdapter<BGRA>(X, Y);
+
+                                while (X < SourceW && (X < Ex || (X == Ex && FracX < FracX1)))
+                                {
+                                    DrawHandler(Adapter, pData++);
+
+                                    FracX += FactorStep;
+                                    while (FracX >= 1f)
+                                    {
+                                        FracX -= 1f;
+                                        Adapter.MoveNext();
+                                        X++;
+                                    }
+                                }
+                            }
+
+                            while (X < Ex || (X == Ex && FracX < FracX1))
+                            {
+                                *pData++ = EmptyPixel;
+
+                                FracX += FactorStep;
+                                while (FracX >= 1f)
+                                {
+                                    X++;
+                                    FracX -= 1f;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Clear
+                            for (int i = IntDirtyX1; i < IntDirtyX2; i++)
+                                *pData++ = EmptyPixel;
+                        }
+                    });
+
+                    #endregion
+
+                    return new Bound<int>(IntDirtyX1, IntDirtyY1, IntDirtyX2, IntDirtyY2);
+                }
+            }
+
+            // Excluded that had be cleared.
+            if (LastImageBound.Left == float.MaxValue &&
+                LastImageBound.Top == float.MaxValue &&
+                LastImageBound.Right == float.MinValue &&
+                LastImageBound.Bottom == float.MinValue)
+                return Bound<int>.Empty;
+
+            // Clear
+            DisplayContext.Clear(EmptyPixel, null);
+
+            // Reset LastImageBound
+            LastImageBound.Left = float.MaxValue;
+            LastImageBound.Top = float.MaxValue;
+            LastImageBound.Right = float.MinValue;
+            LastImageBound.Bottom = float.MinValue;
+
+            return new Bound<int>(0, 0, DisplayContext.Width, DisplayContext.Height);
+        }
+        protected virtual Bound<int> OnDrawMarks()
+        {
+            // Check Scale
             double Scale = Viewer.InternalScale;
             if (Scale > 0d)
             {
                 Rect Viewport = Viewer.InternalViewport;
-                int SourceW = SourceContext.Width,
-                    SourceH = SourceContext.Height,
-                    ContextX = Viewer.ContextX,
+                int ContextX = Viewer.ContextX,
                     ContextY = Viewer.ContextY,
                     ContextW = Viewer.ContextWidth,
                     ContextH = Viewer.ContextHeight;
 
-                // Align
-                AlignContextLocation(SourceW, SourceH, ContextW, ContextH, ref ContextX, ref ContextY);
+                if (_SourceContext != null)
+                {
+                    int SourceW = _SourceContext.Width,
+                        SourceH = _SourceContext.Height;
 
-                // Calculate Source's Rect in ImageViewer.
-                float SourceEx = ContextX + SourceW,
-                      SourceEy = ContextY + SourceH,
-                      ISx = Math.Max((float)((ContextX - Viewport.X) * Scale), 0f),
-                      ISy = Math.Max((float)((ContextY - Viewport.Y) * Scale), 0f),
-                      IEx = Math.Min((float)((SourceEx - Viewport.X) * Scale), DisplayContext.Width),
-                      IEy = Math.Min((float)((SourceEy - Viewport.Y) * Scale), DisplayContext.Height);
+                    // Align
+                    if (SourceW > 0 &&
+                        SourceH > 0)
+                        AlignContextLocation(SourceW, SourceH, ContextW, ContextH, ref ContextX, ref ContextY);
+                }
 
-                // Calculate DirtyRect (Compare with LastImageRect)
-                float DirtyX1 = Math.Min(LastImageBound.Left, ISx),
-                      DirtyY1 = Math.Min(LastImageBound.Top, ISy),
-                      DirtyX2 = Math.Max(LastImageBound.Right, IEx),
-                      DirtyY2 = Math.Max(LastImageBound.Bottom, IEy);
+                double ViewportSx = Viewport.Left,
+                       ViewportSy = Viewport.Top,
+                       ViewportEx = Viewport.Right,
+                       ViewportEy = Viewport.Bottom;
 
-                int IntDirtyX1 = (int)Math.Ceiling(DirtyX1),
-                    IntDirtyY1 = (int)Math.Floor(DirtyY1),
-                    IntDirtyX2 = (int)Math.Ceiling(DirtyX2),
-                    IntDirtyY2 = (int)Math.Floor(DirtyY2);
+                float DirtySx = LastMarksBound.Left,
+                      DirtySy = LastMarksBound.Top,
+                      DirtyEx = LastMarksBound.Right,
+                      DirtyEy = LastMarksBound.Bottom;
 
-                LastImageBound = new Bound<float>(DirtyX1, DirtyY1, DirtyX2, DirtyY2);
+                int DisplayWidth = DisplayContext.Width,
+                    DisplayHeight = DisplayContext.Height;
+                long DisplayStride = DisplayContext.Stride;
 
-                #region Draw
-                float FactorStep = (float)(1 / Scale);
-                byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+                try
+                {
+                    byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
+                    foreach (ImageViewerLayerMark Mark in Marks)
+                    {
+                        if (Mark.CreateVisualContext() is IImageContext Stamp)
+                        {
+                            double MW = Stamp.Width,
+                                   MH = Stamp.Height,
+                                   HMW = MW / 2d,
+                                   HMH = MH / 2d;
 
-                int IntViewportX = (int)Viewport.X,
-                    IntViewportY = (int)Viewport.Y,
-                    IntISx = IntViewportX - ContextX,
-                    IntISy = IntViewportY - ContextY;
-                float FracX0 = (float)(Viewport.X - IntViewportX),
-                      FracY0 = (float)(Viewport.Y - IntViewportY),
-                      FracX1 = IntDirtyX2 * FactorStep + FracX0;
+                            if (Mark.Zoomable && Scale != 1d)
+                            {
+                                double MarkScale = Scale.Clamp(Mark.ZoomMinScale, Mark.ZoomMaxScale);
+                                float FactorStep = (float)(1 / MarkScale);
 
-                FracX0 += IntDirtyX1 * FactorStep;
+                                foreach (Point Center in Mark.CenterLocations)
+                                {
+                                    // Calculate Global Location
+                                    double MCx = ContextX + Center.X,
+                                           MCy = ContextY + Center.Y,
+                                           MSx = MCx - HMW,
+                                           MSy = MCy - HMH,
+                                           MEx = MSx + MW,
+                                           MEy = MSy + MH;
 
-                int IntFracX0 = (int)FracX0,
-                    IntFracY0 = (int)FracY0,
-                    IntFracX1 = (int)FracX1,
-                    Sx = IntISx + IntFracX0,
-                    Sy = IntISy + IntFracY0,
-                    Ex = IntISx + IntFracX1;
+                                    if (MEx < ViewportSx || ViewportEx < MSx ||
+                                        MEy < ViewportSy || ViewportEy < MSy)
+                                        continue;
 
-                FracX0 -= IntFracX0;
-                FracY0 -= IntFracY0;
-                FracX1 -= IntFracX1;
+                                    // Calculate DisplayContext Location
+                                    double Cx = (MCx - ViewportSx) * Scale,
+                                           Cy = (MCy - ViewportSy) * Scale,
+                                           Sx = Cx - HMW * MarkScale,
+                                           Sy = Cy - HMH * MarkScale,
+                                           Ex = Cx + HMW * MarkScale,
+                                           Ey = Cy + HMH * MarkScale;
 
-                Parallel.For(IntDirtyY1, IntDirtyY2, Viewer.RenderParallelOptions ?? DefaultParallelOptions, j =>
-               {
-                   long Offset = j * DisplayContext.Stride + IntDirtyX1 * sizeof(BGRA);
-                   BGRA* pData = (BGRA*)(DisplayScan0 + Offset);
+                                    // Calculate Bound
+                                    double BSx = Math.Max(Sx, 0),
+                                           BSy = Math.Max(Sy, 0),
+                                           BEx = Math.Min(Ex, DisplayWidth),
+                                           BEy = Math.Min(Ey, DisplayHeight);
 
-                   int Y = Sy + (int)(j * FactorStep + FracY0);
+                                    // Calculate Nearest Resize Datas
+                                    float FracX0 = (float)((BSx - Sx) * FactorStep),
+                                          FracX1 = (float)(FracX0 + (BEx - BSx) * FactorStep);
 
-                   if (0 <= Y && Y < SourceH)
-                   {
-                       int X = Sx;
-                       float FracX = FracX0;
+                                    int IntDirtySx = (int)Math.Ceiling(BSx),
+                                        IntDirtySy = (int)Math.Ceiling(BSy),
+                                        IntDirtyEx = (int)Math.Ceiling(BEx),
+                                        IntDirtyEy = (int)Math.Ceiling(BEy),
+                                        StampSx = (int)FracX0,
+                                        StampEx = (int)FracX1;
 
-                       if (X < 0 && (X < Ex || (X == Ex && FracX < FracX1)))
-                       {
-                           do
-                           {
-                               *pData++ = EmptyPixel;
+                                    FracX0 -= StampSx;
+                                    FracX1 -= StampEx;
 
-                               FracX += FactorStep;
-                               while (FracX >= 1f)
-                               {
-                                   X++;
-                                   FracX -= 1f;
-                               }
+                                    // Draw
+                                    _ = Parallel.For(IntDirtySy, IntDirtyEy, j =>
+                                    {
+                                        long Offset = j * DisplayStride + IntDirtySx * sizeof(BGRA);
+                                        BGRA* pData = (BGRA*)(DisplayScan0 + Offset);
 
-                               if (X >= Ex)
-                                   return;
+                                        float FracX = FracX0;
+                                        int X = StampSx,
+                                            Y = (int)((j - Sy) * FactorStep);
 
-                           } while (X < 0);
-                       }
+                                        IPixelAdapter<BGRA> Adapter = Stamp.Operator.GetAdapter<BGRA>(X, Y);
+                                        while (X < MW && (X < StampEx || (X == StampEx && FracX < FracX1)))
+                                        {
+                                            Adapter.OverlayTo(pData++);
 
-                       if (X < Ex || (X == Ex && FracX < FracX1))
-                       {
-                           IPixelAdapter<BGRA> Adapter = SourceContext.Operator.GetAdapter<BGRA>(X, Y);
+                                            FracX += FactorStep;
+                                            while (FracX >= 1f)
+                                            {
+                                                FracX -= 1f;
+                                                Adapter.MoveNext();
+                                                X++;
+                                            }
+                                        }
+                                    });
 
-                           while (X < SourceW && (X < Ex || (X == Ex && FracX < FracX1)))
-                           {
-                               DrawHandler(Adapter, pData++);
+                                    // Update Dirty
+                                    DirtySx = Math.Min(IntDirtySx, DirtySx);
+                                    DirtySy = Math.Min(IntDirtySy, DirtySy);
+                                    DirtyEx = Math.Max(IntDirtyEx, DirtyEx);
+                                    DirtyEy = Math.Max(IntDirtyEy, DirtyEy);
+                                }
+                            }
+                            else
+                            {
+                                foreach (Point Center in Mark.CenterLocations)
+                                {
+                                    // Calculate Global Location
+                                    double MCx = ContextX + Center.X,
+                                           MCy = ContextY + Center.Y,
+                                           MSx = MCx - HMW,
+                                           MSy = MCy - HMH,
+                                           MEx = MSx + MW,
+                                           MEy = MSy + MH;
 
-                               FracX += FactorStep;
-                               while (FracX >= 1f)
-                               {
-                                   FracX -= 1f;
-                                   Adapter.MoveNext();
-                                   X++;
-                               }
-                           }
-                       }
+                                    if (MEx < ViewportSx || ViewportEx < MSx ||
+                                        MEy < ViewportSy || ViewportEy < MSy)
+                                        continue;
 
-                       while (X < Ex || (X == Ex && FracX < FracX1))
-                       {
-                           *pData++ = EmptyPixel;
+                                    // Calculate DisplayContext Location
+                                    double Cx = (MCx - ViewportSx) * Scale,
+                                           Cy = (MCy - ViewportSy) * Scale;
+                                    int Sx = (int)Math.Round(Cx - HMW),
+                                        Sy = (int)Math.Round(Cy - HMH),
+                                        Ex = (int)(Sx + MW),
+                                        Ey = (int)(Sy + MH);
 
-                           FracX += FactorStep;
-                           while (FracX >= 1f)
-                           {
-                               X++;
-                               FracX -= 1f;
-                           }
-                       }
-                   }
-                   else
-                   {
-                       // Clear
-                       for (int i = IntDirtyX1; i < IntDirtyX2; i++)
-                           *pData++ = EmptyPixel;
-                   }
-               });
+                                    // Calculate Bound
+                                    int IntDirtySx = Math.Max(Sx, 0),
+                                        IntDirtySy = Math.Max(Sy, 0),
+                                        IntDirtyEx = Math.Min(Ex, DisplayWidth),
+                                        IntDirtyEy = Math.Min(Ey, DisplayHeight),
+                                        StampSx = IntDirtySx - Sx,
+                                        StampWidth = IntDirtyEx - IntDirtySx;
 
-                #endregion
+                                    // Draw
+                                    _ = Parallel.For(IntDirtySy, IntDirtyEy, j =>
+                                    {
+                                        long Offset = j * DisplayStride + IntDirtySx * sizeof(BGRA);
+                                        BGRA* pData = (BGRA*)(DisplayScan0 + Offset);
 
-                return new Int32Rect(IntDirtyX1, IntDirtyY1, IntDirtyX2 - IntDirtyX1, IntDirtyY2 - IntDirtyY1);
+                                        Stamp.Operator.ScanLine<BGRA>(StampSx, j - Sy, StampWidth, Adapter => Adapter.OverlayTo(pData++));
+                                    });
+
+                                    // Update Dirty
+                                    DirtySx = Math.Min(IntDirtySx, DirtySx);
+                                    DirtySy = Math.Min(IntDirtySy, DirtySy);
+                                    DirtyEx = Math.Max(IntDirtyEx, DirtyEx);
+                                    DirtyEy = Math.Max(IntDirtyEy, DirtyEy);
+                                }
+                            }
+                        }
+                    }
+
+                    return DirtySx == int.MaxValue &&
+                           DirtySy == int.MaxValue &&
+                           DirtyEx == int.MinValue &&
+                           DirtyEy == int.MinValue ?
+                           Bound<int>.Empty :
+                           new Bound<int>((int)DirtySx, (int)DirtySy, (int)DirtyEx, (int)DirtyEy);
+                }
+                finally
+                {
+                    LastMarksBound.Left = DirtySx;
+                    LastMarksBound.Top = DirtySy;
+                    LastMarksBound.Right = DirtyEx;
+                    LastMarksBound.Bottom = DirtyEy;
+                }
             }
 
-            // Clear
-            DisplayContext.Clear(EmptyPixel, null);
-            return new Int32Rect(0, 0, DisplayContext.Width, DisplayContext.Height);
+            // Reset LastImageBound
+            LastMarksBound.Left = float.MaxValue;
+            LastMarksBound.Top = float.MaxValue;
+            LastMarksBound.Right = float.MinValue;
+            LastMarksBound.Bottom = float.MinValue;
+
+            return Bound<int>.Empty;
         }
 
         private void AlignContextLocation(int SourceW, int SourceH, int ContextW, int ContextH, ref int ContextX, ref int ContextY)

@@ -55,6 +55,14 @@ namespace MenthaAssembly.Views
             set => SetValue(TargetViewerProperty, value);
         }
 
+        public static readonly DependencyProperty EnableLayerMarksProperty =
+              DependencyProperty.Register("EnableLayerMarks", typeof(bool), typeof(ImageViewerMapper), new PropertyMetadata(false));
+        public bool EnableLayerMarks
+        {
+            get => (bool)GetValue(EnableLayerMarksProperty);
+            set => SetValue(EnableLayerMarksProperty, value);
+        }
+
         public static readonly DependencyProperty ViewportStrokeProperty =
               DependencyProperty.Register("ViewportStroke", typeof(SolidColorBrush), typeof(ImageViewerMapper), new PropertyMetadata(default));
         public SolidColorBrush ViewportStroke
@@ -109,7 +117,10 @@ namespace MenthaAssembly.Views
                 this.PART_LayerContainer = PART_LayerContainer;
 
                 foreach (ImageViewerLayer Layer in Layers)
+                {
+                    Layer.SetBinding(ImageViewerLayer.EnableLayerMarksProperty, new Binding(nameof(EnableLayerMarks)) { Source = this });
                     PART_LayerContainer.Children.Add(Layer);
+                }
             }
 
             Layers.CollectionChanged += OnLayersCollectionChanged;
@@ -137,6 +148,7 @@ namespace MenthaAssembly.Views
                     {
                         foreach (ImageViewerLayer Layer in e.NewItems.OfType<ImageViewerLayer>())
                         {
+                            Layer.SetBinding(ImageViewerLayer.EnableLayerMarksProperty, new Binding(nameof(EnableLayerMarks)) { Source = this });
                             PART_LayerContainer.Children.Add(Layer);
                             Layer.UpdateCanvas();
                         }
@@ -152,6 +164,7 @@ namespace MenthaAssembly.Views
                     {
                         foreach (ImageViewerLayer Layer in e.NewItems.OfType<ImageViewerLayer>())
                         {
+                            Layer.SetBinding(ImageViewerLayer.EnableLayerMarksProperty, new Binding(nameof(EnableLayerMarks)) { Source = this });
                             PART_LayerContainer.Children.Add(Layer);
                             Layer.UpdateCanvas();
                         }

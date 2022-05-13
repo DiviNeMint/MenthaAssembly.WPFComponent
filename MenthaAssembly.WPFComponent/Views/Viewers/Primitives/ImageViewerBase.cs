@@ -1,6 +1,7 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,10 +13,13 @@ namespace MenthaAssembly.Views.Primitives
     {
         public ParallelOptions RenderParallelOptions { set; get; }
 
+        [Browsable(false)]
         internal virtual Size<int> ViewBox { set; get; }
 
+        [Browsable(false)]
         internal Rect InternalViewport { set; get; }
 
+        [Browsable(false)]
         internal double InternalScale { set; get; }
 
         public Int32Rect ContextRect

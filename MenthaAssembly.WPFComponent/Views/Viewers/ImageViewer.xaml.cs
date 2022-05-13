@@ -261,7 +261,7 @@ namespace MenthaAssembly.Views
         {
             IImageContext Image = e.NewValue;
             if (ContextWidth == 0 || ContextHeight == 0 ||
-                Image.Width == ContextWidth || Image.Height == ContextHeight)
+                Image.Width >= ContextWidth || Image.Height >= ContextHeight)
                 UpdateViewBoxAndContextInfo();
             else if (sender is ImageViewerLayer Layer)
                 Layer.UpdateCanvas();
