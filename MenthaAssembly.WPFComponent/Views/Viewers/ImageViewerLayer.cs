@@ -518,9 +518,17 @@ namespace MenthaAssembly.Views
                                    HMW = MW / 2d,
                                    HMH = MH / 2d;
 
-                            if (Mark.Zoomable && Scale != 1d)
+                            bool Zoomable = Mark.Zoomable && Scale != 1d;
+                            double MarkScale = Zoomable ? Scale.Clamp(Mark.ZoomMinScale, Mark.ZoomMaxScale) : 1d;
+                            if (Viewer is ImageViewerMapper Mapper)
                             {
-                                double MarkScale = Scale.Clamp(Mark.ZoomMinScale, Mark.ZoomMaxScale);
+                                Zoomable = true;
+                                if (!Mark.Zoomable)
+                                    MarkScale = Scale / Mapper.TargetViewer.Scale.Clamp(Mark.ZoomMinScale, Mark.ZoomMaxScale);
+                            }
+
+                            if (Zoomable)
+                            {
                                 float FactorStep = (float)(1 / MarkScale);
 
                                 foreach (Point Center in Mark.CenterLocations)

@@ -246,7 +246,13 @@ namespace MenthaAssembly.Views
         }
 
         private void OnViewportChanged(object sender, ChangedEventArgs<Rect> e)
-            => UpdateViewportRect();
+        {
+            UpdateViewportRect();
+
+            if (EnableLayerMarks)
+                foreach (ImageViewerLayer Layer in Layers.Where(i => i.Marks.Any(j => !j.Zoomable)))
+                    Layer.UpdateCanvas();
+        }
 
         private void UpdateViewBoxContainerAndInternalScale()
         {
