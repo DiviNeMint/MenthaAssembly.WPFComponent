@@ -2,8 +2,7 @@
 using MenthaAssembly.Media.Imaging.Utils;
 using MenthaAssembly.Views.Primitives;
 using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -481,17 +480,6 @@ namespace MenthaAssembly.Views
                     ContextW = Viewer.ContextWidth,
                     ContextH = Viewer.ContextHeight;
 
-                if (_SourceContext != null)
-                {
-                    int SourceW = _SourceContext.Width,
-                        SourceH = _SourceContext.Height;
-
-                    // Align
-                    if (SourceW > 0 &&
-                        SourceH > 0)
-                        AlignContextLocation(SourceW, SourceH, ContextW, ContextH, ref ContextX, ref ContextY);
-                }
-
                 double ViewportSx = Viewport.Left,
                        ViewportSy = Viewport.Top,
                        ViewportEx = Viewport.Right,
@@ -502,6 +490,34 @@ namespace MenthaAssembly.Views
                       DirtyEx = LastMarksBound.Right,
                       DirtyEy = LastMarksBound.Bottom;
 
+                if (_SourceContext != null)
+                {
+                    int SourceW = _SourceContext.Width,
+                        SourceH = _SourceContext.Height;
+
+                    // Align
+                    if (SourceW > 0 &&
+                        SourceH > 0)
+                        AlignContextLocation(SourceW, SourceH, ContextW, ContextH, ref ContextX, ref ContextY);
+                }
+                else if (DirtySx != int.MaxValue &&
+                         DirtySy != int.MaxValue &&
+                         DirtyEx != int.MinValue &&
+                         DirtyEy != int.MinValue)
+                {
+                    // Clear Last Marks.
+                    int LSx = (int)Math.Floor(DirtySx),
+                        LSy = (int)Math.Floor(DirtySy),
+                        LEx = (int)Math.Ceiling(DirtyEx),
+                        LEy = (int)Math.Ceiling(DirtyEy);
+                    Parallel.For(LSy, LEy, DefaultParallelOptions, j =>
+                    {
+                        IPixelAdapter<BGRA> Adapter = DisplayContext.Context.Operator.GetAdapter<BGRA>(LSx, j);
+                        for (int i = LSx; i < LEx; i++, Adapter.MoveNext())
+                            Adapter.Override(EmptyPixel);
+                    });
+                }
+
                 int DisplayWidth = DisplayContext.Width,
                     DisplayHeight = DisplayContext.Height;
                 long DisplayStride = DisplayContext.Stride;
@@ -509,7 +525,7 @@ namespace MenthaAssembly.Views
                 try
                 {
                     byte* DisplayScan0 = (byte*)DisplayContext.Scan0;
-                    foreach (ImageViewerLayerMark Mark in Marks)
+                    foreach (ImageViewerLayerMark Mark in Marks.Where(i => i.Visible))
                     {
                         if (Mark.CreateVisualContext() is IImageContext Stamp)
                         {
