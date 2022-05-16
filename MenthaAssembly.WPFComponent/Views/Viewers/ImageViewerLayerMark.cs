@@ -14,6 +14,17 @@ namespace MenthaAssembly.Views
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        private bool _Visible = true;
+        public bool Visible
+        {
+            get => _Visible;
+            set
+            {
+                _Visible = value;
+                this.OnPropertyChanged();
+            }
+        }
+
         private bool _Zoomable = true;
         public bool Zoomable
         {
