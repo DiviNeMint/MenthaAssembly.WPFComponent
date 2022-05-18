@@ -2,6 +2,7 @@
 using MenthaAssembly.Media.Imaging.Utils;
 using MenthaAssembly.Views.Primitives;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -49,6 +50,7 @@ namespace MenthaAssembly.Views
                           }
                       }
                   }));
+        [Browsable(false)]
         internal ImageViewerLayer AttachedLayer
         {
             get => (ImageViewerLayer)GetValue(AttachedLayerProperty);
@@ -63,6 +65,7 @@ namespace MenthaAssembly.Views
                     if (d is ImageViewerLayer This)
                         This.DisplayContext = e.NewValue is WriteableBitmap Bitmap ? new BitmapContext(Bitmap) : null;
                 }));
+        [Browsable(false)]
         internal WriteableBitmap DisplayImage
         {
             get => (WriteableBitmap)GetValue(DisplayImageProperty);
