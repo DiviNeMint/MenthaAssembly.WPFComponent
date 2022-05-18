@@ -135,37 +135,30 @@ namespace MenthaAssembly.Views
             Layers.LayerSourceChanged += OnLayersSourceChanged;
         }
 
-        private DelayActionToken SizeChangedUpdateToken;
-        protected override Size MeasureOverride(Size Constraint)
+        protected override void OnRenderSizeChanged(SizeChangedInfo Info)
         {
-            try
+            base.OnRenderSizeChanged(Info);
+
+            if (!IsLoaded)
             {
-                return base.MeasureOverride(Constraint);
+                Size PrevSize = Info.PreviousSize;
+                if (PrevSize.Width == 0 && PrevSize.Height == 0)
+                    UpdateViewBoxAndContextInfo();
             }
-            finally
+            else if (DisplayAreaWidth > 0 && DisplayAreaHeight > 0)
             {
-                if (IsLoaded)
-                {
-                    SizeChangedUpdateToken?.Cancel();
-                    SizeChangedUpdateToken = DispatcherHelper.DelayAction(100d, () =>
-                    {
-                        if (DisplayAreaWidth > 0 && DisplayAreaHeight > 0)
-                        {
-                            IsResizeViewer = true;
-                            Resize_ViewportCenterInImage = new Point(Viewport.X + Viewport.Width / 2 - ContextX,
-                                                                     Viewport.Y + Viewport.Height / 2 - ContextY);
+                IsResizeViewer = true;
+                Resize_ViewportCenterInImage = new Point(Viewport.X + Viewport.Width / 2 - ContextX,
+                                                         Viewport.Y + Viewport.Height / 2 - ContextY);
 
-                            // Update ViewBox
-                            Size<int> ViewBox = CalculateViewBox();
-                            if (ViewBox.Equals(this.ViewBox))
-                                OnViewBoxChanged(null);
-                            else
-                                this.ViewBox = ViewBox;
+                // Update ViewBox
+                Size<int> ViewBox = CalculateViewBox();
+                if (ViewBox.Equals(this.ViewBox))
+                    OnViewBoxChanged(null);
+                else
+                    this.ViewBox = ViewBox;
 
-                            IsResizeViewer = false;
-                        }
-                    });
-                }
+                IsResizeViewer = false;
             }
         }
 

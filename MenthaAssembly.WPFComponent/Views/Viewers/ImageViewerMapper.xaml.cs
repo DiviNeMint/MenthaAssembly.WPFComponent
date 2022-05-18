@@ -34,7 +34,11 @@ namespace MenthaAssembly.Views
                               NewViewer.ViewBoxChanged += This.OnViewBoxChanged;
                               NewViewer.ViewportChanged += This.OnViewportChanged;
 
+                              Size<int> ViewBox = NewViewer.ViewBox;
+                              This.ViewBox = ViewBox;
+                              This.InternalViewport = new Rect(0, 0, ViewBox.Width, ViewBox.Height);
                               This.UpdateContextDatas();
+
                               foreach (ImageViewerLayer AttachedLayer in NewViewer.Layers)
                               {
                                   if (!This.Layers.CachePool.TryDequeue(out ImageViewerLayer Layer))

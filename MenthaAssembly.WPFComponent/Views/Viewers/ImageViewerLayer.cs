@@ -206,6 +206,14 @@ namespace MenthaAssembly.Views
             return AvailableSize;
         }
 
+        protected override Size ArrangeOverride(Size FinalSize)
+        {
+            if (DelayUpdate)
+                UpdateCanvas();
+
+            return FinalSize;
+        }
+
         protected override void OnRender(DrawingContext Context)
         {
             WriteableBitmap Image = DisplayImage;
@@ -216,12 +224,10 @@ namespace MenthaAssembly.Views
             Context.DrawImage(Image, new Rect(RenderSize));
         }
 
+        private bool DelayUpdate = false;
         protected Bound<float> LastImageBound, LastMarksBound;
-        private DelayActionToken UpdateCanvasToken;
         public virtual void UpdateCanvas()
         {
-            UpdateCanvasToken?.Cancel();
-
             if (Viewer is null)
             {
                 DisplayImage = null;
@@ -241,9 +247,11 @@ namespace MenthaAssembly.Views
                 DisplayAreaHeight is 0)
             {
                 DisplayImage = null;
-                UpdateCanvasToken = DispatcherHelper.DelayAction(10d, () => UpdateCanvas());
+                DelayUpdate = true;
                 return;
             }
+
+            DelayUpdate = false;
 
             if (DisplayContext is null ||
                 DisplayContext.Width != DisplayAreaWidth ||
