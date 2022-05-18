@@ -1,6 +1,5 @@
 ﻿using MenthaAssembly.Media.Imaging;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -21,7 +20,7 @@ namespace MenthaAssembly.Views
             set
             {
                 _Visible = value;
-                this.OnPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -32,7 +31,7 @@ namespace MenthaAssembly.Views
             set
             {
                 _Zoomable = value;
-                this.OnPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -43,7 +42,7 @@ namespace MenthaAssembly.Views
             set
             {
                 _ZoomMinScale = Math.Max(value, 0d);
-                this.OnPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -54,11 +53,11 @@ namespace MenthaAssembly.Views
             set
             {
                 _ZoomMaxScale = value;
-                this.OnPropertyChanged();
+                OnPropertyChanged();
             }
         }
 
-        public ObservableCollection<Point> CenterLocations { get; } = new ObservableCollection<Point>();
+        public ObservableRangeCollection<Point> CenterLocations { get; } = new ObservableRangeCollection<Point>();
 
         private object _Visual;
         public object Visual

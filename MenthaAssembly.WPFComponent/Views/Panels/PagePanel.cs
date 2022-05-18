@@ -64,7 +64,15 @@ namespace MenthaAssembly.Views
 
         public static readonly DependencyProperty PageProperty =
               DependencyProperty.Register("Page", typeof(int), typeof(PagePanel),
-                  new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange));
+                  new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange, null,
+                      (d, v) =>
+                      {
+                          if (d is PagePanel Panel &&
+                              v is int Value)
+                              return Value.Clamp(0, Panel.PageCount - 1);
+
+                          return Binding.DoNothing;
+                      }));
         public int Page
         {
             get => (int)GetValue(PageProperty);
@@ -490,6 +498,18 @@ namespace MenthaAssembly.Views
                             e.Handled = true;
                             return;
                         }
+                    case Key.PageDown:
+                        {
+                            Page++;
+                            e.Handled = true;
+                            return;
+                        }
+                    case Key.PageUp:
+                        {
+                            Page--;
+                            e.Handled = true;
+                            return;
+                        }
                 }
             }
 
@@ -525,22 +545,22 @@ namespace MenthaAssembly.Views
         }
 
         void IScrollInfo.PageUp()
-            => Page = Math.Max(Page - 1, 0);
+            => Page--;
         void IScrollInfo.PageDown()
-            => Page = Math.Min(Page + 1, PageCount - 1);
+            => Page++;
         void IScrollInfo.PageLeft()
-            => Page = Math.Max(Page - 1, 0);
+            => Page--;
         void IScrollInfo.PageRight()
-            => Page = Math.Min(Page + 1, PageCount);
+            => Page++;
 
         void IScrollInfo.MouseWheelUp()
-            => Page = Math.Max(Page - 1, 0);
+            => Page--;
         void IScrollInfo.MouseWheelDown()
-            => Page = Math.Min(Page + 1, PageCount - 1);
+            => Page++;
         void IScrollInfo.MouseWheelLeft()
-            => Page = Math.Max(Page - 1, 0);
+            => Page--;
         void IScrollInfo.MouseWheelRight()
-            => Page = Math.Min(Page + 1, PageCount - 1);
+            => Page++;
 
         void IScrollInfo.SetHorizontalOffset(double offset)
         {
