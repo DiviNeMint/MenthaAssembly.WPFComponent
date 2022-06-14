@@ -252,11 +252,27 @@ namespace MenthaAssembly.Views
         }
         private void OnLayersSourceChanged(object sender, ChangedEventArgs<IImageContext> e)
         {
-            IImageContext Image = e.NewValue;
-            if (ContextWidth == 0 || ContextHeight == 0 ||
-                Image.Width >= ContextWidth || Image.Height >= ContextHeight)
+            if (ContextWidth == 0 || ContextHeight == 0)
+            {
                 UpdateViewBoxAndContextInfo();
-            else if (sender is ImageViewerLayer Layer)
+                return;
+            }
+
+            IImageContext Image = e.NewValue;
+            if (Image.Width >= ContextWidth || Image.Height >= ContextHeight)
+            {
+                UpdateViewBoxAndContextInfo();
+                return;
+            }
+
+            Image = e.OldValue;
+            if (Image.Width >= ContextWidth || Image.Height >= ContextHeight)
+            {
+                UpdateViewBoxAndContextInfo();
+                return;
+            }
+
+            if (sender is ImageViewerLayer Layer)
                 Layer.UpdateCanvas();
         }
 
