@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Concurrent;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -15,17 +16,18 @@ namespace MenthaAssembly.Views.Primitives
             set => SetValue(EnableMenuProperty, value);
         }
 
+        private readonly ConcurrentQueue<PropertyEditorItem> CacheItems = new ConcurrentQueue<PropertyEditorItem>();
         protected override bool IsItemItsOwnContainerOverride(object item)
             => item is PropertyEditorItem;
         protected override DependencyObject GetContainerForItemOverride()
-            => new PropertyEditorItem();
+            => CacheItems.TryDequeue(out PropertyEditorItem Item) ? Item : new PropertyEditorItem();
 
-        protected override void PrepareContainerForItemOverride(DependencyObject element, object item)
+        protected override void PrepareContainerForItemOverride(DependencyObject Element, object Data)
         {
-            base.PrepareContainerForItemOverride(element, item);
+            base.PrepareContainerForItemOverride(Element, Data);
 
-            if (element is PropertyEditorItem Layer)
-                PreparePropertyEditorItem(Layer, item);
+            if (Element is PropertyEditorItem Item)
+                PreparePropertyEditorItem(Item, Data);
         }
         private void PreparePropertyEditorItem(PropertyEditorItem Item, object Data)
         {
@@ -34,12 +36,15 @@ namespace MenthaAssembly.Views.Primitives
             Item.SetBinding(PropertyEditorItem.TargetObjectProperty, new Binding("Content") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(PropertyEditor), 1) });
         }
 
-        protected override void ClearContainerForItemOverride(DependencyObject element, object item)
+        protected override void ClearContainerForItemOverride(DependencyObject Element, object Data)
         {
-            base.ClearContainerForItemOverride(element, item);
+            base.ClearContainerForItemOverride(Element, Data);
 
-            if (element is PropertyEditorItem Layer)
-                ResetPropertyEditorItem(Layer, item);
+            if (Element is PropertyEditorItem Item)
+            {
+                ResetPropertyEditorItem(Item, Data);
+                CacheItems.Enqueue(Item);
+            }
         }
         private void ResetPropertyEditorItem(PropertyEditorItem Item, object Data)
         {

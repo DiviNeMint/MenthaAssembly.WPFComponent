@@ -256,7 +256,6 @@ namespace MenthaAssembly.Views
                         PART_ComboBox.Style = TryFindResource("PART_ComboBoxStyle") as Style;
                         this.Content = PART_ComboBox;
                     }
-
                     #endregion
 
                     return;

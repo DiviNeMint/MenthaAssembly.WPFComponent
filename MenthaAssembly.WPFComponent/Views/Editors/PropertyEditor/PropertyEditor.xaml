@@ -5,7 +5,20 @@
                     xmlns:Primitive="clr-namespace:MenthaAssembly.Views.Primitives">
 
     <Style TargetType="{x:Type local:PropertyEditor}">
-        <Setter Property="Width" Value="200"/>
+        <Style.Resources>
+            <Style TargetType="local:SearchBox">
+                <Setter Property="Padding" Value="4,2"/>
+            </Style>
+            <Style x:Key="PART_ColorBoxStyle" TargetType="local:ColorBox">
+                <Setter Property="Height" Value="22"/>
+            </Style>
+            <Style x:Key="PART_ValueTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Padding" Value="4,2"/>
+            </Style>
+            <Style x:Key="PART_TextBoxStyle" TargetType="TextBox">
+                <Setter Property="Padding" Value="4,2"/>
+            </Style>
+        </Style.Resources>
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="#FF3F3F46"/>
@@ -58,25 +71,37 @@
                                            VerticalAlignment="Center" HorizontalAlignment="Left"
                                            Grid.Column="2" Grid.Row="1"/>
                             </Grid>
-                            <local:SearchBox x:Name="PART_SearchBox" 
-                                             ItemsSource="{TemplateBinding ItemsSource}"
+                            <local:SearchBox x:Name="PART_SearchBox"
                                              Margin="3,2" Height="{Binding ActualHeight, ElementName=PART_NameTextBox}"
                                              Grid.Row="1"/>
-                            <ScrollViewer x:Name="ScrollViewer"
-                                          Grid.IsSharedSizeScope="True"
-                                          Grid.Row="2">
-                                <Primitive:PropertyEditorList x:Name="PART_ItemsControl"
-                                                              EnableMenu="{TemplateBinding EnableMenu}"
-                                                              ItemsSource="{TemplateBinding ItemsSource}"
-                                                              ItemContainerStyle="{TemplateBinding ItemContainerStyle}"/>
-                            </ScrollViewer>
+
+                            <Primitive:PropertyEditorList x:Name="PART_ItemsControl"
+                                                          EnableMenu="{TemplateBinding EnableMenu}"
+                                                          ItemContainerStyle="{TemplateBinding ItemContainerStyle}"
+                                                          Grid.Row="2">
+                                <Primitive:PropertyEditorList.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel Orientation="Vertical" 
+                                                                IsVirtualizing="True"
+                                                                VirtualizationMode="Recycling" />
+                                    </ItemsPanelTemplate>
+                                </Primitive:PropertyEditorList.ItemsPanel>
+                                <Primitive:PropertyEditorList.Template>
+                                    <ControlTemplate>
+                                        <ScrollViewer CanContentScroll="True">
+                                            <ItemsPresenter/>
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </Primitive:PropertyEditorList.Template>
+                            </Primitive:PropertyEditorList>
+
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Content" Value="{x:Null}">
                             <Setter TargetName="Header" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="PART_SearchBox" Property="Visibility" Value="Collapsed"/>
-                            <Setter TargetName="ScrollViewer" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_ItemsControl" Property="Visibility" Value="Collapsed"/>
                         </Trigger>
                         <DataTrigger Binding="{Binding Visibility, ElementName=PART_NameTextBox}" Value="Hidden">
                             <Setter TargetName="NameTextBlock" Property="Visibility" Value="Collapsed"/>

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -36,17 +35,20 @@ namespace MenthaAssembly.Views
 
         public event EventHandler<PropertyChangedEventArgs> ContentPropertyChanged;
 
-        internal static readonly DependencyProperty ItemsSourceProperty =
-            DependencyProperty.Register("ItemsSource", typeof(ICollection<PropertyEditorData>), typeof(PropertyEditor), new PropertyMetadata(new ObservableCollection<PropertyEditorData>()));
-        internal ICollection<PropertyEditorData> ItemsSource
-            => (ICollection<PropertyEditorData>)GetValue(ItemsSourceProperty);
-
         public static readonly DependencyProperty EnableMenuProperty =
             PropertyEditorItem.EnableMenuProperty.AddOwner(typeof(PropertyEditor), new PropertyMetadata(true));
         public bool EnableMenu
         {
             get => (bool)GetValue(EnableMenuProperty);
             set => SetValue(EnableMenuProperty, value);
+        }
+
+        public static readonly DependencyProperty SearchBoxStyleProperty =
+            DependencyProperty.Register("SearchBoxStyle", typeof(Style), typeof(PropertyEditor), new PropertyMetadata(default));
+        public Style SearchBoxStyle
+        {
+            get => (Style)GetValue(SearchBoxStyleProperty);
+            set => SetValue(SearchBoxStyleProperty, value);
         }
 
         public static readonly DependencyProperty ItemContainerStyleProperty =
@@ -117,9 +119,9 @@ namespace MenthaAssembly.Views
                                         This.PART_TypeTextBlock.Text = EditorOption?.TypeDisplay ?? ObjectType.Name;
 
                                     //Property
-                                    foreach (PropertyInfo item in ObjectType.GetProperties()
-                                                                            .Where(i => ObjectType.GetMember($"set_{i.Name}").Length > 0))
-                                        This.AddProperty(item, item.GetCustomAttribute<EditorDisplayAttribute>(), EditorOption);
+                                    IEnumerable<PropertyInfo> PropertyInfos = ObjectType.GetProperties()
+                                                                                        .Where(i => ObjectType.GetMember($"set_{i.Name}").Length > 0);
+                                    This.ItemsSource.AddRange(This.CreatePropertyDatas(PropertyInfos));
                                 }
 
                                 //Event
@@ -214,6 +216,7 @@ namespace MenthaAssembly.Views
         protected TextBox PART_NameTextBox;
         protected TextBlock PART_TypeTextBlock;
         protected SearchBox PART_SearchBox;
+        private readonly ObservableRangeCollection<PropertyEditorData> ItemsSource = new ObservableRangeCollection<PropertyEditorData>();
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -230,21 +233,20 @@ namespace MenthaAssembly.Views
             if (GetTemplateChild("PART_SearchBox") is SearchBox PART_SearchBox)
             {
                 this.PART_SearchBox = PART_SearchBox;
-                PART_SearchBox.Predicate = (o, s) =>
-                {
-                    if (o is PropertyEditorData Data)
-                        return string.IsNullOrEmpty(s) ||
-                               Data.PropertyName.IndexOf(s, StringComparison.OrdinalIgnoreCase) > -1;
-
-                    return false;
-                };
+                this.PART_SearchBox.SetBinding(StyleProperty, new Binding(nameof(SearchBoxStyle)) { Source = this });
+                PART_SearchBox.ItemsSource = ItemsSource;
+                PART_SearchBox.Predicate = (o, s) => o is PropertyEditorData Data &&
+                                                     (string.IsNullOrEmpty(s) || Data.PropertyName.IndexOf(s, StringComparison.OrdinalIgnoreCase) > -1);
             }
 
-            if (this.GetTemplateChild("PART_ItemsControl") is ItemsControl PART_ItemsControl)
+            if (GetTemplateChild("PART_ItemsControl") is ItemsControl PART_ItemsControl)
+            {
+                PART_ItemsControl.ItemsSource = ItemsSource;
                 PART_ItemsControl.GroupStyle.Add(new GroupStyle
                 {
-                    ContainerStyle = this.GroupContainerStyle
+                    ContainerStyle = GroupContainerStyle
                 });
+            }
 
             // Sorting
             if (CollectionViewSource.GetDefaultView(ItemsSource) is ListCollectionView View)
@@ -256,23 +258,23 @@ namespace MenthaAssembly.Views
         protected virtual void OnContentPropertyChanged(object sender, PropertyChangedEventArgs e)
             => ContentPropertyChanged?.Invoke(this, e);
 
-
-        public void AddProperty(PropertyInfo Info)
-            => AddProperty(Info, Info.GetCustomAttribute<EditorDisplayAttribute>(), Info.DeclaringType.GetCustomAttribute<EditorOptionAttribute>());
-        private void AddProperty(PropertyInfo Info, EditorDisplayAttribute Display, EditorOptionAttribute Option)
+        private IEnumerable<PropertyEditorData> CreatePropertyDatas(IEnumerable<PropertyInfo> PropertyInfos)
         {
-            if (Info.Name.Equals(Option?.NamePath))
-                return;
+            foreach (PropertyInfo Info in PropertyInfos)
+            {
+                if (ItemsSource.Any(i => i.Property.Equals(Info)))
+                    continue;
 
-            if ((Display?.Visible ?? true) &&
-                !ItemsSource.Any(i => i.Property.Equals(Info)))
-                ItemsSource.Add(new PropertyEditorData(Info, Display, Info.GetCustomAttribute<EditorValueAttribute>()));
-        }
+                EditorOptionAttribute Option = Info.DeclaringType.GetCustomAttribute<EditorOptionAttribute>();
+                if (Info.Name.Equals(Option?.NamePath))
+                    continue;
 
-        public void RemoveProperty(PropertyInfo Info)
-        {
-            if (ItemsSource.FirstOrDefault(i => i.Property.Equals(Info)) is PropertyEditorData Item)
-                ItemsSource.Remove(Item);
+                EditorDisplayAttribute Display = Info.GetCustomAttribute<EditorDisplayAttribute>();
+                if (Display?.Visible ?? false)
+                    continue;
+
+                yield return new PropertyEditorData(Info, Display, Info.GetCustomAttribute<EditorValueAttribute>());
+            }
         }
 
         internal class PropertyEditorData

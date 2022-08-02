@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Threading;
 
 namespace MenthaAssembly
@@ -42,6 +43,28 @@ namespace MenthaAssembly
 
                 CancelAction?.Invoke();
             });
+        }
+
+        public static double Timing(Action Action, bool WriteLine = true)
+        {
+            if (Action is null)
+                return -1;
+
+            Stopwatch Sw = new Stopwatch();
+            try
+            {
+                Sw.Start();
+                Action.Invoke();
+            }
+            finally
+            {
+                Sw.Stop();
+
+                if (WriteLine)
+                    Debug.WriteLine($"Total : {Sw.Elapsed.TotalMilliseconds} ms.");
+            }
+
+            return Sw.Elapsed.TotalMilliseconds;
         }
 
         public static void InvokeSync(this Dispatcher This, Action Action)

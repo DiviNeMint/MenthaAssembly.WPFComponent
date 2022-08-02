@@ -22,7 +22,7 @@ namespace MenthaAssembly.Views
 
                         if (CollectionViewSource.GetDefaultView(e.NewValue) is ICollectionView NCView)
                         {
-                            NCView.Filter = (o) => This.Predicate(o, This.Text);
+                            NCView.Filter = (o) => (This.Predicate ?? DefaultPredicate).Invoke(o, This.Text);
                             This.CurrentCollectionView = NCView;
                         }
                     }
@@ -34,9 +34,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty PredicateProperty =
-            DependencyProperty.Register("Predicate", typeof(Func<object, string, bool>), typeof(SearchBox), new PropertyMetadata(
-                new Func<object, string, bool>((o, s) => string.IsNullOrEmpty(s) ||
-                                                         o.ToString().IndexOf(s, StringComparison.OrdinalIgnoreCase) > -1),
+            DependencyProperty.Register("Predicate", typeof(Func<object, string, bool>), typeof(SearchBox), new PropertyMetadata(null,
                 (d, e) =>
                 {
                     if (d is SearchBox This &&
@@ -50,7 +48,6 @@ namespace MenthaAssembly.Views
             set => SetValue(PredicateProperty, value);
         }
 
-
         public static readonly DependencyProperty IsSearchedProperty =
             DependencyProperty.Register("IsSearched", typeof(bool), typeof(SearchBox), new PropertyMetadata(false));
         public bool IsSearched
@@ -59,30 +56,24 @@ namespace MenthaAssembly.Views
             protected set => SetValue(IsSearchedProperty, value);
         }
 
-
-        static SearchBox()
-        {
-            DefaultStyleKeyProperty.OverrideMetadata(typeof(SearchBox), new FrameworkPropertyMetadata(typeof(SearchBox)));
-        }
-
-
-        protected override void OnTextChanged(TextChangedEventArgs e)
-        {
-            base.OnTextChanged(e);
-            if (!e.Handled)
-            {
-                CurrentCollectionView?.Refresh();
-                IsSearched = !string.IsNullOrEmpty(Text);
-            }
-        }
-
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
             if (GetTemplateChild("PART_Button") is Button PARTButton)
                 PARTButton.Click += OnPARTButton_Click;
+        }
 
+        private DelayActionToken DelayToken;
+        protected override void OnTextChanged(TextChangedEventArgs e)
+        {
+            base.OnTextChanged(e);
+            if (!e.Handled)
+            {
+                DelayToken?.Cancel();
+                DelayToken = DispatcherHelper.DelayAction(250d, () => CurrentCollectionView?.Refresh());
+                IsSearched = !string.IsNullOrEmpty(Text);
+            }
         }
 
         private void OnPARTButton_Click(object sender, RoutedEventArgs e)
@@ -90,5 +81,14 @@ namespace MenthaAssembly.Views
             if (IsSearched)
                 Clear();
         }
+
+        static SearchBox()
+        {
+            DefaultStyleKeyProperty.OverrideMetadata(typeof(SearchBox), new FrameworkPropertyMetadata(typeof(SearchBox)));
+        }
+
+        private static bool DefaultPredicate(object Obj, string Keyword)
+            => string.IsNullOrEmpty(Keyword) || Obj.ToString().IndexOf(Keyword, StringComparison.OrdinalIgnoreCase) > -1;
+
     }
 }
