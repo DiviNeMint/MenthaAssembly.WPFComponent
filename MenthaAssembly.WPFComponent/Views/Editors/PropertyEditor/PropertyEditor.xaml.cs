@@ -270,7 +270,7 @@ namespace MenthaAssembly.Views
                     continue;
 
                 EditorDisplayAttribute Display = Info.GetCustomAttribute<EditorDisplayAttribute>();
-                if (Display?.Visible ?? false)
+                if (!Display?.Visible ?? false)
                     continue;
 
                 yield return new PropertyEditorData(Info, Display, Info.GetCustomAttribute<EditorValueAttribute>());

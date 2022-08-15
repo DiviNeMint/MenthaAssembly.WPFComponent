@@ -246,7 +246,8 @@ namespace MenthaAssembly.Views
                             DisplayMemberPath = Data.Option.DisplayMemberPath,
                             SelectedValuePath = Data.Option.SelectedValuePath
                         };
-                        BindingDependencyProperty = ComboBox.SelectedItemProperty;
+
+                        BindingDependencyProperty = string.IsNullOrEmpty(PART_ComboBox.SelectedValuePath) ? ComboBox.SelectedItemProperty : ComboBox.SelectedValueProperty;
                         BindingContent = new Binding
                         {
                             Path = new PropertyPath(Data.Property.Name),
