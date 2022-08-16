@@ -209,6 +209,24 @@ namespace MenthaAssembly.Views
                             PART_ValueTextBox.Style = TryFindResource("PART_ValueTextBoxStyle") as Style;
                             this.Content = PART_ValueTextBox;
                         }
+                        else if (Data.Converter is DateTimeConverter)
+                        {
+                            DatePicker PART_DatePicker = new DatePicker
+                            {
+                                SelectedDateFormat = DatePickerFormat.Short
+                            };
+
+                            BindingDependencyProperty = DatePicker.SelectedDateProperty;
+                            BindingContent = new Binding
+                            {
+                                Path = new PropertyPath(Data.Property.Name),
+                                Source = TargetObject
+                            };
+
+                            PART_DatePicker.SetBinding(BindingDependencyProperty, BindingContent);
+                            PART_DatePicker.Style = TryFindResource("PART_DatePickerStyle") as Style;
+                            this.Content = PART_DatePicker;
+                        }
                         else
                         {
                             TextBox PART_TextBox = new TextBox();
