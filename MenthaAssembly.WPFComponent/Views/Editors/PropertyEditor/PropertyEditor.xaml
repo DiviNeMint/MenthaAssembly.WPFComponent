@@ -83,7 +83,7 @@
                                     <ItemsPanelTemplate>
                                         <VirtualizingStackPanel Orientation="Vertical" 
                                                                 IsVirtualizing="True"
-                                                                VirtualizationMode="Recycling" />
+                                                                VirtualizationMode="Recycling"/>
                                     </ItemsPanelTemplate>
                                 </Primitive:PropertyEditorList.ItemsPanel>
                                 <Primitive:PropertyEditorList.Template>
