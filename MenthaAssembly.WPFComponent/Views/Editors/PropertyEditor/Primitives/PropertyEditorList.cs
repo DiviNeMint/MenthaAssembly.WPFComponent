@@ -5,7 +5,7 @@ using System.Windows.Data;
 
 namespace MenthaAssembly.Views.Primitives
 {
-    [StyleTypedProperty(Property = "MenuStyleStyle", StyleTargetType = typeof(PropertyEditorItem))]
+    [StyleTypedProperty(Property = "ItemContainerStyle", StyleTargetType = typeof(PropertyEditorItem))]
     internal class PropertyEditorList : ItemsControl
     {
         public static readonly DependencyProperty EnableMenuProperty =

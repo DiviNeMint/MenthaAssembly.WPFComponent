@@ -25,6 +25,10 @@
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Charts/LineChart/LineChartItem.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Charts/LineChart/LineChartDataPoint.xaml"/>
 
+        <!--TreeView-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TreeViews/TreeView/TreeView.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TreeViews/TreeView/TreeViewItem.xaml"/>
+
         <!--SearchBox-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TextBoxs/SearchBox.xaml"/>
 
