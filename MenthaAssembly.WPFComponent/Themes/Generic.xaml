@@ -41,6 +41,9 @@
         <!--TitleContainer-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Containers/TitleContainer.xaml"/>
 
+        <!--FooteredContentControl-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Containers/FooteredContentControl.xaml"/>
+
         <!--ArcRingProgress-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/ArcRingProgress.xaml"/>
 
