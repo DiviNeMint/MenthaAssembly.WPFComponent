@@ -795,6 +795,10 @@ namespace MenthaAssembly
 
         #endregion
 
+        public PixelAdapter<T> GetAdapter<T>(int X, int Y)
+            where T : unmanaged, IPixel
+            => Context.GetAdapter<T>(X, Y);
+
         protected bool IsLocked { set; get; }
         public bool TryLock(int Timeout)
         {

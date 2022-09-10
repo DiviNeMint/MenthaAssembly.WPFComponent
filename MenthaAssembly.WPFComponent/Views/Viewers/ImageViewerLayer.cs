@@ -18,7 +18,7 @@ namespace MenthaAssembly.Views
     [ContentProperty(nameof(Marks))]
     public unsafe class ImageViewerLayer : FrameworkElement
     {
-        private delegate void DrawAction(IPixelAdapter<BGRA> Adapter, BGRA* pDisplay);
+        private delegate void DrawAction(PixelAdapter<BGRA> Adapter, BGRA* pDisplay);
         private static readonly ParallelOptions DefaultParallelOptions = new();
 
         public event EventHandler<ChangedEventArgs<IImageContext>> SourceChanged;
@@ -419,7 +419,7 @@ namespace MenthaAssembly.Views
 
                             if (X < Ex || (X == Ex && FracX < FracX1))
                             {
-                                IPixelAdapter<BGRA> Adapter = _SourceContext.Operator.GetAdapter<BGRA>(X, Y);
+                                PixelAdapter<BGRA> Adapter = _SourceContext.Operator.GetAdapter<BGRA>(X, Y);
 
                                 while (X < SourceW && (X < Ex || (X == Ex && FracX < FracX1)))
                                 {
@@ -523,7 +523,7 @@ namespace MenthaAssembly.Views
                         LEy = (int)Math.Ceiling(DirtyEy);
                     Parallel.For(LSy, LEy, DefaultParallelOptions, j =>
                     {
-                        IPixelAdapter<BGRA> Adapter = DisplayContext.Context.Operator.GetAdapter<BGRA>(LSx, j);
+                        PixelAdapter<BGRA> Adapter = DisplayContext.Context.Operator.GetAdapter<BGRA>(LSx, j);
                         for (int i = LSx; i < LEx; i++, Adapter.MoveNext())
                             Adapter.Override(EmptyPixel);
                     });
@@ -610,7 +610,7 @@ namespace MenthaAssembly.Views
                                         int X = StampSx,
                                             Y = (int)((j - Sy) * FactorStep);
 
-                                        IPixelAdapter<BGRA> Adapter = Stamp.Operator.GetAdapter<BGRA>(X, Y);
+                                        PixelAdapter<BGRA> Adapter = Stamp.Operator.GetAdapter<BGRA>(X, Y);
                                         while (X < MW && (X < StampEx || (X == StampEx && FracX < FracX1)))
                                         {
                                             Adapter.OverlayTo(pData++);
