@@ -9,12 +9,11 @@ using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly
 {
-    public unsafe class BitmapContext : IImageContext
+    public unsafe class BitmapContext : IImageContext, IReadOnlyImageContext
     {
         public WriteableBitmap Bitmap { get; }
 
         internal IImageContext Context { get; }
-        IImageOperator IImageContext.Operator => Context.Operator;
 
         public BitmapContext(WriteableBitmap Bitmap)
         {
@@ -65,9 +64,9 @@ namespace MenthaAssembly
 
         public int Channels => Context.Channels;
 
-        Type IImageContext.PixelType => Context.PixelType;
+        public Type PixelType => Context.PixelType;
 
-        Type IImageContext.StructType => Context.StructType;
+        public Type StructType => Context.StructType;
 
         public IntPtr Scan0 => Context.Scan0;
         IntPtr IImageContext.ScanA => throw new NotSupportedException();
@@ -75,351 +74,188 @@ namespace MenthaAssembly
         IntPtr IImageContext.ScanG => throw new NotSupportedException();
         IntPtr IImageContext.ScanB => throw new NotSupportedException();
 
-        public IImagePalette Palette => Context.Palette;
-
-        public IPixel this[int X, int Y]
+        public IReadOnlyPixel this[int X, int Y]
         {
             get => Context[X, Y];
             set => Context[X, Y] = value;
         }
 
         #region Graphic Processing
-        public void DrawLine(Point<int> P0, Point<int> P1, IPixel Color)
-        {
-            Context.DrawLine(P0, P1, Color);
-        }
-        public void DrawLine(int X0, int Y0, int X1, int Y1, IPixel Color)
-        {
-            Context.DrawLine(X0, Y0, X1, Y1, Color);
-        }
+        public void DrawLine<T>(Point<int> P0, Point<int> P1, T Color) where T : unmanaged, IPixel
+            => Context.DrawLine(P0, P1, Color);
+        public void DrawLine<T>(int X0, int Y0, int X1, int Y1, T Color) where T : unmanaged, IPixel
+            => Context.DrawLine(X0, Y0, X1, Y1, Color);
+        public void DrawLine<T>(Point<int> P0, Point<int> P1, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawLine(P0, P1, Contour, Fill);
+        public void DrawLine<T>(int X0, int Y0, int X1, int Y1, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawLine(X0, Y0, X1, Y1, Contour, Fill);
         public void DrawLine(Point<int> P0, Point<int> P1, IImageContext Pen)
-        {
-            Context.DrawLine(P0, P1, Pen);
-        }
+            => Context.DrawLine(P0, P1, Pen);
         public void DrawLine(int X0, int Y0, int X1, int Y1, IImageContext Pen)
-        {
-            Context.DrawLine(X0, Y0, X1, Y1, Pen);
-        }
-        public void DrawLine(Point<int> P0, Point<int> P1, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawLine(P0, P1, Contour, Fill);
-        }
-        public void DrawLine(int X0, int Y0, int X1, int Y1, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawLine(X0, Y0, X1, Y1, Contour, Fill);
-        }
+            => Context.DrawLine(X0, Y0, X1, Y1, Pen);
 
-        public void DrawArc(Point<int> Start, Point<int> End, Point<int> Center, int Rx, int Ry, bool Clockwise, IPixel Color)
-        {
-            Context.DrawArc(Start, End, Center, Rx, Ry, Clockwise, Color);
-        }
-        public void DrawArc(int Sx, int Sy, int Ex, int Ey, int Cx, int Cy, int Rx, int Ry, bool Clockwise, IPixel Color)
-        {
-            Context.DrawArc(Sx, Sy, Ex, Ey, Cx, Cy, Rx, Ry, Clockwise, Color);
-        }
+        public void DrawArc<T>(Point<int> Start, Point<int> End, Point<int> Center, int Rx, int Ry, bool Clockwise, T Color) where T : unmanaged, IPixel
+            => Context.DrawArc(Start, End, Center, Rx, Ry, Clockwise, Color);
+        public void DrawArc<T>(int Sx, int Sy, int Ex, int Ey, int Cx, int Cy, int Rx, int Ry, bool Clockwise, T Color) where T : unmanaged, IPixel
+            => Context.DrawArc(Sx, Sy, Ex, Ey, Cx, Cy, Rx, Ry, Clockwise, Color);
+        public void DrawArc<T>(Point<int> Start, Point<int> End, Point<int> Center, int Rx, int Ry, bool Clockwise, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawArc(Start, End, Center, Rx, Ry, Clockwise, Contour, Fill);
+        public void DrawArc<T>(int Sx, int Sy, int Ex, int Ey, int Cx, int Cy, int Rx, int Ry, bool Clockwise, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawArc(Sx, Sy, Ex, Ey, Cx, Cy, Rx, Ry, Clockwise, Contour, Fill);
         public void DrawArc(Point<int> Start, Point<int> End, Point<int> Center, int Rx, int Ry, bool Clockwise, IImageContext Pen)
-        {
-            Context.DrawArc(Start, End, Center, Rx, Ry, Clockwise, Pen);
-        }
+            => Context.DrawArc(Start, End, Center, Rx, Ry, Clockwise, Pen);
         public void DrawArc(int Sx, int Sy, int Ex, int Ey, int Cx, int Cy, int Rx, int Ry, bool Clockwise, IImageContext Pen)
-        {
-            Context.DrawArc(Sx, Sy, Ex, Ey, Cx, Cy, Rx, Ry, Clockwise, Pen);
-        }
-        public void DrawArc(Point<int> Start, Point<int> End, Point<int> Center, int Rx, int Ry, bool Clockwise, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawArc(Start, End, Center, Rx, Ry, Clockwise, Contour, Fill);
-        }
-        public void DrawArc(int Sx, int Sy, int Ex, int Ey, int Cx, int Cy, int Rx, int Ry, bool Clockwise, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawArc(Sx, Sy, Ex, Ey, Cx, Cy, Rx, Ry, Clockwise, Contour, Fill);
-        }
+            => Context.DrawArc(Sx, Sy, Ex, Ey, Cx, Cy, Rx, Ry, Clockwise, Pen);
 
-        public void DrawCurve(IList<int> Points, float Tension, IPixel Color)
-        {
-            Context.DrawCurve(Points, Tension, Color);
-        }
-        public void DrawCurve(IList<Point<int>> Points, float Tension, IPixel Color)
-        {
-            Context.DrawCurve(Points, Tension, Color);
-        }
+        public void DrawCurve<T>(IList<int> Points, float Tension, T Color) where T : unmanaged, IPixel
+            => Context.DrawCurve(Points, Tension, Color);
+        public void DrawCurve<T>(IList<Point<int>> Points, float Tension, T Color) where T : unmanaged, IPixel
+            => Context.DrawCurve(Points, Tension, Color);
+        public void DrawCurve<T>(IList<int> Points, float Tension, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawCurve(Points, Tension, Contour, Fill);
+        public void DrawCurve<T>(IList<Point<int>> Points, float Tension, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawCurve(Points, Tension, Contour, Fill);
         public void DrawCurve(IList<int> Points, float Tension, IImageContext Pen)
-        {
-            Context.DrawCurve(Points, Tension, Pen);
-        }
+            => Context.DrawCurve(Points, Tension, Pen);
         public void DrawCurve(IList<Point<int>> Points, float Tension, IImageContext Pen)
-        {
-            Context.DrawCurve(Points, Tension, Pen);
-        }
-        public void DrawCurve(IList<int> Points, float Tension, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawCurve(Points, Tension, Contour, Fill);
-        }
-        public void DrawCurve(IList<Point<int>> Points, float Tension, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawCurve(Points, Tension, Contour, Fill);
-        }
+            => Context.DrawCurve(Points, Tension, Pen);
 
-        public void DrawCurveClosed(IList<int> Points, float Tension, IPixel Color)
-        {
-            Context.DrawCurveClosed(Points, Tension, Color);
-        }
-        public void DrawCurveClosed(IList<Point<int>> Points, float Tension, IPixel Color)
-        {
-            Context.DrawCurveClosed(Points, Tension, Color);
-        }
+        public void DrawCurveClosed<T>(IList<int> Points, float Tension, T Color) where T : unmanaged, IPixel
+            => Context.DrawCurveClosed(Points, Tension, Color);
+        public void DrawCurveClosed<T>(IList<Point<int>> Points, float Tension, T Color) where T : unmanaged, IPixel
+            => Context.DrawCurveClosed(Points, Tension, Color);
+        public void DrawCurveClosed<T>(IList<int> Points, float Tension, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawCurveClosed(Points, Tension, Contour, Fill);
+        public void DrawCurveClosed<T>(IList<Point<int>> Points, float Tension, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawCurveClosed(Points, Tension, Contour, Fill);
         public void DrawCurveClosed(IList<int> Points, float Tension, IImageContext Pen)
-        {
-            Context.DrawCurveClosed(Points, Tension, Pen);
-        }
+            => Context.DrawCurveClosed(Points, Tension, Pen);
         public void DrawCurveClosed(IList<Point<int>> Points, float Tension, IImageContext Pen)
-        {
-            Context.DrawCurveClosed(Points, Tension, Pen);
-        }
-        public void DrawCurveClosed(IList<int> Points, float Tension, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawCurveClosed(Points, Tension, Contour, Fill);
-        }
-        public void DrawCurveClosed(IList<Point<int>> Points, float Tension, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawCurveClosed(Points, Tension, Contour, Fill);
-        }
+            => Context.DrawCurveClosed(Points, Tension, Pen);
 
-        public void DrawBezier(int X1, int Y1, int Cx1, int Cy1, int Cx2, int Cy2, int X2, int Y2, IPixel Color)
-        {
-            Context.DrawBezier(X1, Y1, Cx1, Cy1, Cx2, Cy2, X2, Y2, Color);
-        }
+        public void DrawBezier<T>(int X1, int Y1, int Cx1, int Cy1, int Cx2, int Cy2, int X2, int Y2, T Color) where T : unmanaged, IPixel
+            => Context.DrawBezier(X1, Y1, Cx1, Cy1, Cx2, Cy2, X2, Y2, Color);
+        public void DrawBezier<T>(int X1, int Y1, int Cx1, int Cy1, int Cx2, int Cy2, int X2, int Y2, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawBezier(X1, Y1, Cx1, Cy1, Cx2, Cy2, X2, Y2, Contour, Fill);
+        public void DrawBeziers<T>(IList<int> Points, T Color) where T : unmanaged, IPixel
+            => Context.DrawBeziers(Points, Color);
+        public void DrawBeziers<T>(IList<int> Points, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawBeziers(Points, Contour, Fill);
         public void DrawBezier(int X1, int Y1, int Cx1, int Cy1, int Cx2, int Cy2, int X2, int Y2, IImageContext Pen)
-        {
-            Context.DrawBezier(X1, Y1, Cx1, Cy1, Cx2, Cy2, X2, Y2, Pen);
-        }
-        public void DrawBezier(int X1, int Y1, int Cx1, int Cy1, int Cx2, int Cy2, int X2, int Y2, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawBezier(X1, Y1, Cx1, Cy1, Cx2, Cy2, X2, Y2, Contour, Fill);
-        }
-
-        public void DrawBeziers(IList<int> Points, IPixel Color)
-        {
-            Context.DrawBeziers(Points, Color);
-        }
+            => Context.DrawBezier(X1, Y1, Cx1, Cy1, Cx2, Cy2, X2, Y2, Pen);
         public void DrawBeziers(IList<int> Points, IImageContext Pen)
-        {
-            Context.DrawBeziers(Points, Pen);
-        }
-        public void DrawBeziers(IList<int> Points, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawBeziers(Points, Contour, Fill);
-        }
+            => Context.DrawBeziers(Points, Pen);
 
-        public void DrawText(int X, int Y, string Text, int CharSize, IPixel Fill)
-        {
-            Context.DrawText(X, Y, Text, CharSize, Fill);
-        }
-        public void DrawText(int X, int Y, string Text, int CharSize, IPixel Fill, double Angle, FontWeightType Weight, bool Italic)
-        {
-            Context.DrawText(X, Y, Text, CharSize, Fill, Angle, Weight, Italic);
-        }
-        public void DrawText(int X, int Y, string Text, string FontName, int CharSize, IPixel Fill)
-        {
-            Context.DrawText(X, Y, Text, FontName, CharSize, Fill);
-        }
-        public void DrawText(int X, int Y, string Text, string FontName, int CharSize, IPixel Fill, double Angle, FontWeightType Weight, bool Italic)
-        {
-            Context.DrawText(X, Y, Text, FontName, CharSize, Fill, Angle, Weight, Italic);
-        }
-
-        public void DrawTriangle(int X1, int Y1, int X2, int Y2, int X3, int Y3, IPixel Color)
-        {
-            Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Color);
-        }
-        public void DrawTriangle(Point<int> P1, Point<int> P2, Point<int> P3, IPixel Color)
-        {
-            Context.DrawTriangle(P1, P2, P3, Color);
-        }
+        public void DrawTriangle<T>(int X1, int Y1, int X2, int Y2, int X3, int Y3, T Color) where T : unmanaged, IPixel
+            => Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Color);
+        public void DrawTriangle<T>(Point<int> P1, Point<int> P2, Point<int> P3, T Color) where T : unmanaged, IPixel
+            => Context.DrawTriangle(P1, P2, P3, Color);
+        public void DrawTriangle<T>(int X1, int Y1, int X2, int Y2, int X3, int Y3, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Contour, Fill);
+        public void DrawTriangle<T>(Point<int> P1, Point<int> P2, Point<int> P3, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawTriangle(P1, P2, P3, Contour, Fill);
         public void DrawTriangle(int X1, int Y1, int X2, int Y2, int X3, int Y3, IImageContext Pen)
-        {
-            Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Pen);
-        }
+            => Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Pen);
         public void DrawTriangle(Point<int> P1, Point<int> P2, Point<int> P3, IImageContext Pen)
-        {
-            Context.DrawTriangle(P1, P2, P3, Pen);
-        }
-        public void DrawTriangle(int X1, int Y1, int X2, int Y2, int X3, int Y3, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawTriangle(X1, Y1, X2, Y2, X3, Y3, Contour, Fill);
-        }
-        public void DrawTriangle(Point<int> P1, Point<int> P2, Point<int> P3, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawTriangle(P1, P2, P3, Contour, Fill);
-        }
+            => Context.DrawTriangle(P1, P2, P3, Pen);
 
-        public void DrawRectangle(int X1, int Y1, int X2, int Y2, IPixel Color)
-        {
-            Context.DrawRectangle(X1, Y1, X2, Y2, Color);
-        }
-        public void DrawRectangle(Point<int> P1, Point<int> P2, IPixel Color)
-        {
-            Context.DrawRectangle(P1, P2, Color);
-        }
+        public void DrawRectangle<T>(int X1, int Y1, int X2, int Y2, T Color) where T : unmanaged, IPixel
+            => Context.DrawRectangle(X1, Y1, X2, Y2, Color);
+        public void DrawRectangle<T>(Point<int> P1, Point<int> P2, T Color) where T : unmanaged, IPixel
+            => Context.DrawRectangle(P1, P2, Color);
+        public void DrawRectangle<T>(int X1, int Y1, int X2, int Y2, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawRectangle(X1, Y1, X2, Y2, Contour, Fill);
+        public void DrawRectangle<T>(Point<int> P1, Point<int> P2, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawRectangle(P1, P2, Contour, Fill);
         public void DrawRectangle(int X1, int Y1, int X2, int Y2, IImageContext Pen)
-        {
-            Context.DrawRectangle(X1, Y1, X2, Y2, Pen);
-        }
+            => Context.DrawRectangle(X1, Y1, X2, Y2, Pen);
         public void DrawRectangle(Point<int> P1, Point<int> P2, IImageContext Pen)
-        {
-            Context.DrawRectangle(P1, P2, Pen);
-        }
-        public void DrawRectangle(int X1, int Y1, int X2, int Y2, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawRectangle(X1, Y1, X2, Y2, Contour, Fill);
-        }
-        public void DrawRectangle(Point<int> P1, Point<int> P2, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawRectangle(P1, P2, Contour, Fill);
-        }
+            => Context.DrawRectangle(P1, P2, Pen);
 
-        public void DrawQuad(int X1, int Y1, int X2, int Y2, int X3, int Y3, int X4, int Y4, IPixel Color)
-        {
-            Context.DrawQuad(X1, Y1, X2, Y2, X3, Y3, X4, Y4, Color);
-        }
-        public void DrawQuad(Point<int> P1, Point<int> P2, Point<int> P3, Point<int> P4, IPixel Color)
-        {
-            Context.DrawQuad(P1, P2, P3, P4, Color);
-        }
+        public void DrawQuad<T>(int X1, int Y1, int X2, int Y2, int X3, int Y3, int X4, int Y4, T Color) where T : unmanaged, IPixel
+            => Context.DrawQuad(X1, Y1, X2, Y2, X3, Y3, X4, Y4, Color);
+        public void DrawQuad<T>(Point<int> P1, Point<int> P2, Point<int> P3, Point<int> P4, T Color) where T : unmanaged, IPixel
+            => Context.DrawQuad(P1, P2, P3, P4, Color);
+        public void DrawQuad<T>(int X1, int Y1, int X2, int Y2, int X3, int Y3, int X4, int Y4, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawQuad(X1, Y1, X2, Y2, X3, Y3, X4, Y4, Contour, Fill);
+        public void DrawQuad<T>(Point<int> P1, Point<int> P2, Point<int> P3, Point<int> P4, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawQuad(P1, P2, P3, P4, Contour, Fill);
         public void DrawQuad(int X1, int Y1, int X2, int Y2, int X3, int Y3, int X4, int Y4, IImageContext Pen)
-        {
-            Context.DrawQuad(X1, Y1, X2, Y2, X3, Y3, X4, Y4, Pen);
-        }
+            => Context.DrawQuad(X1, Y1, X2, Y2, X3, Y3, X4, Y4, Pen);
         public void DrawQuad(Point<int> P1, Point<int> P2, Point<int> P3, Point<int> P4, IImageContext Pen)
-        {
-            Context.DrawQuad(P1, P2, P3, P4, Pen);
-        }
-        public void DrawQuad(int X1, int Y1, int X2, int Y2, int X3, int Y3, int X4, int Y4, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawQuad(X1, Y1, X2, Y2, X3, Y3, X4, Y4, Contour, Fill);
-        }
-        public void DrawQuad(Point<int> P1, Point<int> P2, Point<int> P3, Point<int> P4, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawQuad(P1, P2, P3, P4, Contour, Fill);
-        }
+            => Context.DrawQuad(P1, P2, P3, P4, Pen);
 
-        public void DrawEllipse(Bound<int> Bound, IPixel Color)
-        {
-            Context.DrawEllipse(Bound, Color);
-        }
-        public void DrawEllipse(Point<int> Center, int Rx, int Ry, IPixel Color)
-        {
-            Context.DrawEllipse(Center, Rx, Ry, Color);
-        }
-        public void DrawEllipse(int Cx, int Cy, int Rx, int Ry, IPixel Color)
-        {
-            Context.DrawEllipse(Cx, Cy, Rx, Ry, Color);
-        }
+        public void DrawEllipse<T>(Bound<int> Bound, T Color) where T : unmanaged, IPixel
+            => Context.DrawEllipse(Bound, Color);
+        public void DrawEllipse<T>(Point<int> Center, int Rx, int Ry, T Color) where T : unmanaged, IPixel
+            => Context.DrawEllipse(Center, Rx, Ry, Color);
+        public void DrawEllipse<T>(int Cx, int Cy, int Rx, int Ry, T Color) where T : unmanaged, IPixel
+            => Context.DrawEllipse(Cx, Cy, Rx, Ry, Color);
+        public void DrawEllipse<T>(Bound<int> Bound, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawEllipse(Bound, Contour, Fill);
+        public void DrawEllipse<T>(Point<int> Center, int Rx, int Ry, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawEllipse(Center, Rx, Ry, Contour, Fill);
+        public void DrawEllipse<T>(int Cx, int Cy, int Rx, int Ry, ImageContour Contour, T Fill) where T : unmanaged, IPixel
+            => Context.DrawEllipse(Cx, Cy, Rx, Ry, Contour, Fill);
         public void DrawEllipse(Bound<int> Bound, IImageContext Pen)
-        {
-            Context.DrawEllipse(Bound, Pen);
-        }
+            => Context.DrawEllipse(Bound, Pen);
         public void DrawEllipse(Point<int> Center, int Rx, int Ry, IImageContext Pen)
-        {
-            Context.DrawEllipse(Center, Rx, Ry, Pen);
-        }
+            => Context.DrawEllipse(Center, Rx, Ry, Pen);
         public void DrawEllipse(int Cx, int Cy, int Rx, int Ry, IImageContext Pen)
-        {
-            Context.DrawEllipse(Cx, Cy, Rx, Ry, Pen);
-        }
-        public void DrawEllipse(Bound<int> Bound, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawEllipse(Bound, Contour, Fill);
-        }
-        public void DrawEllipse(Point<int> Center, int Rx, int Ry, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawEllipse(Center, Rx, Ry, Contour, Fill);
-        }
-        public void DrawEllipse(int Cx, int Cy, int Rx, int Ry, ImageContour Contour, IPixel Fill)
-        {
-            Context.DrawEllipse(Cx, Cy, Rx, Ry, Contour, Fill);
-        }
+            => Context.DrawEllipse(Cx, Cy, Rx, Ry, Pen);
+        public void FillEllipse<T>(Bound<int> Bound, T Fill) where T : unmanaged, IPixel
+            => Context.FillEllipse(Bound, Fill);
+        public void FillEllipse<T>(Point<int> Center, int Rx, int Ry, T Fill) where T : unmanaged, IPixel
+            => Context.FillEllipse(Center, Rx, Ry, Fill);
+        public void FillEllipse<T>(int Cx, int Cy, int Rx, int Ry, T Fill) where T : unmanaged, IPixel
+            => Context.FillEllipse(Cx, Cy, Rx, Ry, Fill);
 
-        public void FillEllipse(Bound<int> Bound, IPixel Fill)
-        {
-            Context.FillEllipse(Bound, Fill);
-        }
-        public void FillEllipse(Point<int> Center, int Rx, int Ry, IPixel Fill)
-        {
-            Context.FillEllipse(Center, Rx, Ry, Fill);
-        }
-        public void FillEllipse(int Cx, int Cy, int Rx, int Ry, IPixel Fill)
-        {
-            Context.FillEllipse(Cx, Cy, Rx, Ry, Fill);
-        }
-
-        public void DrawRegularPolygon(Point<int> Center, double Radius, int VertexNum, IPixel Color, double StartAngle)
-        {
-            Context.DrawRegularPolygon(Center, Radius, VertexNum, Color, StartAngle);
-        }
-        public void DrawRegularPolygon(int Cx, int Cy, double Radius, int VertexNum, IPixel Color, double StartAngle)
-        {
-            Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Color, StartAngle);
-        }
+        public void DrawRegularPolygon<T>(Point<int> Center, double Radius, int VertexNum, T Color, double StartAngle) where T : unmanaged, IPixel
+            => Context.DrawRegularPolygon(Center, Radius, VertexNum, Color, StartAngle);
+        public void DrawRegularPolygon<T>(int Cx, int Cy, double Radius, int VertexNum, T Color, double StartAngle) where T : unmanaged, IPixel
+            => Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Color, StartAngle);
+        public void DrawRegularPolygon<T>(Point<int> Center, double Radius, int VertexNum, ImageContour Contour, T Fill, double StartAngle) where T : unmanaged, IPixel
+            => Context.DrawRegularPolygon(Center, Radius, VertexNum, Contour, Fill, StartAngle);
+        public void DrawRegularPolygon<T>(int Cx, int Cy, double Radius, int VertexNum, ImageContour Contour, T Fill, double StartAngle) where T : unmanaged, IPixel
+            => Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Contour, Fill, StartAngle);
         public void DrawRegularPolygon(Point<int> Center, double Radius, int VertexNum, IImageContext Pen, double StartAngle)
-        {
-            Context.DrawRegularPolygon(Center, Radius, VertexNum, Pen, StartAngle);
-        }
+            => Context.DrawRegularPolygon(Center, Radius, VertexNum, Pen, StartAngle);
         public void DrawRegularPolygon(int Cx, int Cy, double Radius, int VertexNum, IImageContext Pen, double StartAngle)
-        {
-            Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Pen, StartAngle);
-        }
-        public void DrawRegularPolygon(Point<int> Center, double Radius, int VertexNum, ImageContour Contour, IPixel Fill, double StartAngle)
-        {
-            Context.DrawRegularPolygon(Center, Radius, VertexNum, Contour, Fill, StartAngle);
-        }
-        public void DrawRegularPolygon(int Cx, int Cy, double Radius, int VertexNum, ImageContour Contour, IPixel Fill, double StartAngle)
-        {
-            Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Contour, Fill, StartAngle);
-        }
-
-        public void FillPolygon(IEnumerable<Point<int>> Vertices, IPixel Fill, int OffsetX, int OffsetY)
-        {
-            Context.FillPolygon(Vertices, Fill, OffsetX, OffsetY);
-        }
-        public void FillPolygon(IEnumerable<int> VerticeDatas, IPixel Fill, int OffsetX, int OffsetY)
-        {
-            Context.FillPolygon(VerticeDatas, Fill, OffsetX, OffsetY);
-        }
+            => Context.DrawRegularPolygon(Cx, Cy, Radius, VertexNum, Pen, StartAngle);
 
         public void DrawStamp(Point<int> Position, IImageContext Stamp)
-        {
-            Context.DrawStamp(Position, Stamp);
-        }
+            => Context.DrawStamp(Position, Stamp);
         public void DrawStamp(int X, int Y, IImageContext Stamp)
-        {
-            Context.DrawStamp(X, Y, Stamp);
-        }
+            => Context.DrawStamp(X, Y, Stamp);
 
-        public void FillContour(ImageContour Contour, IPixel Fill, int OffsetX, int OffsetY)
-        {
-            Context.FillContour(Contour, Fill, OffsetX, OffsetY);
-        }
+        public void FillPolygon<T>(IEnumerable<Point<int>> Vertices, T Fill, int OffsetX, int OffsetY) where T : unmanaged, IPixel
+            => Context.FillPolygon(Vertices, Fill, OffsetX, OffsetY);
+        public void FillPolygon<T>(IEnumerable<int> VerticeDatas, T Fill, int OffsetX, int OffsetY) where T : unmanaged, IPixel
+            => Context.FillPolygon(VerticeDatas, Fill, OffsetX, OffsetY);
+        public void FillContour<T>(ImageContour Contour, T Fill, int OffsetX, int OffsetY) where T : unmanaged, IPixel
+            => Context.FillContour(Contour, Fill, OffsetX, OffsetY);
 
-        public void SeedFill(Point<int> SeedPoint, IPixel Fill, ImagePredicate Predicate)
-        {
-            Context.SeedFill(SeedPoint, Fill, Predicate);
-        }
-        public void SeedFill(int SeedX, int SeedY, IPixel Fill, ImagePredicate Predicate)
-        {
-            Context.SeedFill(SeedX, SeedY, Fill, Predicate);
-        }
+        public void SeedFill<T>(Point<int> SeedPoint, T Fill, ImagePredicate Predicate) where T : unmanaged, IPixel
+            => Context.SeedFill(SeedPoint, Fill, Predicate);
+        public void SeedFill<T>(int SeedX, int SeedY, T Fill, ImagePredicate Predicate) where T : unmanaged, IPixel
+            => Context.SeedFill(SeedX, SeedY, Fill, Predicate);
+
+        public void DrawText<T>(int X, int Y, string Text, int CharSize, T Fill) where T : unmanaged, IPixel
+            => Context.DrawText(X, Y, Text, CharSize, Fill);
+        public void DrawText<T>(int X, int Y, string Text, int CharSize, T Fill, double Angle, FontWeightType Weight, bool Italic) where T : unmanaged, IPixel
+            => Context.DrawText(X, Y, Text, CharSize, Fill, Angle, Weight, Italic);
+        public void DrawText<T>(int X, int Y, string Text, string FontName, int CharSize, T Fill) where T : unmanaged, IPixel
+            => Context.DrawText(X, Y, Text, FontName, CharSize, Fill);
+        public void DrawText<T>(int X, int Y, string Text, string FontName, int CharSize, T Fill, double Angle, FontWeightType Weight, bool Italic) where T : unmanaged, IPixel
+            => Context.DrawText(X, Y, Text, FontName, CharSize, Fill, Angle, Weight, Italic);
 
         #endregion
 
         #region Transform Processing
-        public ImageContext<T> Rotate<T>(double Angle, bool Crop) where T : unmanaged, IPixel
-        {
-            return Context.Rotate<T>(Angle, Crop);
-        }
-        public ImageContext<T> Rotate<T>(double Angle, bool Crop, ParallelOptions Options) where T : unmanaged, IPixel
-        {
-            return Context.Rotate<T>(Angle, Crop, Options);
-        }
+        public ImageContext<T> Rotate<T>(double Angle, InterpolationTypes Interpolation) where T : unmanaged, IPixel
+            => Context.Rotate<T>(Angle, Interpolation);
+        public ImageContext<T> Rotate<T>(double Angle, InterpolationTypes Interpolation, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.Rotate<T>(Angle, Interpolation, Options);
 
         public ImageContext<T> Resize<T>(int Width, int Height, InterpolationTypes Interpolation) where T : unmanaged, IPixel
         {
@@ -507,14 +343,10 @@ namespace MenthaAssembly
             return Context.Cast<T, U>(Options);
         }
 
-        public void Clear(IPixel Color)
-        {
-            Context.Clear(Color);
-        }
-        public void Clear(IPixel Color, ParallelOptions Options)
-        {
-            Context.Clear(Color, Options);
-        }
+        public void Clear<T>(T Color) where T : unmanaged, IPixel
+            => Context.Clear(Color);
+        public void Clear<T>(T Color, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.Clear(Color, Options);
 
         #endregion
 
@@ -798,8 +630,11 @@ namespace MenthaAssembly
         public PixelAdapter<T> GetAdapter<T>(int X, int Y)
             where T : unmanaged, IPixel
             => Context.GetAdapter<T>(X, Y);
+        public IReadOnlyPixelAdapter GetAdapter(int X, int Y)
+            => ((IReadOnlyImageContext)Context).GetAdapter(X, Y);
 
         protected bool IsLocked { set; get; }
+
         public bool TryLock(int Timeout)
         {
             if (Bitmap is null)

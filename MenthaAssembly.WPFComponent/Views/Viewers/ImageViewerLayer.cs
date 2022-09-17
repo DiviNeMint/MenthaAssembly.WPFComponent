@@ -419,7 +419,7 @@ namespace MenthaAssembly.Views
 
                             if (X < Ex || (X == Ex && FracX < FracX1))
                             {
-                                PixelAdapter<BGRA> Adapter = _SourceContext.Operator.GetAdapter<BGRA>(X, Y);
+                                PixelAdapter<BGRA> Adapter = _SourceContext.GetAdapter<BGRA>(X, Y);
 
                                 while (X < SourceW && (X < Ex || (X == Ex && FracX < FracX1)))
                                 {
@@ -523,7 +523,7 @@ namespace MenthaAssembly.Views
                         LEy = (int)Math.Ceiling(DirtyEy);
                     Parallel.For(LSy, LEy, DefaultParallelOptions, j =>
                     {
-                        PixelAdapter<BGRA> Adapter = DisplayContext.Context.Operator.GetAdapter<BGRA>(LSx, j);
+                        PixelAdapter<BGRA> Adapter = DisplayContext.GetAdapter<BGRA>(LSx, j);
                         for (int i = LSx; i < LEx; i++, Adapter.MoveNext())
                             Adapter.Override(EmptyPixel);
                     });
@@ -610,7 +610,7 @@ namespace MenthaAssembly.Views
                                         int X = StampSx,
                                             Y = (int)((j - Sy) * FactorStep);
 
-                                        PixelAdapter<BGRA> Adapter = Stamp.Operator.GetAdapter<BGRA>(X, Y);
+                                        PixelAdapter<BGRA> Adapter = Stamp.GetAdapter<BGRA>(X, Y);
                                         while (X < MW && (X < StampEx || (X == StampEx && FracX < FracX1)))
                                         {
                                             Adapter.OverlayTo(pData++);
@@ -670,7 +670,7 @@ namespace MenthaAssembly.Views
                                         long Offset = j * DisplayStride + IntDirtySx * sizeof(BGRA);
                                         BGRA* pData = (BGRA*)(DisplayScan0 + Offset);
 
-                                        Stamp.Operator.ScanLine<BGRA>(StampSx, j - Sy, StampWidth, Adapter => Adapter.OverlayTo(pData++));
+                                        Stamp.ScanLine<BGRA>(StampSx, j - Sy, StampWidth, Adapter => Adapter.OverlayTo(pData++));
                                     });
 
                                     // Update Dirty
@@ -725,7 +725,7 @@ namespace MenthaAssembly.Views
         /// <summary>
         /// Get Pixel of current mouse position in ImageViewerLayer.
         /// </summary>
-        public IPixel GetPixel()
+        public IReadOnlyPixel GetPixel()
         {
             Point MousePosition = Mouse.GetPosition(this);
             return GetPixel(MousePosition.X, MousePosition.Y);
@@ -733,7 +733,7 @@ namespace MenthaAssembly.Views
         /// <summary>
         /// Get Pixel of Point(X, Y) at ImageViewerLayer.
         /// </summary>
-        public IPixel GetPixel(double X, double Y)
+        public IReadOnlyPixel GetPixel(double X, double Y)
         {
             if (X < 0 || ActualWidth < X ||
                 Y < 0 || ActualHeight < Y)
@@ -762,7 +762,7 @@ namespace MenthaAssembly.Views
         /// <summary>
         /// Get Pixel of Point(X, Y) at SourceImage.
         /// </summary>
-        public IPixel GetPixel(int X, int Y)
+        public IReadOnlyPixel GetPixel(int X, int Y)
             => SourceContext[X, Y];
 
         /// <summary>
