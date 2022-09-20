@@ -232,7 +232,7 @@ namespace MenthaAssembly
             => Context.FillPolygon(Vertices, Fill, OffsetX, OffsetY);
         public void FillPolygon<T>(IEnumerable<int> VerticeDatas, T Fill, int OffsetX, int OffsetY) where T : unmanaged, IPixel
             => Context.FillPolygon(VerticeDatas, Fill, OffsetX, OffsetY);
-        public void FillContour<T>(ImageContour Contour, T Fill, int OffsetX, int OffsetY) where T : unmanaged, IPixel
+        public void FillContour<T>(IImageContour Contour, T Fill, double OffsetX, double OffsetY) where T : unmanaged, IPixel
             => Context.FillContour(Contour, Fill, OffsetX, OffsetY);
 
         public void SeedFill<T>(Point<int> SeedPoint, T Fill, ImagePredicate Predicate) where T : unmanaged, IPixel
