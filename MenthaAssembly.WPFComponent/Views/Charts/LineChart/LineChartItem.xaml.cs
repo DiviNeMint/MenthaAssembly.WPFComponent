@@ -910,7 +910,6 @@ namespace MenthaAssembly.Views
             else
             {
                 object CurrentData = Source.FirstOrNull();
-
                 if (CurrentData != null)
                 {
                     if (DataExtractor is null)

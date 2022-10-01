@@ -274,18 +274,6 @@ namespace MenthaAssembly
         {
             return Context.Flip<T>(Mode, Options);
         }
-        public ImageContext<T, U> Flip<T, U>(FlipMode Mode)
-            where T : unmanaged, IPixel
-            where U : unmanaged, IPixelIndexed
-        {
-            return Context.Flip<T, U>(Mode);
-        }
-        public ImageContext<T, U> Flip<T, U>(FlipMode Mode, ParallelOptions Options)
-            where T : unmanaged, IPixel
-            where U : unmanaged, IPixelIndexed
-        {
-            return Context.Flip<T, U>(Mode, Options);
-        }
 
         public ImageContext<T> Convolute<T>(ConvoluteKernel Kernel) where T : unmanaged, IPixel
         {
@@ -301,6 +289,20 @@ namespace MenthaAssembly
         public ImageContext<T> Filter<T>(ImageFilter Filter, ParallelOptions Options) where T : unmanaged, IPixel
             => Context.Filter<T>(Filter, Options);
 
+        public ImageContext<T> Quantizate<T>(QuantizationType Type, int Count) where T : unmanaged, IPixel
+            => Context.Quantizate<T>(Type, Count);
+        public ImageContext<T> Quantizate<T>(QuantizationType Type, int Count, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.Quantizate<T>(Type, Count, Options);
+
+        public ImageContext<T, Indexed1> Binarize<T>(ImageThreshold Threshold) where T : unmanaged, IPixel
+            => Context.Binarize<T>(Threshold);
+        public ImageContext<T, Indexed1> Binarize<T>(ImageThreshold Threshold, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.Binarize<T>(Threshold, Options);
+        public ImageContext<T, Indexed1> Binarize<T>(ImagePredicate Predicate) where T : unmanaged, IPixel
+            => Context.Binarize<T>(Predicate);
+        public ImageContext<T, Indexed1> Binarize<T>(ImagePredicate Predicate, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.Binarize<T>(Predicate, Options);
+
         public ImageContext<T> Crop<T>(int X, int Y, int Width, int Height) where T : unmanaged, IPixel
         {
             return Context.Crop<T>(X, Y, Width, Height);
@@ -308,18 +310,6 @@ namespace MenthaAssembly
         public ImageContext<T> Crop<T>(int X, int Y, int Width, int Height, ParallelOptions Options) where T : unmanaged, IPixel
         {
             return Context.Crop<T>(X, Y, Width, Height, Options);
-        }
-        public ImageContext<T, U> Crop<T, U>(int X, int Y, int Width, int Height)
-            where T : unmanaged, IPixel
-            where U : unmanaged, IPixelIndexed
-        {
-            return Context.Crop<T, U>(X, Y, Width, Height);
-        }
-        public ImageContext<T, U> Crop<T, U>(int X, int Y, int Width, int Height, ParallelOptions Options)
-            where T : unmanaged, IPixel
-            where U : unmanaged, IPixelIndexed
-        {
-            return Context.Crop<T, U>(X, Y, Width, Height, Options);
         }
 
         public ImageContext<T> Cast<T>() where T : unmanaged, IPixel
