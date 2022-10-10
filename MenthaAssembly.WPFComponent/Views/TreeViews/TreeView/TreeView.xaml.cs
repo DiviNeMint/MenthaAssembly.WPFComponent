@@ -5,6 +5,22 @@ namespace MenthaAssembly.Views
 {
     public class TreeView : System.Windows.Controls.TreeView
     {
+        public static readonly RoutedEvent ItemExpandedEvent =
+            EventManager.RegisterRoutedEvent("ItemExpanded", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(TreeView));
+        public event RoutedEventHandler ItemExpanded
+        {
+            add => AddHandler(ItemExpandedEvent, value);
+            remove => RemoveHandler(ItemExpandedEvent, value);
+        }
+
+        public static readonly RoutedEvent ItemCollapsedEvent =
+            EventManager.RegisterRoutedEvent("ItemCollapsed", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(TreeView));
+        public event RoutedEventHandler ItemCollapsed
+        {
+            add => AddHandler(ItemCollapsedEvent, value);
+            remove => RemoveHandler(ItemCollapsedEvent, value);
+        }
+
         public static readonly DependencyProperty IndentProperty =
                 TreeViewItem.IndentProperty.AddOwner(typeof(TreeView), new FrameworkPropertyMetadata(20d,
                     (d, e) =>
@@ -17,7 +33,6 @@ namespace MenthaAssembly.Views
             get => (double)GetValue(IndentProperty);
             set => SetValue(IndentProperty, value);
         }
-
 
         public static readonly DependencyProperty IndentExpandButtonProperty =
                 TreeViewItem.IndentExpandButtonProperty.AddOwner(typeof(TreeView), new FrameworkPropertyMetadata(true,
@@ -65,7 +80,10 @@ namespace MenthaAssembly.Views
             Item.SetValue(TreeViewItem.DepthPropertyKey, 0);
             Item.SetBinding(TreeViewItem.IndentProperty, new Binding(nameof(Indent)) { Source = this });
             Item.SetBinding(TreeViewItem.IndentExpandButtonProperty, new Binding(nameof(IndentExpandButton)) { Source = this });
+            Item.Expanded += OnItemExpanded;
+            Item.Collapsed += OnItemCollapsed;
         }
+
 
         protected override void ClearContainerForItemOverride(DependencyObject Element, object Data)
         {
@@ -80,7 +98,15 @@ namespace MenthaAssembly.Views
             Item.ClearValue(TreeViewItem.DepthPropertyKey);
             Item.ClearValue(TreeViewItem.IndentProperty);
             Item.ClearValue(TreeViewItem.IndentExpandButtonProperty);
+            Item.Expanded -= OnItemExpanded;
+            Item.Collapsed -= OnItemCollapsed;
         }
+
+        protected virtual void OnItemExpanded(object sender, RoutedEventArgs e)
+            => RaiseEvent(new RoutedEventArgs(ItemExpandedEvent, sender));
+
+        protected virtual void OnItemCollapsed(object sender, RoutedEventArgs e)
+            => RaiseEvent(new RoutedEventArgs(ItemCollapsedEvent, sender));
 
     }
 }
