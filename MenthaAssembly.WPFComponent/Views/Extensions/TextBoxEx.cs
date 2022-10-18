@@ -23,7 +23,7 @@ namespace MenthaAssembly
                         bool EnableAttach = false;
                         KeyboardInputMode InputMode = KeyboardInputMode.All;
 
-                        if (ValueType.IsIntegerType())
+                        if (ValueType.IsNegativeIntegerType())
                         {
                             InputMode = KeyboardInputMode.NegativeNumber;
                             EnableAttach = true;
