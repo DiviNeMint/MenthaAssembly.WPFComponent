@@ -5,7 +5,7 @@ namespace MenthaAssembly
 {
     public class EnumExtension : MarkupExtension
     {
-        public bool DisplayNames { get; set; }
+        public bool GetNames { get; set; }
 
         private readonly Type Type;
         public EnumExtension(Type Type)
@@ -14,7 +14,7 @@ namespace MenthaAssembly
         }
 
         public override object ProvideValue(IServiceProvider Provider)
-            => DisplayNames ? Enum.GetNames(Type) : Enum.GetValues(Type);
+            => GetNames ? Enum.GetNames(Type) : Enum.GetValues(Type);
 
     }
 }

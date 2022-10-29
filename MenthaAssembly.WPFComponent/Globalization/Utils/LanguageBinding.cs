@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -15,210 +15,37 @@ namespace MenthaAssembly
     {
         internal string Path { get; }
 
-        public bool IsObjectProperty { set; get; }
-
         public string Default { set; get; }
+
+        public BindingBase Source { set; get; }
 
         public LanguageBinding()
         {
-            IsObjectProperty = true;
         }
         public LanguageBinding(string Path)
         {
             this.Path = Path;
-
-            if (string.IsNullOrEmpty(Path))
-                IsObjectProperty = true;
         }
 
         public override object ProvideValue(IServiceProvider Provider)
         {
-            if (IsObjectProperty &&
-                Provider.GetService(typeof(IProvideValueTarget)) is IProvideValueTarget ValueTarget)
+            if (Source != null)
             {
-                if (ValueTarget.TargetObject is DependencyObject Item)
+                Binding Base = Create(null, Default);
+                MultiBinding Multi = new MultiBinding
                 {
-                    if (string.IsNullOrEmpty(Path))
-                    {
-                        // Only DataContext
-                        if (ValueTarget.TargetProperty is DependencyProperty DependencyProperty &&
-                            DependencyPropertyDescriptor.FromProperty(FrameworkElement.DataContextProperty, Item.GetType()) is DependencyPropertyDescriptor DPDescriptor)
-                        {
-                            void OnDataContextValueChanged(object s, EventArgs e)
-                            {
-                                if (BindingOperations.GetBindingExpression(Item, DependencyProperty) is null)
-                                {
-                                    DPDescriptor.RemoveValueChanged(Item, OnDataContextValueChanged);
-                                    return;
-                                }
+                    Mode = BindingMode.OneWay,
+                    Converter = LanguageMultiConverter.Instance,
+                    ConverterParameter = Default
+                };
 
-                                if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContext)
-                                    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataContext, string.IsNullOrEmpty(this.Default) ? DataContext : this.Default));
-                            }
+                Multi.Bindings.Add(Base);
+                Multi.Bindings.Add(Source);
 
-                            DPDescriptor.AddValueChanged(Item, OnDataContextValueChanged);
-
-                            if (Item.GetValue(FrameworkElement.DataContextProperty)?.ToString() is string DataContext)
-                                return Create(DataContext, string.IsNullOrEmpty(this.Default) ? DataContext : this.Default).ProvideValue(Provider);
-                        }
-
-                        return string.IsNullOrEmpty(this.Default) ? "Null" :
-                                                                    Create(this.Default, this.Default).ProvideValue(Provider);
-                    }
-                    else
-                    {
-                        // DataContext Property
-                        if (Item.GetValue(FrameworkElement.DataContextProperty) is object DataContext &&
-                            TryGetValue(DataContext, Path, out object DataValue))
-                        {
-                            // TODO : 
-                            // When DataContext's property changed, update binding.
-
-                            //if (DataContext is INotifyPropertyChanged NotifyContext &&
-                            //    ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
-                            //{
-                            //    void OnNotifyContextPropertyChanged(object sender, PropertyChangedEventArgs e)
-                            //    {
-                            //        if (BindingOperations.GetBindingExpression(Item, DependencyProperty) is null)
-                            //        {
-                            //            NotifyContext.PropertyChanged -= OnNotifyContextPropertyChanged;
-                            //            return;
-                            //        }
-
-                            //        //if (GetValue(DataContext, Path)?.ToString() is string DataPath)
-                            //        //else
-                            //        //BindingOperations.ClearBinding(Item, DependencyProperty);
-                            //        //if (e.PropertyName.Equals(DependencyProperty.Name) &&
-                            //        //    GetValue(DataContext, Path)?.ToString() is string DataPath)
-                            //        //    BindingOperations.SetBinding(Item, DependencyProperty, Create(DataPath, this.Default));
-                            //    }
-
-
-                            //    NotifyContext.PropertyChanged += OnNotifyContextPropertyChanged;
-                            //}
-
-                            string DataPath = DataValue?.ToString();
-                            return string.IsNullOrEmpty(DataPath) ? "Null" :
-                                                                    Create(DataPath, this.Default).ProvideValue(Provider);
-                        }
-
-                        // Control Property
-                        if (TryGetValue(Item, Path, out object ControlValue))
-                        {
-                            string ControlPath = ControlValue?.ToString();
-                            return string.IsNullOrEmpty(ControlPath) ? "Null" :
-                                                                       Create(ControlPath?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
-                        }
-
-
-                        // TODO : 
-                        // When Control's property changed, update binding.
-
-                        //if (Item.GetType() is Type ControlType &&
-                        //    ControlType.GetProperty(this.Path) is PropertyInfo ControlProperty)
-                        //{
-                        //    if (TypeDescriptor.GetProperties(Item)[Path] is PropertyDescriptor prop)
-                        //    {
-                        //        prop.AddValueChanged(Item, (s, e) =>
-                        //        {
-                        //            Console.WriteLine("Test");
-                        //        });
-                        //    }
-
-                        //    if (ValueTarget.TargetProperty is DependencyProperty DependencyProperty)
-                        //        DependencyPropertyDescriptor.FromName(Path, ControlType, ControlType).AddValueChanged(Item,
-                        //            (s, e) =>
-                        //            {
-                        //                if (ControlProperty.GetValue(Item)?.ToString() is string NewControlPath)
-                        //                    BindingOperations.SetBinding(Item, DependencyProperty, Create(NewControlPath));
-                        //            });
-
-                        //    return Create(ControlProperty.GetValue(Item)?.ToString() ?? this.Path, this.Default).ProvideValue(Provider);
-                        //}
-
-                        return Create(this.Path, this.Default).ProvideValue(Provider);
-                    }
-                }
-
-                return this;
+                return Multi.ProvideValue(Provider);
             }
 
-            return Create(this.Path, this.Default).ProvideValue(Provider);
-        }
-        private bool TryGetValue(object Item, string Path, out object Value)
-        {
-            Value = Item;
-            if (Value is null)
-                return false;
-
-            Type ValueType = Value.GetType();
-
-            // Index
-            Match mItem = Regex.Match(Path, @"^\[?(?<Index>[\d\w]+)\]$");
-            if (mItem.Success)
-            {
-                string Key = mItem.Groups["Index"].Value;
-                foreach (MethodInfo Method in ValueType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                                                       .Where(i => i.Name.Equals("get_Item")))
-                {
-                    ParameterInfo[] Args = Method.GetParameters();
-                    if (Args.Length > 1)
-                        continue;
-
-                    object Arg = Convert.ChangeType(Key, Args[0].ParameterType);
-                    Value = Method.Invoke(Item, new[] { Arg });
-                    return true;
-                }
-
-                return false;
-            }
-
-            // Property
-            foreach (Match m in Regex.Matches(Path, @"(?<PropertyName>[\w-[\[\]]]+)(\[(?<Index>\d+)\])?"))
-            {
-                if (m.Success &&
-                    ValueType.GetProperty(m.Groups["PropertyName"].Value) is PropertyInfo TempProperty)
-                {
-                    string IndexStr = m.Groups["Index"].Value;
-                    if (string.IsNullOrEmpty(IndexStr))
-                    {
-                        Value = TempProperty.GetValue(Value);
-                    }
-                    else if (int.TryParse(IndexStr, out int Index))
-                    {
-                        object Collection = TempProperty.GetValue(Value);
-                        if (Collection is IList List)
-                        {
-                            if (List.Count <= Index)
-                                return false;
-
-                            Value = List[Index];
-                        }
-                        else if (Collection is Array Array)
-                        {
-                            if (Array.Length <= Index)
-                                return false;
-
-                            Value = Array.GetValue(Index);
-                        }
-                        else
-                        {
-                            Value = TempProperty.GetValue(Value, new object[] { Index });
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
-
-                    if (Value is null)
-                        return false;
-
-                    ValueType = Value.GetType();
-                }
-            }
-
-            return !Item.Equals(Value);
+            return Create(Path, Default).ProvideValue(Provider);
         }
 
         private static readonly PropertyInfo LanguageCurrentInfo = typeof(LanguageManager).GetProperty(nameof(LanguageManager.Current));
@@ -228,9 +55,25 @@ namespace MenthaAssembly
             return new Binding
             {
                 Path = new PropertyPath($"(0)[{Path}]", LanguageCurrentInfo),
-                FallbackValue = Temp,
-                TargetNullValue = Temp
+                TargetNullValue = Temp,
+                FallbackValue = Temp
             };
         }
+
+        private class LanguageMultiConverter : IMultiValueConverter
+        {
+            public static LanguageMultiConverter Instance { get; } = new LanguageMultiConverter();
+
+            public object Convert(object[] Values, Type TargetType, object Parameter, CultureInfo culture)
+            {
+                string Path = Values[1]?.ToString();
+                return string.IsNullOrEmpty(Path) ? Parameter ?? Binding.DoNothing : LanguageManager.Current?[Path] ?? Parameter ?? Path;
+            }
+
+            public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+                => throw new NotSupportedException();
+
+        }
+
     }
 }
