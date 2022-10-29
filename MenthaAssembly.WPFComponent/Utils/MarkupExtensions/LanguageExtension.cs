@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections;
-using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 
-namespace MenthaAssembly
+namespace MenthaAssembly.MarkupExtensions
 {
-    public class LanguageBinding : MarkupExtension
+    public class LanguageExtension : MarkupExtension
     {
         internal string Path { get; }
 
@@ -19,10 +15,10 @@ namespace MenthaAssembly
 
         public BindingBase Source { set; get; }
 
-        public LanguageBinding()
+        public LanguageExtension()
         {
         }
-        public LanguageBinding(string Path)
+        public LanguageExtension(string Path)
         {
             this.Path = Path;
         }

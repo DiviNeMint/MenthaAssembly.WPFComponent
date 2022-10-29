@@ -9,7 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
 
-namespace MenthaAssembly
+namespace MenthaAssembly.MarkupExtensions
 {
     public static class WindowEx
     {

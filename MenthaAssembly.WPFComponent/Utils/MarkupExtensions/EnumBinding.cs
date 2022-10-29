@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Markup;
 
-namespace MenthaAssembly
+namespace MenthaAssembly.MarkupExtensions
 {
     public class EnumExtension : MarkupExtension
     {

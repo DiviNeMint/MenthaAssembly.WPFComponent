@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:Core="clr-namespace:MenthaAssembly"
+                    xmlns:Ex="clr-namespace:MenthaAssembly.MarkupExtensions"
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
     <Style TargetType="{x:Type local:ColorBox}">
@@ -52,7 +52,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Color" Value="{x:Null}">
-                            <Setter TargetName="Root" Property="Content" Value="{Core:LanguageBinding Null}"/>
+                            <Setter TargetName="Root" Property="Content" Value="{Ex:Language Null}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
