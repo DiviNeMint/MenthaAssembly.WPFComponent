@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace MenthaAssembly.Views.Primitives
 {
-    public class ImageViewerLayerMarkCollection : ObservableCollection<ImageViewerLayerMark>
+    public sealed class ImageViewerLayerMarkCollection : ObservableCollection<ImageViewerLayerMark>
     {
         public event EventHandler MarkChanged;
 
@@ -54,7 +54,14 @@ namespace MenthaAssembly.Views.Primitives
         protected override void ClearItems()
         {
             CheckReentrancy();
+            Reset();
+            OnPropertyChanged(CountString);
+            OnPropertyChanged(IndexerName);
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
 
+        internal void Reset()
+        {
             for (int i = Items.Count - 1; i >= 0; i--)
             {
                 ImageViewerLayerMark Mark = Items[i];
@@ -63,10 +70,6 @@ namespace MenthaAssembly.Views.Primitives
 
                 Items.RemoveAt(i);
             }
-
-            OnPropertyChanged(CountString);
-            OnPropertyChanged(IndexerName);
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
         private void OnMarkLocationsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)

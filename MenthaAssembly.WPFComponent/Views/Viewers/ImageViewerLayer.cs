@@ -131,6 +131,11 @@ namespace MenthaAssembly.Views
 
         public ImageViewerLayerMarkCollection Marks { get; private set; }
 
+        public UIElementCollection<ImageViewerLayerElement> Elements { get; }
+
+        protected override int VisualChildrenCount
+            => Elements.Count;
+
         internal bool IsGeneratedFromSystem = false;
 
         protected internal ImageViewerBase Viewer;
@@ -143,6 +148,8 @@ namespace MenthaAssembly.Views
         {
             Marks = new ImageViewerLayerMarkCollection();
             Marks.MarkChanged += OnMarkDataChanged;
+
+            Elements = new UIElementCollection<ImageViewerLayerElement>(this, this);
         }
 
         private void OnAttachLayerSourceChanged(object sender, ChangedEventArgs<IImageContext> e)
@@ -197,10 +204,16 @@ namespace MenthaAssembly.Views
         private void OnMarkDataChanged(object sender, EventArgs e)
             => UpdateCanvas();
 
+        protected override Visual GetVisualChild(int Index)
+            => Elements[Index];
+
         protected int DisplayAreaWidth = 0,
                       DisplayAreaHeight = 0;
         protected override Size MeasureOverride(Size AvailableSize)
         {
+            foreach (ImageViewerLayerElement Element in Elements)
+                Element.Measure(AvailableSize);
+
             DisplayAreaWidth = (int)AvailableSize.Width;
             DisplayAreaHeight = (int)AvailableSize.Height;
             return AvailableSize;
@@ -208,10 +221,35 @@ namespace MenthaAssembly.Views
 
         protected override Size ArrangeOverride(Size FinalSize)
         {
+            if (Viewer != null)
+            {
+                double Scale = Viewer.InternalScale;
+                Rect Viewport = Viewer.InternalViewport;
+                int ContextX = Viewer.ContextX,
+                    ContextY = Viewer.ContextY;
+
+                foreach (ImageViewerLayerElement Element in Elements)
+                {
+                    Point<int> Location = Element.Location;
+                    Size ElementSize = Element.DesiredSize;
+                    double LTx = (Location.X + ContextX - Viewport.X) * Scale,
+                           LTy = (Location.Y + ContextY - Viewport.Y) * Scale;
+
+                    Element.Arrange(new Rect(LTx, LTy, ElementSize.Width, ElementSize.Height));
+                }
+            }
+
             if (DelayUpdate)
                 UpdateCanvas();
 
             return FinalSize;
+        }
+
+        protected override Geometry GetLayoutClip(Size LayoutSlotSize)
+        {
+            RectangleGeometry Rect = new RectangleGeometry(new Rect(RenderSize));
+            Rect.Freeze();
+            return Rect;
         }
 
         protected override void OnRender(DrawingContext Context)

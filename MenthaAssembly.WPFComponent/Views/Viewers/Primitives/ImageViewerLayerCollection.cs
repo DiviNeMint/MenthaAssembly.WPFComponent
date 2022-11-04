@@ -217,6 +217,7 @@ namespace MenthaAssembly.Views.Primitives
                 Layer.ClearValue(ImageViewerLayer.EnableLayerMarksProperty);
                 Layer.AttachedLayer = null;
                 Layer.SourceContext = null;
+                Layer.Marks.Reset();
             }
         }
 
