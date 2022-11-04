@@ -73,12 +73,13 @@ namespace MenthaAssembly.Views
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            if (IsLeftMouseDown && IsDraggable)
+            if (IsLeftMouseDown)
             {
                 Point Position = e.GetPosition(this);
                 Vector Delta = new Vector(Position.X - MousePosition.X, Position.Y - MousePosition.Y);
 
-                if (Layer?.Viewer is ImageViewerBase Viewer)
+                if (IsDraggable &&
+                    Layer?.Viewer is ImageViewerBase Viewer)
                 {
                     double Scale = Viewer.InternalScale,
                            DDx = DragDx + Delta.X / Scale,
@@ -104,12 +105,6 @@ namespace MenthaAssembly.Views
             {
                 ReleaseMouseCapture();
                 IsLeftMouseDown = false;
-
-                if (!IsDraggable)
-                {
-                    Point Position = e.GetPosition(this);
-                    MouseMoveDelta = new Vector(Position.X - MousePosition.X, Position.Y - MousePosition.Y);
-                }
 
                 if (MouseMoveDelta.LengthSquared <= 25)
                     OnClick(new RoutedEventArgs(ClickEvent, this));
