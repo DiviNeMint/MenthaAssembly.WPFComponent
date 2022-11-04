@@ -21,6 +21,9 @@ namespace MenthaAssembly.Views
             set => Collection[Index] = value;
         }
 
+        public UIElementCollection(FrameworkElement Parent) : this(Parent, Parent)
+        {
+        }
         public UIElementCollection(UIElement VisualParent, FrameworkElement LogicalParent)
         {
             Collection = new UIElementCollection(VisualParent, LogicalParent);

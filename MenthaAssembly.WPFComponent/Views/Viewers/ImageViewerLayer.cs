@@ -149,7 +149,7 @@ namespace MenthaAssembly.Views
             Marks = new ImageViewerLayerMarkCollection();
             Marks.MarkChanged += OnMarkDataChanged;
 
-            Elements = new UIElementCollection<ImageViewerLayerElement>(this, this);
+            Elements = new UIElementCollection<ImageViewerLayerElement>(this);
         }
 
         private void OnAttachLayerSourceChanged(object sender, ChangedEventArgs<IImageContext> e)
