@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using MenthaAssembly.MarkupExtensions;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -35,7 +36,7 @@ namespace MenthaAssembly.Views.Primitives
                 Item.SetBinding(MenuItem.CommandParameterProperty, new Binding("Content") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(PropertyEditor), 1) });
 
                 Item.Icon = Data.Icon;
-                Item.SetBinding(HeaderedItemsControl.HeaderProperty, LanguageBinding.Create(Data.Header, Data.Header));
+                Item.SetBinding(HeaderedItemsControl.HeaderProperty, LanguageExtension.Create(Data.Header, Data.Header));
             }
         }
 

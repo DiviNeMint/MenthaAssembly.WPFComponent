@@ -2,7 +2,7 @@
 using System.Windows.Data;
 using System.Windows.Markup;
 
-namespace MenthaAssembly
+namespace MenthaAssembly.MarkupExtensions
 {
     public class StaticBinding : MarkupExtension
     {
@@ -15,8 +15,11 @@ namespace MenthaAssembly
             this.Path = Path;
         }
 
+        //var a = Provider.GetService(typeof(IXamlTypeResolver)) as IXamlTypeResolver;
+        //var b = a.Resolve("Views:TreeView");
+
         public override object ProvideValue(IServiceProvider Provider)
-            => Create(this.Path, this.Converter, this.ConverterParameter).ProvideValue(Provider);
+            => Create(Path, Converter, ConverterParameter).ProvideValue(Provider);
 
         public static Binding Create(string Path, IValueConverter Converter = null, object ConverterParameter = null)
         {

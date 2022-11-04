@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MenthaAssembly.MarkupExtensions;
+using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
@@ -103,7 +104,7 @@ namespace MenthaAssembly.Views
                     if (string.IsNullOrEmpty(Data.Display?.DisplayPath))
                         PropertyName = Data.Display?.Display ?? Data.Property.Name;
                     else
-                        SetBinding(PropertyNameProperty, LanguageBinding.Create(Data.Display.DisplayPath, Data.Property.Name));
+                        SetBinding(PropertyNameProperty, LanguageExtension.Create(Data.Display.DisplayPath, Data.Property.Name));
 
                     #endregion
                     #region PropertyValue
@@ -171,7 +172,7 @@ namespace MenthaAssembly.Views
                             if (Data.Option?.IsEnumLanguageBinding ?? false)
                             {
                                 FrameworkElementFactory TemplateTextBlock = new FrameworkElementFactory(typeof(TextBlock));
-                                TemplateTextBlock.SetValue(TextBlock.TextProperty, new LanguageBinding());
+                                TemplateTextBlock.SetValue(TextBlock.TextProperty, new LanguageExtension());
 
                                 PART_ComboBox.ItemTemplate = new DataTemplate
                                 {

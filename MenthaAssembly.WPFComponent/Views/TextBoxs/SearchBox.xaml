@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:Core="clr-namespace:MenthaAssembly"
+                    xmlns:Ex="clr-namespace:MenthaAssembly.MarkupExtensions"
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
     <Style TargetType="{x:Type local:SearchBox}">
@@ -57,7 +57,7 @@
                                     Padding="1,2,2,2"
                                     Focusable="False"
                                     Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"
-                                    ToolTip="{Core:LanguageBinding Search}"
+                                    ToolTip="{Ex:Language Search}"
                                     Grid.Column="1">
                                 <Button.Template>
                                     <ControlTemplate TargetType="{x:Type ButtonBase}">
@@ -96,7 +96,7 @@
                             <Setter Property="BorderBrush" TargetName="border" Value="#FF569DE5"/>
                         </Trigger>
                         <Trigger Property="IsSearched" Value="True">
-                            <Setter TargetName="PART_Button" Property="ToolTip" Value="{Core:LanguageBinding Clear}"/>
+                            <Setter TargetName="PART_Button" Property="ToolTip" Value="{Ex:Language Clear}"/>
                             <Setter TargetName="PART_Path" Property="Margin" Value="3"/>
                             <Setter TargetName="PART_Path" Property="Data" Value="M1.414,0L5.657,4.243 9.9,0 11.314,1.414 7.07,5.657 11.314,9.9 9.9,11.314 5.657,7.07 1.414,11.314 0,9.9 4.243,5.657 0,1.414z"/>
                         </Trigger>

@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace MenthaAssembly
+namespace MenthaAssembly.MarkupExtensions
 {
     public static class ScrollViewerEx
     {

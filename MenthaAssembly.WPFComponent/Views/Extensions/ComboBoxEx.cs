@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace MenthaAssembly
+namespace MenthaAssembly.MarkupExtensions
 {
     public static class ComboBoxEx
     {
