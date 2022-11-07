@@ -21,21 +21,24 @@ namespace MenthaAssembly.Views
             set => Collection[Index] = value;
         }
 
-        public UIElementCollection(FrameworkElement Parent) : this(Parent, Parent)
+        protected UIElementCollection(UIElementCollection Collection)
+        {
+            this.Collection = Collection;
+        }
+        public UIElementCollection(FrameworkElement Parent) : this(new UIElementCollection(Parent, Parent))
         {
         }
-        public UIElementCollection(UIElement VisualParent, FrameworkElement LogicalParent)
+        public UIElementCollection(UIElement VisualParent, FrameworkElement LogicalParent) : this(new UIElementCollection(VisualParent, LogicalParent))
         {
-            Collection = new UIElementCollection(VisualParent, LogicalParent);
         }
 
         public virtual void Add(T Element)
             => Collection.Add(Element);
 
-        public void Insert(int Index, T Element)
+        public virtual void Insert(int Index, T Element)
             => Collection.Insert(Index, Element);
 
-        public int IndexOf(T Element)
+        public virtual int IndexOf(T Element)
             => Collection.IndexOf(Element);
 
         public virtual bool Remove(T Element)
@@ -79,7 +82,7 @@ namespace MenthaAssembly.Views
         bool IList.IsFixedSize
             => ((IList)Collection).IsFixedSize;
         int IList.Add(object Value)
-            => Value is UIElement Element ? Collection.Add(Element) : -1;
+            => Value is T Element ? Collection.Add(Element) : -1;
         void IList.Insert(int Index, object Value)
             => ((IList)Collection).Insert(Index, Value);
         void IList.Remove(object Value)
