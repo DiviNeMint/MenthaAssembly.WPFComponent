@@ -146,8 +146,10 @@ namespace System.Windows
             => new ChangedEventArgs<T>(e.OldValue is T New ? New : default,
                                        e.NewValue is T Old ? Old : default);
 
-        public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this ChangedEventArgs<T> e)
-            => new RoutedPropertyChangedEventArgs<T>(e.OldValue, e.NewValue);
+        public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this DependencyPropertyChangedEventArgs e, RoutedEvent Event)
+            => new RoutedPropertyChangedEventArgs<T>(e.OldValue is T New ? New : default,
+                                                     e.NewValue is T Old ? Old : default,
+                                                     Event);
         public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this ChangedEventArgs<T> e, RoutedEvent Event)
             => new RoutedPropertyChangedEventArgs<T>(e.OldValue, e.NewValue, Event);
 
