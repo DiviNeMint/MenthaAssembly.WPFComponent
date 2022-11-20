@@ -413,6 +413,7 @@ namespace MenthaAssembly.Views.Primitives
                     NearestResizePixelAdapter<BGRA> Adapter0 = new(ImageContext, Iw, Ih);
                     byte* pDest0 = (byte*)Bitmap.BackBuffer;
                     long Stride = Bitmap.BackBufferStride;
+
                     _ = Parallel.For(0, Ih, j =>
                     {
                         PixelAdapter<BGRA> Adapter = Adapter0.Clone();

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace MenthaAssembly.Views.Primitives
 {
@@ -14,8 +15,8 @@ namespace MenthaAssembly.Views.Primitives
     {
         private const int RenderBlockSize = 200;
 
-        private bool HasViewer, HasImage, HasImageContext;
-        private double Lw, Lh, Iw, Ih, Scale, Vx, Vy;   // ImageWidth, ImageHeight, LayerWidth, LayerHeight, LayerScale, ViewportX, ViewportY
+        private bool HasViewer, HasImage, HasImageContext, HasMarks;
+        private double Lw, Lh, Iw, Ih, Scale, Vx, Vy;   // LayerWidth, LayerHeight, ImageWidth, ImageHeight, LayerScale, ViewportX, ViewportY
         private int IBc, IBr, LBL, LBT, LBR, LBB;       // ImageBlockColumn, ImageBlockRow, LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
 
         private readonly ImageViewerLayer Layer;
@@ -27,53 +28,119 @@ namespace MenthaAssembly.Views.Primitives
             IBc = IBr = LBL = LBT = LBR = LBB = 0;
         }
 
-        private RectangleGeometry ClipGeometry;
+        private bool IsValid = true;
         public void Invalidate()
         {
-            if (!Layer.IsVisible)
-                return;
-
-            if (Layer.Source is ImageSource Image)
+            if (IsValid && Layer.IsVisible)
             {
-                HasImage = true;
-                HasImageContext = false;
+                Dispatcher Dispatcher = Layer.Dispatcher;
+                if (Dispatcher.CheckAccess())
+                    Refresh();
+                else
+#if NET462
+                    Dispatcher.BeginInvoke(new Action(Refresh), DispatcherPriority.Render);
+#else
+                    Dispatcher.BeginInvoke(Refresh, DispatcherPriority.Render);
+#endif
+            }
+        }
 
-                if (Layer.Parent is ImageViewer Viewer)
+        private bool IsMarksValid = true;
+        public void InvalidateMarks()
+        {
+            if (IsMarksValid)
+            {
+                IsMarksValid = false;
+                Invalidate();
+            }
+        }
+
+        private RectangleGeometry ClipGeometry;
+        private void Refresh()
+        {
+            IsValid = false;
+
+            try
+            {
+                HasMarks = Layer.Marks.FirstOrDefault(i => i.Visible) != null;
+
+                if (Layer.Source is ImageSource Image)
                 {
-                    HasViewer = true;
-                    if (RefreshSource(Image, Viewer))
+                    HasImage = true;
+                    HasImageContext = false;
+
+                    if (Layer.Parent is ImageViewer Viewer)
+                    {
+                        HasViewer = true;
+                        if (RefreshSource(Image, Viewer) || !IsMarksValid)
+                            Layer.InvalidateVisual();
+                    }
+                    else
+                    {
+                        HasViewer = false;
+                        if (RefreshSource(Image) || !IsMarksValid)
+                            Layer.InvalidateVisual();
+                    }
+                }
+
+                else if (Layer.SourceContext is IImageContext Context)
+                {
+                    HasImage = false;
+                    HasImageContext = true;
+
+                    if (Layer.Parent is ImageViewer Viewer)
+                    {
+                        HasViewer = true;
+                        RefreshContext(Context, Viewer);
+                    }
+                    else
+                    {
+                        HasViewer = false;
+                        RefreshContext(Context);
+                    }
+
+                    if (!IsMarksValid)
                         Layer.InvalidateVisual();
                 }
+
                 else
                 {
-                    HasViewer = false;
-                    if (RefreshSource(Image))
+                    if (HasMarks)
+                    {
+                        double Lw = Layer.ActualWidth,
+                               Lh = Layer.ActualHeight;
+                        if (ClipGeometry is null)
+                        {
+                            ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
+                            this.Lw = Lw;
+                            this.Lh = Lh;
+                        }
+
+                        else if (this.Lw != Lw || this.Lh != Lh)
+                        {
+                            ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
+                            this.Lw = Lw;
+                            this.Lh = Lh;
+                        }
+                    }
+
+                    if (HasImage || HasImageContext)
+                    {
+                        HasImage = false;
+                        HasImageContext = false;
                         Layer.InvalidateVisual();
+                    }
+
+                    else if (HasMarks)
+                        Layer.InvalidateVisual();
+
                 }
+
             }
-
-            else if (Layer.SourceContext is IImageContext Context)
+            finally
             {
-                HasImage = false;
-                HasImageContext = true;
-
-                if (Layer.Parent is ImageViewer Viewer)
-                {
-                    HasViewer = true;
-                    RefreshContext(Context, Viewer);
-                }
-                else
-                {
-                    HasViewer = false;
-                    RefreshContext(Context);
-                }
-            }
-
-            else if (HasImage || HasImageContext)
-            {
-                HasImage = false;
-                HasImageContext = false;
-                Layer.InvalidateVisual();
+                IsValid = true;
+                IsMarksValid = true;
             }
         }
 
@@ -89,17 +156,30 @@ namespace MenthaAssembly.Views.Primitives
                 this.ImageHash = ImageHash;
             }
 
+            bool NewSize = false;
             double Lw = Layer.ActualWidth,
-                   Lh = Layer.ActualHeight,
-                   Iw = Image.Width,
-                   Ih = Image.Height;
-
-            if (NewImage ||
-                this.Lw != Lw || this.Lh != Lh ||
-                this.Iw != Iw || this.Ih != Ih)
+                   Lh = Layer.ActualHeight;
+            if (ClipGeometry is null)
             {
+                NewSize = true;
+                ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
                 this.Lw = Lw;
                 this.Lh = Lh;
+            }
+
+            else if (this.Lw != Lw || this.Lh != Lh)
+            {
+                NewSize = true;
+                ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
+                this.Lw = Lw;
+                this.Lh = Lh;
+            }
+
+            double Iw = Image.Width,
+                   Ih = Image.Height;
+            if (NewImage || NewSize ||
+                this.Iw != Iw || this.Ih != Ih)
+            {
                 this.Iw = Iw;
                 this.Ih = Ih;
 
@@ -686,10 +766,28 @@ namespace MenthaAssembly.Views.Primitives
                     Context.PushTransform(ScaleTransform);
                     Context.DrawImage(Source, Region);
                     Context.Pop();
+
+                    if (HasMarks)
+                    {
+                        GetImageCoordination(0d, 0d, out double Ix, out double Iy);
+                        Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
+                        foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
+                            RenderMark(Mark, Context, Viewport, Scale);
+                    }
                 }
                 else
                 {
                     Context.DrawImage(Source, Region);
+
+                    if (HasMarks)
+                    {
+                        Context.PushClip(ClipGeometry);
+
+                        GetImageCoordination(0d, 0d, out double Ix, out double Iy);
+                        Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
+                        foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
+                            RenderMark(Mark, Context, Viewport, Scale);
+                    }
                 }
             }
 
@@ -710,7 +808,58 @@ namespace MenthaAssembly.Views.Primitives
                     }
                 }
 
-                Context.Pop();
+                if (HasMarks)
+                {
+                    GetImageCoordination(0d, 0d, out double Ix, out double Iy);
+                    Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
+                    foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
+                        RenderMark(Mark, Context, Viewport, Scale);
+                }
+            }
+
+            else if (HasMarks &&
+                     Layer.Parent is ImageViewer Viewer)
+            {
+                Context.PushClip(ClipGeometry);
+
+                Rect Viewport = Viewer.Viewport;
+                Viewport.X -= Viewer.ContextX;
+                Viewport.Y -= Viewer.ContextY;
+
+                foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
+                    RenderMark(Mark, Context, Viewport, Viewer.Scale);
+            }
+        }
+
+        public void RenderMark(ImageViewerLayerMark Mark, DrawingContext Context, Rect Viewport, double Scale)
+        {
+            ImageSource Visual = Mark.GetVisual();
+
+            double Iw = Visual.Width,
+                   Ih = Visual.Height,
+                   HIw = Iw / 2d,
+                   HIh = Ih / 2d,
+                   Lx = Viewport.Left - HIw,
+                   Rx = Viewport.Right + HIw,
+                   Ty = Viewport.Top - HIh,
+                   By = Viewport.Bottom + HIh;
+
+            if (Mark.Zoomable)
+            {
+                double Factor = MathHelper.Clamp(Scale, Mark.ZoomMinScale, Mark.ZoomMaxScale);
+                Iw *= Factor;
+                Ih *= Factor;
+                HIw *= Factor;
+                HIh *= Factor;
+            }
+
+            Rect Dirty = new(double.NaN, double.NaN, Iw, Ih);
+            Brush Brush = Mark.GetBrush();
+            foreach (Point Location in Mark.Locations.Where(i => Lx <= i.X && i.X <= Rx && Ty <= i.Y && i.Y <= By))
+            {
+                Dirty.X = (Location.X - Viewport.X) * Scale - HIw;
+                Dirty.Y = (Location.Y - Viewport.Y) * Scale - HIh;
+                Context.DrawRectangle(Brush, null, Dirty);
             }
         }
 

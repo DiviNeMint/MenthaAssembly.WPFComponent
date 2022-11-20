@@ -2,6 +2,7 @@
 using MenthaAssembly.Win32;
 using System;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -62,6 +63,25 @@ namespace MenthaAssembly
             throw new NotSupportedException();
         }
 
+        public unsafe static WriteableBitmap ToBitmapSource(this IImageContext This)
+        {
+            int Iw = This.Width,
+                Ih = This.Height;
+            WriteableBitmap Bitmap = new WriteableBitmap(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
+            try
+            {
+                Bitmap.Lock();
+                This.BlockCopy<BGRA>(0, 0, Iw, Ih, (byte*)Bitmap.BackBuffer, Bitmap.BackBufferStride, null);
+            }
+            finally
+            {
+                Bitmap.AddDirtyRect(new Int32Rect(0, 0, Iw, Ih));
+                Bitmap.Unlock();
+            }
+
+            return Bitmap;
+        }
+
         public static RenderTargetBitmap ToBitmapSource(this UIElement This)
         {
             bool IsCalculate = false;
@@ -73,25 +93,34 @@ namespace MenthaAssembly
                 IsCalculate = true;
             }
 
+            HwndSource Source = null;
+            bool CreateSource = false;
+            if (!This.IsVisible)
+            {
+                CreateSource = true;
+                Source = new HwndSource(new HwndSourceParameters()) { RootVisual = This };
+                //Source.Dispatcher.Invoke(DispatcherPriority.Loaded, new Action(() => { }));
+            }
+
             try
             {
                 Rect Bound = VisualTreeHelper.GetDescendantBounds(This);
 
-                DrawingVisual Drawing = new DrawingVisual();
+                DrawingVisual Drawing = new();
                 using (DrawingContext Context = Drawing.RenderOpen())
                 {
                     Context.DrawRectangle(new VisualBrush(This), null, Bound);
                 }
 
-                RenderTargetBitmap Image = new RenderTargetBitmap((int)Math.Round(Bound.Right, MidpointRounding.AwayFromZero),
-                                                                  (int)Math.Round(Bound.Bottom, MidpointRounding.AwayFromZero),
-                                                                  96d, 96d, PixelFormats.Pbgra32);
-
+                RenderTargetBitmap Image = new((int)Math.Round(Bound.Right), (int)Math.Round(Bound.Bottom), 96d, 96d, PixelFormats.Pbgra32);
                 Image.Render(Drawing);
                 return Image;
             }
             finally
             {
+                if (CreateSource)
+                    Source.Dispose();
+
                 if (IsCalculate)
                 {
                     This.InvalidateMeasure();
@@ -107,6 +136,7 @@ namespace MenthaAssembly
             {
                 Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 Element.Arrange(new Rect(Element.DesiredSize));
+                Element.UpdateLayout();
                 IsCalculate = true;
             }
 
@@ -118,16 +148,11 @@ namespace MenthaAssembly
                        Width = Bound.Right * Scale,
                        Height = Bound.Bottom * Scale;
 
-                DrawingVisual Drawing = new DrawingVisual();
-                using (DrawingContext Context = Drawing.RenderOpen())
-                {
-                    Context.DrawRectangle(new VisualBrush(Element), null, new Rect(Bound.TopLeft, new Point(Width / Scale, Height / Scale)));
-                }
+                DrawingVisual Drawing = new();
+                using DrawingContext Context = Drawing.RenderOpen();
+                Context.DrawRectangle(new VisualBrush(Element), null, new Rect(Bound.TopLeft, new Point(Width / Scale, Height / Scale)));
 
-                RenderTargetBitmap Bitmap = new RenderTargetBitmap((int)Math.Round(Width, MidpointRounding.AwayFromZero),
-                                                                   (int)Math.Round(Height, MidpointRounding.AwayFromZero),
-                                                                   Dpi, Dpi, PixelFormats.Pbgra32);
-
+                RenderTargetBitmap Bitmap = new((int)Math.Round(Width), (int)Math.Round(Height), Dpi, Dpi, PixelFormats.Pbgra32);
                 Bitmap.Render(Drawing);
                 return Bitmap;
             }

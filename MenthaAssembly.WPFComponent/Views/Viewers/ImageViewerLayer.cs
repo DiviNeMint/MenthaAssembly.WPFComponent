@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace MenthaAssembly.Views
 {
@@ -56,12 +55,17 @@ namespace MenthaAssembly.Views
             set => SetValue(SourceContextProperty, value);
         }
 
+        public ImageViewerLayerMarkCollection Marks { get; }
+
         private readonly ImageViewerLayerRenderer Renderer;
         internal readonly bool IsGeneratedFromCollection;
         internal ImageViewerLayer(bool GeneratedFromCollection)
         {
-            Renderer = new ImageViewerLayerRenderer(this);
+            RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
+
             IsGeneratedFromCollection = GeneratedFromCollection;
+            Renderer = new ImageViewerLayerRenderer(this);
+            Marks = new ImageViewerLayerMarkCollection(this);
 
             Type ThisType = GetType();
             DependencyPropertyDescriptor.FromProperty(VerticalAlignmentProperty, ThisType).AddValueChanged(this, OnAlignmentChanged);
@@ -79,12 +83,18 @@ namespace MenthaAssembly.Views
             try
             {
                 IsContextChanging = true;
-                ClearValue(SourceContextProperty);
 
-                if (e.NewValue is ImageSource Image)
+                if (SourceContext is IImageContext Context)
+                {
+                    ClearValue(SourceContextProperty);
+                    InvalidateContextSize(Context.Width, Context.Height);
+                }
+
+                else if (e.OldValue is ImageSource OldImage)
+                    InvalidateContextSize(OldImage.Width, OldImage.Height);
+
+                else if (e.NewValue is ImageSource Image)
                     InvalidateContextSize(Image.Width, Image.Height);
-                else
-                    InvalidateContextSize(0d, 0d);
 
                 RaiseEvent(e);
             }
@@ -98,12 +108,17 @@ namespace MenthaAssembly.Views
             try
             {
                 IsContextChanging = true;
-                ClearValue(SourceProperty);
+                if (Source is ImageSource Image)
+                {
+                    ClearValue(SourceProperty);
+                    InvalidateContextSize(Image.Width, Image.Height);
+                }
 
-                if (e.NewValue is IImageContext Context)
+                else if (e.OldValue is IImageContext OldContext)
+                    InvalidateContextSize(OldContext.Width, OldContext.Height);
+
+                else if (e.NewValue is IImageContext Context)
                     InvalidateContextSize(Context.Width, Context.Height);
-                else
-                    InvalidateContextSize(0d, 0d);
 
                 RaiseEvent(e);
             }
@@ -122,7 +137,7 @@ namespace MenthaAssembly.Views
                 InvalidateContextSize(Context.Width, Context.Height);
 
             else
-                InvalidateContextSize(0d, 0d);
+                InvalidateCanvas();
 
             OnStatusChanged();
         }
@@ -158,10 +173,10 @@ namespace MenthaAssembly.Views
                        Ch = Viewer.ContextHeight;
                 if (IsVisible)
                 {
-                    if (Cw < Width || Ch < Height)
-                        Viewer.Manager.Add(ImageViewerAction.ContextSize);
-                    else
+                    if (Width < Cw && Height < Ch)
                         InvalidateCanvas();
+                    else
+                        Viewer.Manager.Add(ImageViewerAction.ContextSize);
                 }
                 else if (Cw == Width || Ch == Height)
                 {
@@ -180,16 +195,14 @@ namespace MenthaAssembly.Views
         /// After invalidation, the canvas will update its rendering, which will happen asynchronously.
         /// </summary>
         public virtual void InvalidateCanvas()
-        {
-            if (Dispatcher.CheckAccess())
-                Renderer.Invalidate();
-            else
-#if NET462
-                Dispatcher.BeginInvoke(new Action(Renderer.Invalidate), DispatcherPriority.Render);
-#else
-            Dispatcher.BeginInvoke(Renderer.Invalidate, DispatcherPriority.Render);
-#endif
-        }
+            => Renderer.Invalidate();
+
+        /// <summary>
+        /// Invalidate the marks.
+        /// After invalidation, the marks will update its rendering, which will happen asynchronously.
+        /// </summary>
+        public virtual void InvalidateMarks()
+            => Renderer.InvalidateMarks();
 
         protected override void OnRender(DrawingContext Context)
             => Renderer.Render(Context);

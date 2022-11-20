@@ -364,7 +364,7 @@ namespace MenthaAssembly.Views.Primitives
                 Layer.ClearValue(ImageViewerLayer.SourceContextProperty);
 
                 //Layer.ClearValue(ImageViewerLayer.EnableLayerMarksProperty);
-                //Layer.Marks.Reset();
+                Layer.Marks.Clear();
             }
         }
 
