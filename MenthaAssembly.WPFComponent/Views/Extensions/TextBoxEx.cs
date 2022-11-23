@@ -28,11 +28,13 @@ namespace MenthaAssembly.MarkupExtensions
                             InputMode = KeyboardInputMode.NegativeNumber;
                             EnableAttach = true;
                         }
+
                         else if (ValueType.IsUnsignedIntegerType())
                         {
                             InputMode = KeyboardInputMode.Number;
                             EnableAttach = true;
                         }
+
                         else if (ValueType.IsDecimalType())
                         {
                             InputMode = KeyboardInputMode.NegativeNumberAndDot;
@@ -53,6 +55,7 @@ namespace MenthaAssembly.MarkupExtensions
                             This.PreviewMouseWheel += OnPreviewMouseWheel;
                             This.PreviewKeyDown += OnPreviewKeyDown;
                         }
+
                         else
                         {
                             SetInputMode(This, InputMode);
@@ -66,25 +69,29 @@ namespace MenthaAssembly.MarkupExtensions
         public static void SetValueType(TextBox obj, Type value)
             => obj.SetValue(ValueTypeProperty, value);
 
-        public static readonly DependencyProperty MinimumProperty = DependencyProperty.RegisterAttached("Minimum", typeof(object), typeof(TextBoxEx), new PropertyMetadata(null));
+        public static readonly DependencyProperty MinimumProperty =
+            DependencyProperty.RegisterAttached("Minimum", typeof(object), typeof(TextBoxEx), new PropertyMetadata(null));
         public static object GetMinimum(TextBox obj)
             => obj.GetValue(MinimumProperty);
         public static void SetMinimum(TextBox obj, object value)
             => obj.SetValue(MinimumProperty, value);
 
-        public static readonly DependencyProperty MaximumProperty = DependencyProperty.RegisterAttached("Maximum", typeof(object), typeof(TextBoxEx), new PropertyMetadata(null));
+        public static readonly DependencyProperty MaximumProperty =
+            DependencyProperty.RegisterAttached("Maximum", typeof(object), typeof(TextBoxEx), new PropertyMetadata(null));
         public static object GetMaximum(TextBox obj)
             => obj.GetValue(MaximumProperty);
         public static void SetMaximum(TextBox obj, object value)
             => obj.SetValue(MaximumProperty, value);
 
-        public static readonly DependencyProperty DeltaProperty = DependencyProperty.RegisterAttached("Delta", typeof(object), typeof(TextBoxEx), new PropertyMetadata(1));
+        public static readonly DependencyProperty DeltaProperty =
+            DependencyProperty.RegisterAttached("Delta", typeof(object), typeof(TextBoxEx), new PropertyMetadata(1));
         public static object GetDelta(TextBox obj)
             => obj.GetValue(DeltaProperty);
         public static void SetDelta(TextBox obj, object value)
             => obj.SetValue(DeltaProperty, value);
 
-        public static readonly DependencyProperty CombineDeltaProperty = DependencyProperty.RegisterAttached("CombineDelta", typeof(object), typeof(TextBoxEx), new PropertyMetadata(10));
+        public static readonly DependencyProperty CombineDeltaProperty =
+            DependencyProperty.RegisterAttached("CombineDelta", typeof(object), typeof(TextBoxEx), new PropertyMetadata(10));
         public static object GetCombineDelta(TextBox obj)
             => obj.GetValue(CombineDeltaProperty);
         public static void SetCombineDelta(TextBox obj, object value)
@@ -116,11 +123,7 @@ namespace MenthaAssembly.MarkupExtensions
                         Temp = Min;
                 }
 
-                AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
-
-                if (!GetEnableDelayNotifyText(This))
-                    This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-
+                This.Text = Temp.ToString();
                 e.Handled = true;
             }
         }
@@ -133,20 +136,15 @@ namespace MenthaAssembly.MarkupExtensions
             {
                 if (e.Key is Key.Enter)
                 {
-                    if (GetDelayToken(This) is DelayActionToken Token)
-                        Token.Cancel();
-
                     Type ValueType = GetValueType(This);
                     dynamic Min = GetMinValue(This, ValueType),
                             Max = GetMaxValue(This, ValueType),
                             Value = This.Text.ToValueType(ValueType);
 
                     if (Value < Min)
-                        AvoidDelayNotifyBlock(This, () => This.Text = Min.ToString());
+                        This.Text = Min.ToString();
                     else if (Max < Value)
-                        AvoidDelayNotifyBlock(This, () => This.Text = Max.ToString());
-
-                    This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                        This.Text = Max.ToString();
                 }
 
                 else if (e.Key is Key.Up)
@@ -161,11 +159,7 @@ namespace MenthaAssembly.MarkupExtensions
                     if (Max < Temp)
                         Temp = Max;
 
-                    AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
-
-                    if (!GetEnableDelayNotifyText(This))
-                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-
+                    This.Text = Temp.ToString();
                     e.Handled = true;
                 }
 
@@ -181,11 +175,7 @@ namespace MenthaAssembly.MarkupExtensions
                     if (Temp < Min)
                         Temp = Min;
 
-                    AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
-
-                    if (!GetEnableDelayNotifyText(This))
-                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-
+                    This.Text = Temp.ToString();
                     e.Handled = true;
                 }
 
@@ -200,11 +190,7 @@ namespace MenthaAssembly.MarkupExtensions
                     if (Max < Temp)
                         Temp = Max;
 
-                    AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
-
-                    if (!GetEnableDelayNotifyText(This))
-                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-
+                    This.Text = Temp.ToString();
                     e.Handled = true;
                 }
 
@@ -219,11 +205,7 @@ namespace MenthaAssembly.MarkupExtensions
                     if (Temp < Min)
                         Temp = Min;
 
-                    AvoidDelayNotifyBlock(This, () => This.Text = Temp.ToString());
-
-                    if (!GetEnableDelayNotifyText(This))
-                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-
+                    This.Text = Temp.ToString();
                     e.Handled = true;
                 }
             }
@@ -340,88 +322,6 @@ namespace MenthaAssembly.MarkupExtensions
                     return;
 
                 e.Handled = true;
-            }
-        }
-
-        #endregion
-
-        #region EnableDelayNotifyText
-        public static double DelayNotifyInterval { get; set; } = 500d;
-
-        public static readonly DependencyProperty EnableDelayNotifyTextProperty =
-            DependencyProperty.RegisterAttached("EnableDelayNotifyText", typeof(bool), typeof(TextBoxEx), new PropertyMetadata(false,
-                (d, e) =>
-                {
-                    if (d is TextBox This)
-                    {
-                        if (e.NewValue is true)
-                        {
-                            This.TextChanged += OnDelayNotify_TextChanged;
-                        }
-                        else
-                        {
-                            This.TextChanged -= OnDelayNotify_TextChanged;
-
-                            if (GetDelayToken(This) is DelayActionToken Token)
-                                Token.Cancel();
-                        }
-                    }
-                }));
-        public static bool GetEnableDelayNotifyText(TextBox obj)
-            => (bool)obj.GetValue(EnableDelayNotifyTextProperty);
-        public static void SetEnableDelayNotifyText(TextBox obj, bool value)
-            => obj.SetValue(EnableDelayNotifyTextProperty, value);
-
-        private static readonly DependencyProperty DelayTokenProperty =
-            DependencyProperty.RegisterAttached("DelayToken", typeof(DelayActionToken), typeof(TextBoxEx), new PropertyMetadata(null));
-        private static DelayActionToken GetDelayToken(DependencyObject obj)
-            => (DelayActionToken)obj.GetValue(DelayTokenProperty);
-        private static void SetDelayToken(DependencyObject obj, DelayActionToken value)
-            => obj.SetValue(DelayTokenProperty, value);
-
-        private static void OnDelayNotify_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (sender is TextBox This)
-            {
-                if (GetDelayToken(This) is DelayActionToken OldToken)
-                    OldToken.Cancel();
-
-                void DelayTask()
-                {
-                    SetDelayToken(This, null);
-
-                    if (!string.IsNullOrEmpty(This.Text) &&
-                        GetValueType(This) is Type ValueType)
-                    {
-                        dynamic Min = GetMinValue(This, ValueType),
-                                Max = GetMaxValue(This, ValueType),
-                                Value = This.Text.ToValueType(ValueType);
-                        if (Value < Min)
-                            AvoidDelayNotifyBlock(This, () => This.Text = Min.ToString());
-                        else if (Max < Value)
-                            AvoidDelayNotifyBlock(This, () => This.Text = Max.ToString());
-
-                        This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-                    }
-                }
-
-                DelayActionToken Token = DispatcherHelper.DelayAction(DelayNotifyInterval, DelayTask, () => SetDelayToken(This, null));
-                SetDelayToken(This, Token);
-            }
-        }
-
-        internal static void AvoidDelayNotifyBlock(TextBox ThisBox, Action Action)
-        {
-            bool Enable = GetEnableDelayNotifyText(ThisBox);
-
-            try
-            {
-                SetEnableDelayNotifyText(ThisBox, false);
-                Action();
-            }
-            finally
-            {
-                SetEnableDelayNotifyText(ThisBox, Enable);
             }
         }
 
