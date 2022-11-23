@@ -254,7 +254,6 @@ namespace MenthaAssembly.Views.Primitives
             {
                 ReleaseMouseCapture();
                 IsLeftMouseDown = false;
-                e.Handled = true;
             }
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e)

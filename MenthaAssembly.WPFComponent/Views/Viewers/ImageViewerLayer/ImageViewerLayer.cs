@@ -5,10 +5,12 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 
 namespace MenthaAssembly.Views
 {
+    [ContentProperty(nameof(Elements))]
     public class ImageViewerLayer : FrameworkElement
     {
         internal event EventHandler<ImageViewerLayer> StatusChanged;
@@ -57,7 +59,10 @@ namespace MenthaAssembly.Views
 
         public ImageViewerLayerMarkCollection Marks { get; }
 
-        private readonly ImageViewerLayerRenderer Renderer;
+        public ImageViewerLayerElementCollection Elements { get; }
+
+        internal readonly ImageViewerLayerRenderer Renderer;
+        private readonly ImageViewerLayerPresenter TemplatePresenter;
         internal readonly bool IsGeneratedFromCollection;
         internal ImageViewerLayer(bool GeneratedFromCollection)
         {
@@ -65,7 +70,11 @@ namespace MenthaAssembly.Views
 
             IsGeneratedFromCollection = GeneratedFromCollection;
             Renderer = new ImageViewerLayerRenderer(this);
+            TemplatePresenter = new ImageViewerLayerPresenter(this);
+            AddVisualChild(TemplatePresenter);
+
             Marks = new ImageViewerLayerMarkCollection(this);
+            Elements = new ImageViewerLayerElementCollection(this, TemplatePresenter.Children);
 
             Type ThisType = GetType();
             DependencyPropertyDescriptor.FromProperty(VerticalAlignmentProperty, ThisType).AddValueChanged(this, OnAlignmentChanged);
@@ -76,6 +85,11 @@ namespace MenthaAssembly.Views
         public ImageViewerLayer() : this(false)
         {
         }
+
+        protected override int VisualChildrenCount
+            => 1;
+        protected override Visual GetVisualChild(int Index)
+            => TemplatePresenter;
 
         private bool IsContextChanging = false;
         private void OnSourceChanged(RoutedPropertyChangedEventArgs<ImageSource> e)
@@ -141,7 +155,6 @@ namespace MenthaAssembly.Views
 
             OnStatusChanged();
         }
-
         protected virtual void OnAlignmentChanged(object sender, EventArgs e)
         {
             if (Parent is ImageViewer)
@@ -149,10 +162,8 @@ namespace MenthaAssembly.Views
 
             OnStatusChanged();
         }
-
         protected virtual void OnStatusChanged()
             => StatusChanged?.Invoke(Parent, this);
-
         protected override void OnRenderSizeChanged(SizeChangedInfo SizeInfo)
         {
             if (Parent is not ImageViewer &&
@@ -163,7 +174,15 @@ namespace MenthaAssembly.Views
         }
 
         protected override Size MeasureOverride(Size AvailableSize)
-            => AvailableSize;
+        {
+            TemplatePresenter.Measure(AvailableSize);
+            return AvailableSize;
+        }
+        protected override Size ArrangeOverride(Size FinalSize)
+        {
+            TemplatePresenter.Arrange(new Rect(FinalSize));
+            return base.ArrangeOverride(FinalSize);
+        }
 
         protected virtual void InvalidateContextSize(double Width, double Height)
         {
@@ -195,7 +214,10 @@ namespace MenthaAssembly.Views
         /// After invalidation, the canvas will update its rendering, which will happen asynchronously.
         /// </summary>
         public virtual void InvalidateCanvas()
-            => Renderer.Invalidate();
+        {
+            Renderer.Invalidate();
+            TemplatePresenter.InvalidateArrange();
+        }
 
         /// <summary>
         /// Invalidate the marks.

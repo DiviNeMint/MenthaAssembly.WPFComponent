@@ -432,8 +432,6 @@ namespace MenthaAssembly.Views
 
                 if (MouseMoveDelta <= 25)
                     OnClick();
-
-                e.Handled = true;
             }
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e)

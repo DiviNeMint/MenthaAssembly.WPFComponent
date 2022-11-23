@@ -15,9 +15,9 @@ namespace MenthaAssembly.Views.Primitives
     {
         private const int RenderBlockSize = 200;
 
-        private bool HasViewer, HasImage, HasImageContext, HasMarks;
-        private double Lw, Lh, Iw, Ih, Scale, Vx, Vy;   // LayerWidth, LayerHeight, ImageWidth, ImageHeight, LayerScale, ViewportX, ViewportY
-        private int IBc, IBr, LBL, LBT, LBR, LBB;       // ImageBlockColumn, ImageBlockRow, LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
+        public bool HasViewer, HasImage, HasImageContext, HasMarks;
+        public double Lw, Lh, Iw, Ih, Scale, Vx, Vy;   // LayerWidth, LayerHeight, ImageWidth, ImageHeight, LayerScale, ViewportX, ViewportY
+        public int IBc, IBr, LBL, LBT, LBR, LBB;       // ImageBlockColumn, ImageBlockRow, LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
 
         private readonly ImageViewerLayer Layer;
         public ImageViewerLayerRenderer(ImageViewerLayer Layer)
