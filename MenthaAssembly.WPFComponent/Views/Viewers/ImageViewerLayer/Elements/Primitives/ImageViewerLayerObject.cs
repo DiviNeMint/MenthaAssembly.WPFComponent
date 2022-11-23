@@ -5,7 +5,7 @@ namespace MenthaAssembly.Views.Primitives
     public abstract class ImageViewerLayerObject : FrameworkElement
     {
 
-        protected void GetImageStatus(out double ImageLayerX, out double ImageLayerY, out double Scale)
+        protected internal void GetImageStatus(out double ImageLayerX, out double ImageLayerY, out double Scale)
         {
             if (Parent is ImageViewerLayer Layer)
             {
@@ -24,7 +24,7 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
-        protected double GetScale()
+        protected internal double GetScale()
         {
             if (Parent is ImageViewerLayer Layer)
                 return Layer.Renderer.Scale;

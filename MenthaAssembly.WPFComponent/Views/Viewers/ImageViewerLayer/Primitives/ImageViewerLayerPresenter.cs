@@ -1,27 +1,12 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
 
 namespace MenthaAssembly.Views.Primitives
 {
-    internal sealed class ImageViewerLayerPresenter : Panel
+    internal sealed class ImageViewerLayerPresenter : Panel<ImageViewerLayer>
     {
-        private readonly ImageViewerLayer LogicalParent;
-        public ImageViewerLayerPresenter(ImageViewerLayer LogicalParent)
+        public ImageViewerLayerPresenter(ImageViewerLayer LogicalParent) : base(LogicalParent)
         {
-            this.LogicalParent = LogicalParent;
             ClipToBounds = true;
-        }
-
-        protected override UIElementCollection CreateUIElementCollection(FrameworkElement Parent)
-            => base.CreateUIElementCollection(LogicalParent);
-
-        protected override Size MeasureOverride(Size AvailableSize)
-        {
-            int Count = Children.Count;
-            for (int i = 0; i < Count; i++)
-                Children[i].Measure(AvailableSize);
-
-            return base.MeasureOverride(AvailableSize);
         }
 
         protected override Size ArrangeOverride(Size FinalSize)
@@ -45,7 +30,7 @@ namespace MenthaAssembly.Views.Primitives
                 }
             }
 
-            return base.ArrangeOverride(FinalSize);
+            return FinalSize;
         }
 
     }

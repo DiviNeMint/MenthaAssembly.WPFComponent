@@ -6,7 +6,6 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -16,13 +15,11 @@ using System.Windows.Threading;
 
 namespace MenthaAssembly.Views.Primitives
 {
-    internal sealed class ImageViewerMapperPresenter : Panel, IImageViewerAttachment
+    internal sealed class ImageViewerMapperPresenter : Panel<ImageViewerMapper>, IImageViewerAttachment
     {
-        private readonly ImageViewerMapper LogicalParent;
         private readonly Rectangle ViewportRect;
-        public ImageViewerMapperPresenter(ImageViewerMapper LogicalParent)
+        public ImageViewerMapperPresenter(ImageViewerMapper LogicalParent) : base(LogicalParent)
         {
-            this.LogicalParent = LogicalParent;
             _ = SetBinding(BackgroundProperty, new Binding("Viewer.Background") { Source = LogicalParent });
 
             ViewportRect = new Rectangle();
@@ -31,9 +28,6 @@ namespace MenthaAssembly.Views.Primitives
             _ = ViewportRect.SetBinding(Shape.FillProperty, new Binding(nameof(LogicalParent.ViewportFill)) { Source = LogicalParent });
             _ = Children.Add(ViewportRect);
         }
-
-        protected override UIElementCollection CreateUIElementCollection(FrameworkElement Parent)
-            => base.CreateUIElementCollection(LogicalParent);
 
         private double Scale = double.NaN;
         protected override Size MeasureOverride(Size AvailableSize)
