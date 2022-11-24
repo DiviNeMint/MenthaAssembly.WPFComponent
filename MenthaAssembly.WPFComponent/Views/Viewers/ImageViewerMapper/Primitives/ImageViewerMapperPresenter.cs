@@ -78,7 +78,7 @@ namespace MenthaAssembly.Views.Primitives
                 LogicalParent.Viewer is ImageViewer Viewer)
             {
                 Rect Viewport = Viewer.Viewport;
-                ViewportRect.Arrange(new Rect(Viewport.X * Scale, Viewport.Y * Scale, Viewport.Width * Scale, Viewport.Height * Scale));
+                ViewportRect.Arrange(Viewport.IsEmpty ? new Rect() : new Rect(Viewport.X * Scale, Viewport.Y * Scale, Viewport.Width * Scale, Viewport.Height * Scale));
 
                 // Skips ViewportRect by start index 0.
                 Rect Rect = new(FinalSize);

@@ -15,10 +15,16 @@ namespace MenthaAssembly.Views.Primitives
         private const string IndexerName = "Item[]";
 
         private readonly ImageViewerLayer Layer;
+        private readonly ImageViewerLayerItemsElement ItemsElement;
         private readonly UIElementCollection Elements;
         internal ImageViewerLayerElementCollection(ImageViewerLayer Layer, UIElementCollection Elements)
         {
             this.Layer = Layer;
+            this.Elements = Elements;
+        }
+        internal ImageViewerLayerElementCollection(ImageViewerLayerItemsElement ItemsElement, UIElementCollection Elements)
+        {
+            this.ItemsElement = ItemsElement;
             this.Elements = Elements;
         }
 

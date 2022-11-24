@@ -4,23 +4,33 @@ namespace MenthaAssembly.Views.Primitives
 {
     public abstract class ImageViewerLayerObject : FrameworkElement
     {
-
-        protected internal void GetImageStatus(out double ImageLayerX, out double ImageLayerY, out double Scale)
+        protected internal void GetLayerPosition(double Ix, double Iy, out double Lx, out double Ly)
         {
             if (Parent is ImageViewerLayer Layer)
-            {
-                Layer.Renderer.GetLayerPosition(0d, 0d, out ImageLayerX, out ImageLayerY);
-                Scale = Layer.Renderer.Scale;
-            }
+                Layer.Renderer.GetLayerPosition(Ix, Iy, out Lx, out Ly);
 
             else if (Parent is ImageViewerLayerObject Object)
-                Object.GetImageStatus(out ImageLayerX, out ImageLayerY, out Scale);
+                Object.GetLayerPosition(Ix, Iy, out Lx, out Ly);
 
             else
             {
-                ImageLayerX = 0d;
-                ImageLayerY = 0d;
-                Scale = 1d;
+                Lx = 0d;
+                Ly = 0d;
+            }
+        }
+
+        protected internal void GetImageCoordination(double Lx, double Ly, out double Ix, out double Iy)
+        {
+            if (Parent is ImageViewerLayer Layer)
+                Layer.Renderer.GetImageCoordination(Lx, Ly, out Ix, out Iy);
+
+            else if (Parent is ImageViewerLayerObject Object)
+                Object.GetImageCoordination(Lx, Ly, out Ix, out Iy);
+
+            else
+            {
+                Ix = 0d;
+                Iy = 0d;
             }
         }
 

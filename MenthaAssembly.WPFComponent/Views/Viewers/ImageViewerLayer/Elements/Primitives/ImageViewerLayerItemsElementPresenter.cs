@@ -2,9 +2,9 @@
 
 namespace MenthaAssembly.Views.Primitives
 {
-    internal sealed class ImageViewerLayerPresenter : Panel<ImageViewerLayer>
+    internal sealed class ImageViewerLayerItemsElementPresenter : Panel<ImageViewerLayerItemsElement>
     {
-        public ImageViewerLayerPresenter(ImageViewerLayer LogicalParent) : base(LogicalParent)
+        public ImageViewerLayerItemsElementPresenter(ImageViewerLayerItemsElement LogicalParent) : base(LogicalParent)
         {
             ClipToBounds = true;
         }
@@ -13,6 +13,10 @@ namespace MenthaAssembly.Views.Primitives
         {
             Rect Rect = new(FinalSize);
             int Count = Children.Count;
+
+            double Scale = LogicalParent.GetScale();
+            LogicalParent.GetLayerPosition(0d, 0d, out double ILx, out double ILy);
+
             for (int i = 0; i < Count; i++)
             {
                 UIElement Child = Children[i];
@@ -20,7 +24,9 @@ namespace MenthaAssembly.Views.Primitives
                 {
                     Size ElementSize = Element.DesiredSize;
                     Point Location = Element.Location;
-                    LogicalParent.Renderer.GetLayerPosition(Location.X, Location.Y, out double Lx, out double Ly);
+
+                    double Lx = Location.X * Scale + ILx,
+                           Ly = Location.Y * Scale + ILy;
                     Element.Arrange(new Rect(Lx - ElementSize.Width / 2d, Ly - ElementSize.Height / 2d, ElementSize.Width, ElementSize.Height));
                 }
 
