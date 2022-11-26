@@ -9,21 +9,10 @@ namespace MenthaAssembly.Views
 {
     public class ConsoleBox : TextBox
     {
-        public static readonly DependencyProperty IsMonitorProperty =
-            DependencyProperty.Register("IsMonitor", typeof(bool), typeof(ConsoleBox), new PropertyMetadata(false,
-                (d, e) =>
-                {
-                    if (d is ConsoleBox This)
-                        if (e.NewValue is true)
-                            This.Start();
-                        else
-                            This.Stop();
-                }));
-        public bool IsMonitor
-        {
-            get => (bool)GetValue(IsMonitorProperty);
-            set => SetValue(IsMonitorProperty, value);
-        }
+        public static readonly DependencyPropertyKey IsMonitoringPropertyKey =
+            DependencyProperty.RegisterReadOnly("IsMonitoring", typeof(bool), typeof(ConsoleBox), new PropertyMetadata(false));
+        public bool IsMonitoring
+            => (bool)GetValue(IsMonitoringPropertyKey.DependencyProperty);
 
         protected ConsoleGrabber Grabber { get; }
 
@@ -42,64 +31,80 @@ namespace MenthaAssembly.Views
 
         public void Start()
         {
-            Console.SetOut(Grabber);        // Console
+            InternalStart();
+            SetValue(IsMonitoringPropertyKey, true);
+        }
+        protected virtual void InternalStart()
+        {
+            // Console
+            Console.SetOut(Grabber);
+
             // Debug
             // .Net Core's Listeners use together.
             //https://stackoverflow.com/questions/54342622/it-seems-that-debug-listeners-does-not-exist-in-net-core
             //Debug.Listeners.Add(Listener)   
-            Trace.Listeners.Add(Listener);  // Debug、Trace
-        }
-        public void Stop()
-        {
-            Console.SetOut(new StreamWriter(Console.OpenStandardOutput())   // Console
-            {
-                AutoFlush = true
-            });
-            Trace.Listeners.Remove(Listener);                               //Debug、Trace
+
+            // Trace
+            Trace.Listeners.Add(Listener);
         }
 
+        public void Stop()
+        {
+            InternalStop();
+            SetValue(IsMonitoringPropertyKey, false);
+        }
+        protected virtual void InternalStop()
+        {
+            // Console
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+
+            // Debug、Trace
+            Trace.Listeners.Remove(Listener);
+        }
 
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
-            if (this.GetTemplateChild("PART_ContentHost") is ScrollViewer PART_ContentHost)
+            if (GetTemplateChild("PART_ContentHost") is ScrollViewer PART_ContentHost)
                 ScrollViewerEx.SetAutoScrollToEnd(PART_ContentHost, true);
         }
 
         ~ConsoleBox()
         {
-            if (IsMonitor)
-                Stop();
-
-            Grabber?.Dispose();
-            Listener?.Dispose();
+            InternalStop();
+            Grabber.Dispose();
+            Listener.Dispose();
         }
 
         protected class ConsoleGrabber : StringWriter
         {
             private TextBox TextBox { get; }
             public ConsoleGrabber(TextBox TextBox)
-                => this.TextBox = TextBox;
+            {
+                this.TextBox = TextBox;
+            }
 
-            public override void Write(string value)
-                => TextBox.Dispatcher.Invoke(() => TextBox.Text += value);
+            public override void Write(string Value)
+                => TextBox.Dispatcher.BeginInvoke(new Action(() => TextBox.Text += Value));
 
             public override void WriteLine()
-                => TextBox.Dispatcher.Invoke(() => TextBox.Text += NewLine);
+                => TextBox.Dispatcher.BeginInvoke(new Action(() => TextBox.Text += NewLine));
 
         }
         protected class ConsoleListener : TraceListener
         {
             private TextBox TextBox { get; }
             public ConsoleListener(TextBox TextBox)
-                => this.TextBox = TextBox;
+            {
+                this.TextBox = TextBox;
+            }
 
-            public override void Write(string message)
-                => TextBox.Dispatcher.Invoke(() => TextBox.Text += message);
+            public override void Write(string Message)
+                => TextBox.Dispatcher.BeginInvoke(new Action(() => TextBox.Text += Message));
 
-            public override void WriteLine(string message)
-                => TextBox.Dispatcher.Invoke(() => TextBox.Text += $"{ message}{Environment.NewLine}");
+            public override void WriteLine(string Message)
+                => TextBox.Dispatcher.BeginInvoke(new Action(() => TextBox.Text += $"{Message}{Environment.NewLine}"));
 
         }
 
