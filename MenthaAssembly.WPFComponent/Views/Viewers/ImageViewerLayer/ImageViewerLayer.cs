@@ -224,7 +224,11 @@ namespace MenthaAssembly.Views
         /// After invalidation, the marks will update its rendering, which will happen asynchronously.
         /// </summary>
         public virtual void InvalidateMarks()
-            => Renderer.InvalidateMarks();
+        {
+            Renderer.InvalidateMarks();
+            if (Parent is ImageViewer Viewer)
+                Viewer._Attachments.ForEach(i => i.InvalidateMarks());
+        }
 
         protected override void OnRender(DrawingContext Context)
             => Renderer.Render(Context);

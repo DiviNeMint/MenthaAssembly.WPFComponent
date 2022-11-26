@@ -144,6 +144,16 @@ namespace MenthaAssembly.Views.Primitives
         public void InvalidateViewport()
             => InvalidateArrange();
 
+        private bool IsMarksValid = true;
+        public void InvalidateMarks()
+        {
+            if (IsMarksValid)
+            {
+                IsMarksValid = false;
+                InvalidateCanvas();
+            }
+        }
+
         private bool IsCanvasValid = true;
         public void InvalidateCanvas()
         {
@@ -186,18 +196,20 @@ namespace MenthaAssembly.Views.Primitives
                             IsRefresh = true;
                     }
 
-                    if (NewViewer || IsRefresh)
+                    if (NewViewer || IsRefresh || !IsMarksValid)
                         InvalidateVisual();
                 }
 
                 else if (ViewerHashCode != 0)
                 {
                     ViewerHashCode = 0;
+                    MiniLayers.Clear();
                     InvalidateVisual();
                 }
             }
             finally
             {
+                IsMarksValid = true;
                 IsCanvasValid = true;
             }
         }
@@ -207,7 +219,33 @@ namespace MenthaAssembly.Views.Primitives
             base.OnRender(Context);
 
             foreach (MiniLayer Layer in MiniLayers.Values.Where(i => i.IsValid))
+            {
                 Context.DrawImage(Layer.Image, Layer.Region);
+
+                if (Layer.Marks.FirstOrDefault() != null)
+                {
+                    double Ix = Layer.Ix * Scale,
+                           Iy = Layer.Iy * Scale;
+                    foreach (ImageViewerLayerMark Mark in Layer.Marks)
+                    {
+                        ImageSource Visual = Mark.GetVisual();
+                        double Iw = Visual.Width * Scale,
+                               Ih = Visual.Height * Scale,
+                               Dx = Ix - Iw / 2d,
+                               Dy = Iy - Ih / 2d;
+
+                        Rect Dirty = new(double.NaN, double.NaN, Iw, Ih);
+                        Brush Brush = Mark.GetBrush();
+                        foreach (Point Location in Mark.Locations)
+                        {
+                            Dirty.X = Location.X * Scale + Dx;
+                            Dirty.Y = Location.Y * Scale + Dy;
+                            Context.DrawRectangle(Brush, null, Dirty);
+                        }
+                    }
+                }
+            }
+
         }
 
         private bool IsLeftMouseDown = false;
@@ -272,6 +310,8 @@ namespace MenthaAssembly.Views.Primitives
             public bool IsValid
                 => Image != null;
 
+            public IEnumerable<ImageViewerLayerMark> Marks;
+
             public MiniLayer()
             {
                 Ix = Iy = Scale = double.NaN;
@@ -286,6 +326,14 @@ namespace MenthaAssembly.Views.Primitives
                 try
                 {
                     IsPreparing = true;
+
+                    bool NewMarks = false;
+                    if (Marks != Layer.Marks)
+                    {
+                        NewMarks = true;
+                        Marks = Layer.Marks;
+                    }
+
                     bool IsVisibleChanged = IsVisible != Layer.IsVisible;
                     if (IsVisibleChanged)
                     {
@@ -294,15 +342,20 @@ namespace MenthaAssembly.Views.Primitives
                             return true;
                     }
 
+                    bool IsRefresh;
                     if (Layer.Source is ImageSource Image)
-                        return PrepareImageSource(Viewer, Layer, Image, Scale) || IsVisibleChanged;
+                        IsRefresh = PrepareImageSource(Viewer, Layer, Image, Scale);
 
                     else if (Layer.SourceContext is IImageContext ImageContext)
-                        return PrepareImageContext(Viewer, Layer, ImageContext, Scale) || IsVisibleChanged;
+                        IsRefresh = PrepareImageContext(Viewer, Layer, ImageContext, Scale);
 
-                    bool IsRefresh = this.Image != null;
-                    this.Image = null;
-                    return IsVisibleChanged || IsRefresh;
+                    else
+                    {
+                        IsRefresh = this.Image != null;
+                        this.Image = null;
+                    }
+
+                    return IsRefresh || NewMarks || IsVisibleChanged;
                 }
                 finally
                 {
@@ -311,7 +364,7 @@ namespace MenthaAssembly.Views.Primitives
             }
 
             private int ImageHashCode = 0;
-            private double Ix, Iy, Scale;
+            public double Ix, Iy, Scale;
             private bool PrepareImageSource(ImageViewer Viewer, ImageViewerLayer Layer, ImageSource Image, double Scale)
             {
                 bool NewImage = false;

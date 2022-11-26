@@ -8,6 +8,8 @@ namespace MenthaAssembly.Views.Primitives
 
         public void InvalidateViewport();
 
+        public void InvalidateMarks();
+
         public void InvalidateCanvas();
 
         public void OnLayerCollectionChanged(NotifyCollectionChangedEventArgs e);
