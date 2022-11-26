@@ -4,7 +4,6 @@
     <TargetFrameworks>net462;netcoreapp3.1</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
-    <!--<UseWindowsForms>true</UseWindowsForms>-->
     <RootNamespace>MenthaAssembly</RootNamespace>
     <Platforms>AnyCPU</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

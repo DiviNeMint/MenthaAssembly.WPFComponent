@@ -34,6 +34,9 @@
         <!--ConsoleBox-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TextBoxs/ConsoleBox.xaml"/>
 
+        <!--EditableTextBlock-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/TextBoxs/EditableTextBlock.xaml"/>
+
         <!--Popup-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Popups/PopupMenu.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Popups/PopupMenuItem.xaml"/>
