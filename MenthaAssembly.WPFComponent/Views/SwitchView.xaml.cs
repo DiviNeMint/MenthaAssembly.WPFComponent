@@ -2,12 +2,17 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace MenthaAssembly.Views
 {
     [DefaultEvent("ToggleChanged")]
+    [TemplatePart(Name = nameof(PART_GradientStop), Type = typeof(GradientStop))]
+    [TemplatePart(Name = nameof(PART_Thumb), Type = typeof(Thumb))]
+    [TemplatePart(Name = nameof(PART_ThumbTranslateTransform), Type = typeof(TranslateTransform))]
     public class SwitchView : Control
     {
         public static readonly RoutedEvent ToggleChangedEvent =
@@ -18,137 +23,191 @@ namespace MenthaAssembly.Views
             remove { RemoveHandler(ToggleChangedEvent, value); }
         }
 
-        public static new readonly DependencyProperty PaddingProperty =
-            DependencyProperty.Register("Padding", typeof(Thickness), typeof(SwitchView), new PropertyMetadata(new Thickness(2)));
-        public new Thickness Padding
+        public static readonly DependencyProperty CornerRadiusProperty =
+            Border.CornerRadiusProperty.AddOwner(typeof(SwitchView), new PropertyMetadata(null));
+        public CornerRadius CornerRadius
         {
-            get { return (Thickness)GetValue(PaddingProperty); }
-            set { SetValue(PaddingProperty, value); }
+            get => (CornerRadius)GetValue(CornerRadiusProperty);
+            set => SetValue(CornerRadiusProperty, value);
         }
 
-        public static readonly DependencyProperty IsPressedProperty =
-            DependencyProperty.Register("IsPressed", typeof(bool), typeof(SwitchView), new PropertyMetadata(false));
-        public bool IsPressed
+        public static readonly DependencyProperty EnableAnimationProperty =
+            DependencyProperty.Register("EnableAnimation", typeof(bool), typeof(SwitchView), new PropertyMetadata(true));
+        public bool EnableAnimation
         {
-            get { return (bool)GetValue(IsPressedProperty); }
-            protected set { SetValue(IsPressedProperty, value); }
+            get => (bool)GetValue(EnableAnimationProperty);
+            set => SetValue(EnableAnimationProperty, value);
         }
 
         public static readonly DependencyProperty IsToggledProperty =
-            DependencyProperty.Register("IsToggled", typeof(bool), typeof(SwitchView), new PropertyMetadata(false,
+            DependencyProperty.Register("IsToggled", typeof(bool?), typeof(SwitchView), new PropertyMetadata(false,
                 (d, e) =>
                 {
                     if (d is SwitchView This)
-                    {
-                        This.RaiseEvent(new RoutedPropertyChangedEventArgs<bool>(
-                            (bool)e.OldValue,
-                            (bool)e.NewValue,
-                            ToggleChangedEvent));
-                    }
+                        This.OnIsToggledChanged(e.ToRoutedPropertyChangedEventArgs<bool?>(ToggleChangedEvent));
                 }));
-        public bool IsToggled
+        public bool? IsToggled
         {
-            get { return (bool)GetValue(IsToggledProperty); }
-            set { SetValue(IsToggledProperty, value); }
+            get => (bool?)GetValue(IsToggledProperty);
+            set => SetValue(IsToggledProperty, value);
         }
 
-        public static readonly DependencyProperty IsAnimationEnabledProperty =
-            DependencyProperty.Register("IsAnimationEnabled", typeof(bool), typeof(SwitchView), new PropertyMetadata(true));
-        public bool IsAnimationEnabled
+        public static readonly DependencyPropertyKey IsPressedPropertyKey =
+              DependencyProperty.RegisterReadOnly("IsPressed", typeof(bool), typeof(SwitchView), new PropertyMetadata(false));
+        public bool IsPressed
+            => (bool)GetValue(IsPressedPropertyKey.DependencyProperty);
+
+        public static readonly DependencyProperty ThumbStyleProperty =
+            DependencyProperty.Register("ThumbStyle", typeof(Style), typeof(SwitchView), new PropertyMetadata(null));
+        public Style ThumbStyle
         {
-            get { return (bool)GetValue(IsAnimationEnabledProperty); }
-            set { SetValue(IsAnimationEnabledProperty, value); }
+            get => (Style)GetValue(ThumbStyleProperty);
+            set => SetValue(ThumbStyleProperty, value);
         }
-
-        public static readonly DependencyProperty ToggledBackgroundProperty =
-            DependencyProperty.Register("ToggledBackground", typeof(Brush), typeof(SwitchView), new PropertyMetadata(new SolidColorBrush(Color.FromArgb(0xFF, 0x1A, 0xB9, 0x00))));
-        public Brush ToggledBackground
-        {
-            get { return (Brush)GetValue(ToggledBackgroundProperty); }
-            set { SetValue(ToggledBackgroundProperty, value); }
-        }
-
-        public static readonly DependencyProperty CornerRadiusProperty =
-            DependencyProperty.Register("CornerRadius", typeof(CornerRadius), typeof(SwitchView), new PropertyMetadata(new CornerRadius(10),
-                (d, e) =>
-                {
-                    if (e.NewValue is CornerRadius corner)
-                    {
-                        Thickness Padding = (Thickness)d.GetValue(PaddingProperty);
-                        corner.TopLeft = Math.Max(0, corner.TopLeft - Math.Max(Padding.Top, Padding.Left));
-                        corner.TopRight = Math.Max(0, corner.TopRight - Math.Max(Padding.Top, Padding.Right));
-                        corner.BottomLeft = Math.Max(0, corner.BottomLeft - Math.Max(Padding.Bottom, Padding.Left));
-                        corner.BottomRight = Math.Max(0, corner.BottomRight - Math.Max(Padding.Bottom, Padding.Right));
-
-                        d.SetValue(ToggleCornerRadiusProperty, corner);
-                    }
-                }));
-        public CornerRadius CornerRadius
-        {
-            get { return (CornerRadius)GetValue(CornerRadiusProperty); }
-            set { SetValue(CornerRadiusProperty, value); }
-        }
-
-        public static readonly DependencyProperty ToggleCornerRadiusProperty =
-            DependencyProperty.RegisterAttached("ToggleCornerRadius", typeof(CornerRadius), typeof(SwitchView), new PropertyMetadata(new CornerRadius(8)));
-        public static CornerRadius GetToggleCornerRadius(DependencyObject obj)
-            => (CornerRadius)obj.GetValue(ToggleCornerRadiusProperty);
-        public static void SetToggleCornerRadius(DependencyObject obj, CornerRadius value)
-            => obj.SetValue(ToggleCornerRadiusProperty, value);
-
 
         static SwitchView()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(SwitchView), new FrameworkPropertyMetadata(typeof(SwitchView)));
         }
 
+        private GradientStop PART_GradientStop;
+        private Thumb PART_Thumb;
+        private TranslateTransform PART_ThumbTranslateTransform;
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            if (GetTemplateChild("PART_Toggle") is Border PART_Toggle)
-                AnimationHelper.AddUpdateHandler(PART_Toggle, new RoutedPropertyChangedEventHandler<double>(OnAnimationUpdate));
-        }
 
-        protected void OnAnimationUpdate(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (sender is FrameworkElement PART_Toggle &&
-                e.NewValue is double NewValue)
+            if (GetTemplateChild("PART_GradientStop") is GradientStop PART_GradientStop)
+                this.PART_GradientStop = PART_GradientStop;
+
+            if (GetTemplateChild("PART_Thumb") is Thumb PART_Thumb)
+                this.PART_Thumb = PART_Thumb;
+
+            if (GetTemplateChild("PART_ThumbTranslateTransform") is TranslateTransform PART_ThumbTranslateTransform)
+                this.PART_ThumbTranslateTransform = PART_ThumbTranslateTransform;
+
+            bool? Value = IsToggled;
+            if (IsToggled is not false)
             {
-                Thickness Padding = this.Padding;
-                if (NewValue > 0)
-                    Padding.Left += Math.Abs(this.ActualWidth - this.ActualHeight) * NewValue;
-
-                PART_Toggle.Margin = Padding;
+                this.PART_GradientStop.Offset = Value.HasValue ? 1d : 0.5d;
+                this.PART_Thumb.HorizontalAlignment = Value.HasValue ? HorizontalAlignment.Right : HorizontalAlignment.Center;
             }
         }
 
-        private bool IsMouseDown = false;
-        protected override void OnMouseDown(MouseButtonEventArgs e)
+        private readonly TimeSpan AnimationInterval = TimeSpan.FromMilliseconds(100d);
+        protected virtual void OnIsToggledChanged(RoutedPropertyChangedEventArgs<bool?> e)
         {
-            base.OnMouseDown(e);
-            CaptureMouse();
-            IsMouseDown = true;
-            IsPressed = true;
+            bool? Value = e.NewValue;
+            GradientStopOffsetTo(Value.HasValue ? Value.Value ? 1d : 0d : 0.5d);
+            ThumbMoveTo(Value.HasValue ? Value.Value ? HorizontalAlignment.Right : HorizontalAlignment.Left : HorizontalAlignment.Center);
         }
-        protected override void OnMouseUp(MouseButtonEventArgs e)
+
+        private void GradientStopOffsetTo(double To)
         {
-            base.OnMouseUp(e);
-            ReleaseMouseCapture();
-            if (IsPressed)
+            if (PART_GradientStop is null)
+                return;
+
+            if (EnableAnimation)
             {
-                IsPressed = false;
-                IsToggled = !IsToggled;
+                DoubleAnimation OffsetAnimation = new DoubleAnimation(To, AnimationInterval, FillBehavior.Stop);
+                OffsetAnimation.Completed += (d, e) => PART_GradientStop.Offset = To;
+                OffsetAnimation.Freeze();
+
+                PART_GradientStop.ApplyAnimationClock(GradientStop.OffsetProperty, OffsetAnimation.CreateClock());
             }
-            IsMouseDown = false;
-        }
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
-            if (IsMouseDown)
+            else
             {
-                Point Location = e.GetPosition(this);
-                IsPressed = !(Location.X > ActualWidth || Location.Y > ActualHeight);
+                PART_GradientStop.Offset = To;
             }
         }
+        private void ThumbMoveTo(HorizontalAlignment Alignment)
+        {
+            if (PART_Thumb is null ||
+                PART_ThumbTranslateTransform is null)
+                return;
+
+            if (EnableAnimation)
+            {
+                Thickness Padding = this.Padding,
+                          BorderThickness = this.BorderThickness,
+                          Margin = PART_Thumb.Margin;
+                double Delta = (ActualWidth - (BorderThickness.Left + BorderThickness.Right + Padding.Left + Padding.Right + PART_Thumb.ActualWidth + Margin.Left + Margin.Right));
+
+                double From = PART_Thumb.HorizontalAlignment switch
+                {
+                    HorizontalAlignment.Left => 0d,
+                    HorizontalAlignment.Right => Delta,
+                    _ => Delta / 2d
+                };
+
+                double To = Alignment switch
+                {
+                    HorizontalAlignment.Left => 0d,
+                    HorizontalAlignment.Right => Delta,
+                    _ => Delta / 2d
+                };
+
+                DoubleAnimation OffsetAnimation = new DoubleAnimation(To - From, AnimationInterval, FillBehavior.Stop);
+                OffsetAnimation.Completed += (d, e) => PART_Thumb.HorizontalAlignment = Alignment;
+                OffsetAnimation.Freeze();
+
+                PART_ThumbTranslateTransform.ApplyAnimationClock(TranslateTransform.XProperty, OffsetAnimation.CreateClock());
+            }
+            else
+            {
+                PART_Thumb.HorizontalAlignment = Alignment;
+            }
+        }
+
+        private bool IsLeftMouseDown;
+        private Point MousePosition;
+        private double MouseMoveDelta;
+        protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseDown(e);
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                _ = CaptureMouse();
+                IsLeftMouseDown = true;
+                SetValue(IsPressedPropertyKey, true);
+                MousePosition = e.GetPosition(this);
+                MouseMoveDelta = 0d;
+                e.Handled = true;
+            }
+        }
+        protected override void OnPreviewMouseMove(MouseEventArgs e)
+        {
+            base.OnPreviewMouseMove(e);
+            if (IsLeftMouseDown)
+            {
+                Point Position = e.GetPosition(this);
+                double Dx = Position.X - MousePosition.X,
+                       Dy = Position.Y - MousePosition.Y;
+
+                if (MouseMoveDelta <= 25d)
+                    MouseMoveDelta += Dx * Dx + Dy * Dy;
+
+                SetValue(IsPressedPropertyKey, !(Position.X > ActualWidth || Position.Y > ActualHeight));
+                MousePosition = Position;
+                e.Handled = true;
+            }
+        }
+        protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseUp(e);
+            if (IsLeftMouseDown)
+            {
+                ReleaseMouseCapture();
+                IsLeftMouseDown = false;
+                SetValue(IsPressedPropertyKey, false);
+
+                if (MouseMoveDelta <= 25)
+                {
+                    bool? Value = IsToggled;
+                    IsToggled = Value.HasValue ? !IsToggled : false;
+                }
+            }
+        }
+
     }
 }

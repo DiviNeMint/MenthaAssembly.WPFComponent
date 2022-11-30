@@ -14,6 +14,19 @@ namespace MenthaAssembly.Views
             set => SetValue(TextTrimmingProperty, value);
         }
 
+        public static readonly DependencyProperty DoubleClickToEditProperty =
+              DependencyProperty.Register("DoubleClickToEdit", typeof(bool), typeof(EditableTextBlock), new PropertyMetadata(true,
+                  (d, e) =>
+                  {
+                      if (d is EditableTextBlock This)
+                          This.OnDoubleClickToEditChanged(e.ToChangedEventArgs<bool>());
+                  }));
+        public bool DoubleClickToEdit
+        {
+            get => (bool)GetValue(DoubleClickToEditProperty);
+            set => SetValue(DoubleClickToEditProperty, value);
+        }
+
         public static readonly DependencyPropertyKey IsEditingPropertyKey =
             DependencyProperty.RegisterReadOnly("IsEditing", typeof(bool), typeof(EditableTextBlock), new PropertyMetadata(false));
         public bool IsEditing
@@ -23,6 +36,9 @@ namespace MenthaAssembly.Views
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(EditableTextBlock), new FrameworkPropertyMetadata(typeof(EditableTextBlock)));
         }
+
+        private void OnDoubleClickToEditChanged(ChangedEventArgs<bool> e)
+            => IsHitTestVisible = e.NewValue;
 
         protected override void OnMouseDoubleClick(MouseButtonEventArgs e)
         {
@@ -34,6 +50,9 @@ namespace MenthaAssembly.Views
         {
             base.OnLostKeyboardFocus(e);
             SetValue(IsEditingPropertyKey, false);
+
+            if (!DoubleClickToEdit)
+                IsHitTestVisible = false;
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -45,6 +64,14 @@ namespace MenthaAssembly.Views
                 SetValue(IsEditingPropertyKey, false);
                 Keyboard.ClearFocus();
             }
+        }
+
+        public void StartEditing()
+        {
+            if (!DoubleClickToEdit)
+                IsHitTestVisible = true;
+
+            SetValue(IsEditingPropertyKey, true);
         }
 
     }
