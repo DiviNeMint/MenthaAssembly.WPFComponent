@@ -45,8 +45,13 @@ namespace MenthaAssembly.Views.Primitives
 
             int Count = Items.Count;
             foreach (object Item in ItemsSource.Where(i => i != null))
+            {
                 if (CreateImageViewerLayer(Item) is ImageViewerLayer Layer)
+                {
                     InternalInsertItem(Count++, Layer);
+                    PrepareImageViewerLayerContext(Layer, Item);
+                }
+            }
 
             if (ItemsSource is INotifyCollectionChanged NotifySource)
             {
@@ -64,8 +69,13 @@ namespace MenthaAssembly.Views.Primitives
                     {
                         int Count = Items.Count;
                         foreach (object Data in e.NewItems.Where(i => i != null))
+                        {
                             if (CreateImageViewerLayer(Data) is ImageViewerLayer Layer)
+                            {
                                 InternalInsertItem(Count++, Layer);
+                                PrepareImageViewerLayerContext(Layer, Data);
+                            }
+                        }
                         break;
                     }
                 case NotifyCollectionChangedAction.Remove:
@@ -92,9 +102,14 @@ namespace MenthaAssembly.Views.Primitives
                             {
                                 Data = e.NewItems[i];
                                 if (Data != null && CreateImageViewerLayer(Data) is ImageViewerLayer Layer)
+                                {
                                     InternalSetItem(Index, Layer);
+                                    PrepareImageViewerLayerContext(Layer, Data);
+                                }
                                 else
+                                {
                                     InternalRemoveItem(Index);
+                                }
                             }
                         }
                         break;
@@ -276,19 +291,14 @@ namespace MenthaAssembly.Views.Primitives
             CheckReentrancy();
 
             ImageViewerLayer Item = Items[Index];
-            try
-            {
-                Items.RemoveAt(Index);
-                Layers.RemoveAt(Index);
+            ResetImageViewerLayer(Item);
 
-                OnPropertyChanged(CountString);
-                OnPropertyChanged(IndexerName);
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, Item, Index));
-            }
-            finally
-            {
-                ResetImageViewerLayer(Item);
-            }
+            Items.RemoveAt(Index);
+            Layers.RemoveAt(Index);
+
+            OnPropertyChanged(CountString);
+            OnPropertyChanged(IndexerName);
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, Item, Index));
         }
 
         protected override void ClearItems()
@@ -303,9 +313,9 @@ namespace MenthaAssembly.Views.Primitives
             for (int i = Items.Count - 1; i >= 0; i--)
             {
                 ImageViewerLayer Item = Items[i];
-                Items.RemoveAt(i);
-
                 ResetImageViewerLayer(Item);
+
+                Items.RemoveAt(i);
             }
 
             Layers.Clear();
@@ -321,36 +331,25 @@ namespace MenthaAssembly.Views.Primitives
         }
 
         private ImageViewerLayer CreateImageViewerLayer(object Context)
-        {
-            if (Context is ImageViewerLayer Layer)
-                return Layer;
-
-            if (Context is IImageContext ImageContext)
-            {
-                ImageViewerLayer NewLayer = new ImageViewerLayer(true)
-                {
-                    DataContext = Context,
-                    SourceContext = ImageContext
-                };
-                return NewLayer;
-            }
-
-            if (Context is ImageSource Image)
-            {
-                ImageViewerLayer NewLayer = new ImageViewerLayer(true)
-                {
-                    DataContext = Context,
-                    Source = Image
-                };
-                return NewLayer;
-            }
-
-            return new ImageViewerLayer(true) { DataContext = Context };
-        }
+            => Context is ImageViewerLayer Layer ? Layer : new ImageViewerLayer(true);
         private void PrepareImageViewerLayer(ImageViewerLayer Layer)
         {
             Layer.StatusChanged += OnLayerStatusChanged;
             //Layer.ChannelChanged += OnLayerChannelChanged;
+        }
+        private void PrepareImageViewerLayerContext(ImageViewerLayer Layer, object Context)
+        {
+            if (Context is IImageContext ImageContext)
+            {
+                Layer.DataContext = Context;
+                Layer.SourceContext = ImageContext;
+            }
+
+            if (Context is ImageSource Image)
+            {
+                Layer.DataContext = Context;
+                Layer.Source = Image;
+            }
         }
         private void ResetImageViewerLayer(ImageViewerLayer Layer)
         {
