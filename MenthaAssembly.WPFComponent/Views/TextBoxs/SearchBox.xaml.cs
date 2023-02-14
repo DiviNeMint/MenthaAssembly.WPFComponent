@@ -11,11 +11,14 @@ namespace MenthaAssembly.Views
     {
         protected ICollectionView CurrentCollectionView;
         public static readonly DependencyProperty ItemsSourceProperty =
-            DependencyProperty.Register("ItemsSource", typeof(IEnumerable), typeof(SearchBox), new PropertyMetadata(default,
+            DependencyProperty.Register("ItemsSource", typeof(IEnumerable), typeof(SearchBox), new PropertyMetadata(null,
                 (d, e) =>
                 {
                     if (d is SearchBox This)
                     {
+                        if (This.ViewSource is not null)
+                            throw new InvalidOperationException("Operation is not valid while ViewSource is in use.");
+
                         This.Clear();
                         if (This.CurrentCollectionView is ICollectionView OCView)
                             OCView.Filter = null;
@@ -31,6 +34,33 @@ namespace MenthaAssembly.Views
         {
             get => (IEnumerable)GetValue(ItemsSourceProperty);
             set => SetValue(ItemsSourceProperty, value);
+        }
+
+        public static readonly DependencyProperty ViewSourceProperty =
+            DependencyProperty.Register("ViewSource", typeof(CollectionViewSource), typeof(SearchBox), new PropertyMetadata(null,
+                (d, e) =>
+                {
+                    if (d is SearchBox This)
+                    {
+                        if (This.ItemsSource is not null)
+                            throw new InvalidOperationException("Operation is not valid while ItemsSource is in use.");
+
+                        This.Clear();
+                        if (This.CurrentCollectionView is ICollectionView OCView)
+                            OCView.Filter = null;
+
+                        if (e.NewValue is CollectionViewSource ViewSource &&
+                            ViewSource.View is ICollectionView NCView)
+                        {
+                            NCView.Filter = (o) => (This.Predicate ?? DefaultPredicate).Invoke(o, This.Text);
+                            This.CurrentCollectionView = NCView;
+                        }
+                    }
+                }));
+        public CollectionViewSource ViewSource
+        {
+            get => (CollectionViewSource)GetValue(ViewSourceProperty);
+            set => SetValue(ViewSourceProperty, value);
         }
 
         public static readonly DependencyProperty PredicateProperty =
