@@ -679,7 +679,10 @@ namespace MenthaAssembly.Views.Primitives
 
                                 Block.Bitmap = Bw == RenderBlockSize && Bh == RenderBlockSize ? Canvas :
                                                                                                 new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, Bw, Bh));
-                                Layer.InvalidateVisual();
+                                if (NewScale)
+                                    Layer.Dispatcher.Invoke(Layer.InvalidateVisual, DispatcherPriority.ApplicationIdle);
+                                else
+                                    Layer.InvalidateVisual();
                             }
                             finally
                             {
@@ -696,7 +699,12 @@ namespace MenthaAssembly.Views.Primitives
                 }
 
                 if (!IsRefresh)
-                    Layer.InvalidateVisual();
+                {
+                    if (NewScale)
+                        Layer.Dispatcher.Invoke(Layer.InvalidateVisual, DispatcherPriority.ApplicationIdle);
+                    else
+                        Layer.InvalidateVisual();
+                }
             }
 
             // Free some unused canvas.
@@ -795,14 +803,36 @@ namespace MenthaAssembly.Views.Primitives
             {
                 Context.PushClip(ClipGeometry);
 
+                ImageViewerLayerRenderBlock Block = null;
                 int Index0 = LBT * IBc + LBL,
-                    Index;
+                    Index = Index0;
+
+                // Guild Line
+                GuidelineSet GuideLines = new GuidelineSet();
+                for (int i = LBL; i <= LBR; i++, Index++)
+                {
+                    Block = RenderBlocks[Index];
+                    GuideLines.GuidelinesX.Add(Block.Region.Left);
+                }
+                GuideLines.GuidelinesX.Add(Block.Region.Right);
+
+                Index = Index0;
+                for (int j = LBT; j <= LBB; j++, Index += IBc)
+                {
+                    Block = RenderBlocks[Index];
+                    GuideLines.GuidelinesY.Add(Block.Region.Top);
+                }
+                GuideLines.GuidelinesY.Add(Block.Region.Bottom);
+
+                Context.PushGuidelineSet(GuideLines);
+
+                // Image
                 for (int j = LBT; j <= LBB; j++, Index0 += IBc)
                 {
                     Index = Index0;
                     for (int i = LBL; i <= LBR; i++, Index++)
                     {
-                        ImageViewerLayerRenderBlock Block = RenderBlocks[Index];
+                        Block = RenderBlocks[Index];
                         if (Block.IsValid)
                             Context.DrawImage(Block.Bitmap, Block.Region);
                     }
