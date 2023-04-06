@@ -31,13 +31,12 @@ namespace MenthaAssembly.Views
 
         protected override Size MeasureOverride(Size AvailableSize)
         {
-            if (Content is UIElement Child)
-            {
-                Child.Measure(AvailableSize);
-                return Child.DesiredSize;
-            }
+            ZoomedDesiredSize = base.MeasureOverride(AvailableSize);
 
-            return base.MeasureOverride(AvailableSize);
+            if (Content is UIElement Child)
+                Child.Measure(ZoomedDesiredSize);
+
+            return ZoomedDesiredSize;
         }
 
         protected override Size ArrangeOverride(Size FinalSize)
@@ -54,10 +53,16 @@ namespace MenthaAssembly.Views
         private void OnContentChanged(ChangedEventArgs<UIElement> e)
         {
             if (e.OldValue != null)
+            {
                 RemoveVisualChild(e.OldValue);
+                RemoveLogicalChild(e.OldValue);
+            }
 
             if (e.NewValue != null)
+            {
                 AddVisualChild(e.NewValue);
+                AddLogicalChild(e.NewValue);
+            }
         }
 
     }

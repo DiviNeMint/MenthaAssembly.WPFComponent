@@ -147,7 +147,7 @@ namespace MenthaAssembly.Views
             if (Source is ImageSource Image)
                 InvalidateContextSize(Image.Width, Image.Height);
 
-            if (Source is IImageContext Context)
+            if (SourceContext is IImageContext Context)
                 InvalidateContextSize(Context.Width, Context.Height);
 
             else
@@ -216,7 +216,7 @@ namespace MenthaAssembly.Views
         public virtual void InvalidateCanvas()
         {
             Renderer.Invalidate();
-            TemplatePresenter.InvalidateArrange();
+            TemplatePresenter.InvalidateMeasure();
         }
 
         /// <summary>

@@ -26,6 +26,9 @@ namespace MenthaAssembly.Views
 
         protected override Size MeasureOverride(Size AvailableSize)
         {
+            if (Presenter.IsMeasureValid)
+                Presenter.InvalidateMeasure();
+
             Presenter.Measure(AvailableSize);
             return base.MeasureOverride(AvailableSize);
         }

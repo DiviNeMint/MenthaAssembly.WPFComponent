@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace MenthaAssembly.Views.Primitives
@@ -11,6 +12,24 @@ namespace MenthaAssembly.Views.Primitives
         {
             add => AddHandler(ClickEvent, value);
             remove => RemoveHandler(ClickEvent, value);
+        }
+
+        public static new readonly DependencyProperty WidthProperty =
+            DependencyProperty.Register("Width", typeof(double), typeof(ImageViewerLayerElement),
+                new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+        public new double Width
+        {
+            get => (double)GetValue(WidthProperty);
+            set => SetValue(WidthProperty, value);
+        }
+
+        public static new readonly DependencyProperty HeightProperty =
+            DependencyProperty.Register("Height", typeof(double), typeof(ImageViewerLayerElement),
+                new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+        public new double Height
+        {
+            get => (double)GetValue(HeightProperty);
+            set => SetValue(HeightProperty, value);
         }
 
         public static readonly RoutedEvent LocationChangedEvent =
@@ -41,6 +60,69 @@ namespace MenthaAssembly.Views.Primitives
         {
             get => (bool)GetValue(DraggableProperty);
             set => SetValue(DraggableProperty, value);
+        }
+
+        public static readonly DependencyProperty ZoomableProperty =
+              DependencyProperty.Register("Zoomable", typeof(bool), typeof(ImageViewerLayerElement),
+                  new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsParentArrange,
+                      (d, e) =>
+                      {
+                          if (d is ImageViewerLayerElement This)
+                              This.OnZoomableChanged(e.ToChangedEventArgs<bool>());
+                      }));
+        public bool Zoomable
+        {
+            get => (bool)GetValue(ZoomableProperty);
+            set => SetValue(ZoomableProperty, value);
+        }
+
+        public Size ZoomedDesiredSize { get; protected set; }
+
+        private readonly Binding WidthBinding, HeightBinding;
+        protected ImageViewerLayerElement()
+        {
+            WidthBinding = new Binding(nameof(Width)) { Source = this };
+            HeightBinding = new Binding(nameof(Height)) { Source = this };
+            _ = SetBinding(FrameworkElement.WidthProperty, WidthBinding);
+            _ = SetBinding(FrameworkElement.HeightProperty, HeightBinding);
+        }
+
+        protected override Size MeasureOverride(Size AvailableSize)
+        {
+            double Cw = Width,
+                   Ch = Height;
+
+            if (double.IsNaN(Cw) || double.IsInfinity(Cw) || double.IsNaN(Ch) || double.IsInfinity(Ch))
+            {
+                Cw = 0d;
+                Ch = 0d;
+            }
+            else if (Zoomable)
+            {
+                double Scale = GetScale();
+                if (!double.IsNaN(Scale))
+                {
+                    Cw *= Scale;
+                    Ch *= Scale;
+                }
+            }
+
+            ZoomedDesiredSize = new Size(Cw, Ch);
+            return ZoomedDesiredSize;
+        }
+
+        private void OnZoomableChanged(ChangedEventArgs<bool> e)
+        {
+            if (e.NewValue)
+            {
+                BindingOperations.ClearBinding(this, FrameworkElement.WidthProperty);
+                BindingOperations.ClearBinding(this, FrameworkElement.HeightProperty);
+            }
+            else
+            {
+                _ = SetBinding(FrameworkElement.WidthProperty, WidthBinding);
+                _ = SetBinding(FrameworkElement.HeightProperty, HeightBinding);
+            }
         }
 
         private bool IsLeftMouseDown;

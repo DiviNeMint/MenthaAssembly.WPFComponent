@@ -9,6 +9,21 @@ namespace MenthaAssembly.Views.Primitives
             ClipToBounds = true;
         }
 
+        protected override Size MeasureOverride(Size AvailableSize)
+        {
+            int Count = Children.Count;
+            for (int i = 0; i < Count; i++)
+            {
+                UIElement Child = Children[i];
+                if (Child.IsMeasureValid)
+                    Child.InvalidateMeasure();
+
+                Child.Measure(AvailableSize);
+            }
+
+            return AvailableSize;
+        }
+
         protected override Size ArrangeOverride(Size FinalSize)
         {
             Rect Rect = new(FinalSize);
@@ -18,10 +33,33 @@ namespace MenthaAssembly.Views.Primitives
                 UIElement Child = Children[i];
                 if (Child is ImageViewerLayerElement Element)
                 {
-                    Size ElementSize = Element.DesiredSize;
                     Point Location = Element.Location;
                     LogicalParent.Renderer.GetLayerPosition(Location.X, Location.Y, out double Lx, out double Ly);
-                    Element.Arrange(new Rect(Lx - ElementSize.Width / 2d, Ly - ElementSize.Height / 2d, ElementSize.Width, ElementSize.Height));
+
+                    if (double.IsNaN(Lx) || double.IsNaN(Ly))
+                        continue;
+
+                    Size ElementSize = Element.ZoomedDesiredSize;
+                    double Ew = ElementSize.Width,
+                           Eh = ElementSize.Height,
+                           Px, Py;
+                    Px = Element.HorizontalAlignment switch
+                    {
+                        HorizontalAlignment.Left => Lx,
+                        HorizontalAlignment.Right => Lx - Ew,
+                        _ => Lx - Ew / 2d,
+                    };
+                    Py = Element.VerticalAlignment switch
+                    {
+                        VerticalAlignment.Top => Ly,
+                        VerticalAlignment.Bottom => Ly - Eh,
+                        _ => Ly - Eh / 2d,
+                    };
+
+                    if (Element.IsArrangeValid)
+                        Element.InvalidateArrange();
+
+                    Element.Arrange(new Rect(Px, Py, Ew, Eh));
                 }
 
                 else
