@@ -65,6 +65,20 @@ namespace System.Windows
                         yield return Brother;
         }
 
+        public static IEnumerable<T> FindLogicalParents<T>(this DependencyObject This)
+            where T : DependencyObject
+        {
+            if (This != null)
+            {
+                DependencyObject Parent = LogicalTreeHelper.GetParent(This);
+                if (Parent is T Result)
+                    yield return Result;
+
+                foreach (T ParentOfParent in FindLogicalParents<T>(Parent))
+                    yield return ParentOfParent;
+            }
+        }
+
         private static PropertyInfo PropertyPath_Length;
         private static MethodInfo PropertyPath_SetContext,
                                   PropertyPath_GetAccessor,
