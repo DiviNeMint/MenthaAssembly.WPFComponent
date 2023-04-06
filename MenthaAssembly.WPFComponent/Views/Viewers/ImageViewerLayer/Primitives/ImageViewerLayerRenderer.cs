@@ -782,7 +782,7 @@ namespace MenthaAssembly.Views.Primitives
 
                     if (HasMarks)
                     {
-                        GetImageCoordination(0d, 0d, out double Ix, out double Iy);
+                        GetImageCoordinate(0d, 0d, out double Ix, out double Iy);
                         Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
                         foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                             RenderMark(Mark, Context, Viewport, Scale);
@@ -796,7 +796,7 @@ namespace MenthaAssembly.Views.Primitives
                     {
                         Context.PushClip(ClipGeometry);
 
-                        GetImageCoordination(0d, 0d, out double Ix, out double Iy);
+                        GetImageCoordinate(0d, 0d, out double Ix, out double Iy);
                         Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
                         foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                             RenderMark(Mark, Context, Viewport, Scale);
@@ -845,7 +845,7 @@ namespace MenthaAssembly.Views.Primitives
 
                 if (HasMarks)
                 {
-                    GetImageCoordination(0d, 0d, out double Ix, out double Iy);
+                    GetImageCoordinate(0d, 0d, out double Ix, out double Iy);
                     Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
                     foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                         RenderMark(Mark, Context, Viewport, Scale);
@@ -898,7 +898,7 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
-        public void GetImageCoordination(double Lx, double Ly, out double Ix, out double Iy)
+        public void GetImageCoordinate(double Lx, double Ly, out double Ix, out double Iy)
         {
             if (HasImage)
             {
@@ -938,11 +938,11 @@ namespace MenthaAssembly.Views.Primitives
                 Iy = double.NaN;
             }
         }
-        public void GetGlobalImageCoordination(double Lx, double Ly, out double Ix, out double Iy)
+        public void GetGlobalImageCoordinate(double Lx, double Ly, out double Ix, out double Iy)
         {
             if (Layer.Parent is ImageViewer Viewer)
             {
-                GetImageCoordination(Lx, Ly, out Ix, out Iy);
+                GetImageCoordinate(Lx, Ly, out Ix, out Iy);
                 if (!double.IsNaN(Ix) && !double.IsNaN(Iy))
                     AlignContextLocation(Viewer, Layer, Iw, Ih, ref Ix, ref Iy);
             }

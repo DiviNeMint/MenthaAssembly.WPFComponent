@@ -234,48 +234,48 @@ namespace MenthaAssembly.Views
             => Renderer.Render(Context);
 
         /// <summary>
-        /// Gets the image coordination of the mouse position in this layer.
+        /// Gets the image coordinate of the mouse position in this layer.
         /// </summary>
-        public Point GetImageCoordination()
+        public Point GetImageCoordinate()
         {
             Point Position = Mouse.GetPosition(this);
-            return GetImageCoordination(Position.X, Position.Y);
+            return GetImageCoordinate(Position.X, Position.Y);
         }
         /// <summary>
-        /// Gets the image coordination of the specified position in this layer.
+        /// Gets the image coordinate of the specified position in this layer.
         /// </summary>
         /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
         /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
-        public Point GetImageCoordination(double Lx, double Ly)
+        public Point GetImageCoordinate(double Lx, double Ly)
         {
-            Renderer.GetImageCoordination(Lx, Ly, out double Ix, out double Iy);
+            Renderer.GetImageCoordinate(Lx, Ly, out double Ix, out double Iy);
             return new Point(Ix, Iy);
         }
 
         /// <summary>
-        /// Gets the global image coordination of the mouse position in this layer.
+        /// Gets the global image coordinate of the mouse position in this layer.
         /// </summary>
-        public Point GetGlobalImageCoordination()
+        public Point GetGlobalImageCoordinate()
         {
             Point Position = Mouse.GetPosition(this);
-            return GetGlobalImageCoordination(Position.X, Position.Y);
+            return GetGlobalImageCoordinate(Position.X, Position.Y);
         }
         /// <summary>
-        /// Gets the global image coordination of the specified position in this layer.
+        /// Gets the global image coordinate of the specified position in this layer.
         /// </summary>
         /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
         /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
-        public Point GetGlobalImageCoordination(double Lx, double Ly)
+        public Point GetGlobalImageCoordinate(double Lx, double Ly)
         {
-            Renderer.GetGlobalImageCoordination(Lx, Ly, out double Ix, out double Iy);
+            Renderer.GetGlobalImageCoordinate(Lx, Ly, out double Ix, out double Iy);
             return new Point(Ix, Iy);
         }
 
         /// <summary>
-        /// Gets the position in this layer of the specified image coordination.
+        /// Gets the position in this layer of the specified image coordinate.
         /// </summary>
-        /// <param name="Ix">The x-coordinate of the specified image coordination.</param>
-        /// <param name="Iy">The y-coordinate of the specified image coordination.</param>
+        /// <param name="Ix">The x-coordinate of the specified image coordinate.</param>
+        /// <param name="Iy">The y-coordinate of the specified image coordinate.</param>
         public Point GetLayerPosition(double Ix, double Iy)
         {
             Renderer.GetLayerPosition(Ix, Iy, out double Lx, out double Ly);
