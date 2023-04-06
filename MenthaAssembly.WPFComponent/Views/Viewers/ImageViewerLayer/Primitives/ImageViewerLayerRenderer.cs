@@ -20,9 +20,11 @@ namespace MenthaAssembly.Views.Primitives
         public int IBc, IBr, LBL, LBT, LBR, LBB;       // ImageBlockColumn, ImageBlockRow, LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
 
         private readonly ImageViewerLayer Layer;
-        public ImageViewerLayerRenderer(ImageViewerLayer Layer)
+        private readonly ImageViewerLayerPresenter LayerPresenter;
+        public ImageViewerLayerRenderer(ImageViewerLayer Layer, ImageViewerLayerPresenter LayerPresenter)
         {
             this.Layer = Layer;
+            this.LayerPresenter = LayerPresenter;
 
             Lw = Lh = Iw = Ih = Scale = Vx = Vy = double.NaN;
             IBc = IBr = LBL = LBT = LBR = LBB = 0;
@@ -252,6 +254,7 @@ namespace MenthaAssembly.Views.Primitives
                 NewScale = true;
                 this.Scale = Scale;
                 ScaleTransform = new ScaleTransform(Scale, Scale, LCx, LCy);
+                LayerPresenter.InvalidateMeasure();
             }
             else
             {
@@ -267,6 +270,7 @@ namespace MenthaAssembly.Views.Primitives
                     this.Scale = Scale;
                     ScaleTransform.ScaleX = Scale;
                     ScaleTransform.ScaleY = Scale;
+                    LayerPresenter.InvalidateMeasure();
                 }
             }
 
@@ -495,6 +499,7 @@ namespace MenthaAssembly.Views.Primitives
             {
                 NewScale = true;
                 this.Scale = Scale;
+                LayerPresenter.InvalidateMeasure();
             }
 
             int IBc = this.IBc,

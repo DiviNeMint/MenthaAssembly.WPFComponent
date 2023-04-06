@@ -69,8 +69,8 @@ namespace MenthaAssembly.Views
             RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
 
             IsGeneratedFromCollection = GeneratedFromCollection;
-            Renderer = new ImageViewerLayerRenderer(this);
             TemplatePresenter = new ImageViewerLayerPresenter(this);
+            Renderer = new ImageViewerLayerRenderer(this, TemplatePresenter);
             AddVisualChild(TemplatePresenter);
 
             Marks = new ImageViewerLayerMarkCollection(this);
