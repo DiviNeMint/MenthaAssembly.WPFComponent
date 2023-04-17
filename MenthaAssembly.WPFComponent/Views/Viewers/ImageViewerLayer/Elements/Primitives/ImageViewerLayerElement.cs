@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 
@@ -6,6 +7,13 @@ namespace MenthaAssembly.Views.Primitives
 {
     public abstract class ImageViewerLayerElement : ImageViewerLayerObject
     {
+        public static readonly RoutedEvent DragDeltaEvent = Thumb.DragDeltaEvent.AddOwner(typeof(ImageViewerLayerElement));
+        public event DragDeltaEventHandler DragDelta
+        {
+            add => AddHandler(DragDeltaEvent, value);
+            remove => RemoveHandler(DragDeltaEvent, value);
+        }
+
         public static readonly RoutedEvent ClickEvent =
             EventManager.RegisterRoutedEvent("Click", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ImageViewerLayerElement));
         public event RoutedEventHandler Click
@@ -14,9 +22,28 @@ namespace MenthaAssembly.Views.Primitives
             remove => RemoveHandler(ClickEvent, value);
         }
 
+        public static new readonly RoutedEvent SizeChangedEvent =
+            EventManager.RegisterRoutedEvent("SizeChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<Size>), typeof(ImageViewerLayerElement));
+        public new event RoutedPropertyChangedEventHandler<Point> SizeChanged
+        {
+            add => AddHandler(SizeChangedEvent, value);
+            remove => RemoveHandler(SizeChangedEvent, value);
+        }
+
         public static new readonly DependencyProperty WidthProperty =
             DependencyProperty.Register("Width", typeof(double), typeof(ImageViewerLayerElement),
-                new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+                new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsParentArrange,
+                    (d, e) =>
+                    {
+                        if (d is ImageViewerLayerElement This)
+                        {
+                            double H = This.Height;
+                            Size Old = e.OldValue is double OldValue && !double.IsNaN(OldValue) && !double.IsNaN(H) ? new(OldValue, H) : new(double.NaN, double.NaN),
+                                 New = e.NewValue is double NewValue && !double.IsNaN(NewValue) && !double.IsNaN(H) ? new(NewValue, H) : new(double.NaN, double.NaN);
+
+                            This.OnSizeChanged(new RoutedPropertyChangedEventArgs<Size>(Old, New, SizeChangedEvent));
+                        }
+                    }));
         public new double Width
         {
             get => (double)GetValue(WidthProperty);
@@ -25,7 +52,18 @@ namespace MenthaAssembly.Views.Primitives
 
         public static new readonly DependencyProperty HeightProperty =
             DependencyProperty.Register("Height", typeof(double), typeof(ImageViewerLayerElement),
-                new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+                new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsParentArrange,
+                    (d, e) =>
+                    {
+                        if (d is ImageViewerLayerElement This)
+                        {
+                            double W = This.Width;
+                            Size Old = e.OldValue is double OldValue && !double.IsNaN(OldValue) && !double.IsNaN(W) ? new(W, OldValue) : new(double.NaN, double.NaN),
+                                 New = e.NewValue is double NewValue && !double.IsNaN(NewValue) && !double.IsNaN(W) ? new(W, NewValue) : new(double.NaN, double.NaN);
+
+                            This.OnSizeChanged(new RoutedPropertyChangedEventArgs<Size>(Old, New, SizeChangedEvent));
+                        }
+                    }));
         public new double Height
         {
             get => (double)GetValue(HeightProperty);
@@ -147,21 +185,29 @@ namespace MenthaAssembly.Views.Primitives
                 Point Position = e.GetPosition(null);
                 double Dx = Position.X - MousePosition.X,
                        Dy = Position.Y - MousePosition.Y;
-
-                if (Draggable)
+                try
                 {
-                    double Scale = GetScale();
-                    Point LastLocation = Location;
-                    Location = new Point(LastLocation.X + Dx / Scale, LastLocation.Y + Dy / Scale);
+                    if (Draggable)
+                    {
+                        DragDeltaEventArgs DragDeltaArg = new DragDeltaEventArgs(Dx, Dy);
+                        OnDragDelta(DragDeltaArg);
+                        if (DragDeltaArg.Handled)
+                            return;
+
+                        double Scale = GetScale();
+                        Point LastLocation = Location;
+                        Location = new Point(LastLocation.X + Dx / Scale, LastLocation.Y + Dy / Scale);
+                    }
+
+                    if (MouseMoveDistance <= 25d)
+                        MouseMoveDistance += Dx * Dx + Dy * Dy;
                 }
-
-                if (MouseMoveDistance <= 25d)
-                    MouseMoveDistance += Dx * Dx + Dy * Dy;
-
-                MousePosition = Position;
-                e.Handled = true;
+                finally
+                {
+                    MousePosition = Position;
+                    e.Handled = true;
+                }
             }
-
         }
         protected override void OnMouseUp(MouseButtonEventArgs e)
         {
@@ -175,10 +221,16 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
+        protected virtual void OnDragDelta(DragDeltaEventArgs e)
+            => RaiseEvent(e);
+
         protected virtual void OnClick(RoutedEventArgs e)
             => RaiseEvent(e);
 
         protected virtual void OnLocationChanged(RoutedPropertyChangedEventArgs<Point> e)
+            => RaiseEvent(e);
+
+        protected virtual void OnSizeChanged(RoutedPropertyChangedEventArgs<Size> e)
             => RaiseEvent(e);
 
     }
