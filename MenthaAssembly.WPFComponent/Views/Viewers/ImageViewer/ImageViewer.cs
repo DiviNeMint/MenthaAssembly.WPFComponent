@@ -427,8 +427,8 @@ namespace MenthaAssembly.Views
 
             if (IsLeftMouseDown)
             {
-                ReleaseMouseCapture();
                 IsLeftMouseDown = false;
+                ReleaseMouseCapture();
 
                 if (MouseMoveDelta <= 25)
                     OnClick();

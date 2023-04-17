@@ -213,8 +213,8 @@ namespace MenthaAssembly.Views.Primitives
         {
             if (IsLeftMouseDown)
             {
-                ReleaseMouseCapture();
                 IsLeftMouseDown = false;
+                ReleaseMouseCapture();
 
                 if (MouseMoveDistance <= 25d)
                     OnClick(new RoutedEventArgs(ClickEvent, this));
