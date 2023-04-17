@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using System.Windows;
-using System.Windows.Input;
 
 namespace MenthaAssembly.Views.Primitives
 {
@@ -101,20 +100,11 @@ namespace MenthaAssembly.Views.Primitives
         protected internal double GetScale()
             => GetParentLayer()?.Renderer.Scale ?? 1d;
 
-        private ImageViewerLayer OwnerLayer;
         /// <summary>
         /// Gets the parent layer of this object.
         /// </summary>
         protected internal ImageViewerLayer GetParentLayer()
-            => IsParentChecked ? OwnerLayer : this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault();
-
-        private bool IsParentChecked = false;
-        protected override void OnVisualParentChanged(DependencyObject OldParent)
-        {
-            base.OnVisualParentChanged(OldParent);
-            OwnerLayer = this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault();
-            IsParentChecked = true;
-        }
+            => this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault();
 
     }
 }
