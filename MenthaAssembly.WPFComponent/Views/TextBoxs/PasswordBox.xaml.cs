@@ -84,19 +84,29 @@ namespace MenthaAssembly.Views
             {
                 if (e.Key == Key.Back && SelectionStart > 0)
                 {
-                    int Index = this.SelectionStart;
+                    int Index = SelectionStart;
                     Password = SelectionLength > 0 ? Password.Remove(SelectionStart, SelectionLength) : Password.Remove(SelectionStart - 1, 1);
-                    this.SelectionStart = Index;
+                    SelectionStart = Index;
                     e.Handled = true;
                 }
-                if (e.Key == Key.Delete && SelectionStart < Text.Length)
+
+                else if (e.Key == Key.Delete && SelectionStart < Text.Length)
                 {
-                    int Index = this.SelectionStart;
+                    int Index = SelectionStart;
                     Password = SelectionLength > 0 ? Password.Remove(SelectionStart, SelectionLength) : Password.Remove(SelectionStart, 1);
-                    this.SelectionStart = Index;
+                    SelectionStart = Index;
                     e.Handled = true;
                 }
             }
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            
+            if (!e.Handled &&
+                e.Key == Key.Enter)
+                e.Handled = true;
         }
 
         protected bool IsTextChanging { set; get; } = false;
