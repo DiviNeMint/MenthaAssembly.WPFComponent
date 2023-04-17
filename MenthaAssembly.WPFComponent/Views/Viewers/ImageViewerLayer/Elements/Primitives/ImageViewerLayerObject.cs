@@ -25,60 +25,52 @@ namespace MenthaAssembly.Views.Primitives
         }
 
         /// <summary>
-        /// Gets the position in the parent layer of the specified image coordinate.
+        /// Translates the specified image coordinate to the position in the specified element.
         /// </summary>
+        /// <param name="RelativeTo">The specified element.</param>
+        /// <param name="Px">The x-coordinate of the point in this element.</param>
+        /// <param name="Py">The y-coordinate of the point in this element.</param>
         /// <param name="Ix">The x-coordinate of the specified image coordinate.</param>
         /// <param name="Iy">The y-coordinate of the specified image coordinate.</param>
-        /// <param name="Lx">The x-coordinate of the specified point in the parent layer.</param>
-        /// <param name="Ly">The y-coordinate of the specified point in the parent layer.</param>
-        public void GetLayerPosition(double Ix, double Iy, out double Lx, out double Ly)
+        public void TranslatePoint(UIElement RelativeTo, out double Px, out double Py, double Ix, double Iy)
         {
-            if (this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault() is ImageViewerLayer Layer)
-                Layer.Renderer.GetLayerPosition(Ix, Iy, out Lx, out Ly);
-            else
-            {
-                Lx = double.NaN;
-                Ly = double.NaN;
-            }
-        }
-
-        /// <summary>
-        /// Gets the position in the element of the specified image coordinate.
-        /// </summary>
-        /// <param name="Ix">The x-coordinate of the specified image coordinate.</param>
-        /// <param name="Iy">The y-coordinate of the specified image coordinate.</param>
-        /// <param name="Px">The x-coordinate of the specified point in this element.</param>
-        /// <param name="Py">The y-coordinate of the specified point in this element.</param>
-        public void GetPosition(double Ix, double Iy, out double Px, out double Py)
-        {
-            if (this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault() is ImageViewerLayer Layer)
-            {
-                Layer.Renderer.GetLayerPosition(Ix, Iy, out double Lx, out double Ly);
-                Point P = Layer.TranslatePoint(new Point(Lx, Ly), this);
-                Px = P.X;
-                Py = P.Y;
-            }
+            if (GetParentLayer() is ImageViewerLayer Layer)
+                Layer.TranslatePoint(RelativeTo, out Px, out Py, Ix, Iy);
             else
             {
                 Px = double.NaN;
                 Py = double.NaN;
             }
         }
-
         /// <summary>
-        /// Gets the image coordinate of the specified position in this object.
+        /// Translates the specified image coordinate to the position in this object.
         /// </summary>
-        /// <param name="Px">The x-coordinate of the specified position in this object.</param>
-        /// <param name="Py">The y-coordinate of the specified position in this object.</param>
-        /// <param name="Ix">The x-coordinate in image.</param>
-        /// <param name="Iy">The y-coordinate in image.</param>
-        public void GetImageCoordinate(double Px, double Py, out double Ix, out double Iy)
+        /// <param name="Lx">The x-coordinate of the point in this object.</param>
+        /// <param name="Ly">The y-coordinate of the point in this object.</param>
+        /// <param name="Ix">The x-coordinate of the specified image coordinate.</param>
+        /// <param name="Iy">The y-coordinate of the specified image coordinate.</param>
+        public void TranslatePoint(out double Lx, out double Ly, double Ix, double Iy)
         {
-            if (this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault() is ImageViewerLayer Layer)
+            if (GetParentLayer() is ImageViewerLayer Layer)
+                Layer.TranslatePoint(this, out Lx, out Ly, Ix, Iy);
+            else
             {
-                Point LayerPosition = TranslatePoint(new Point(Px, Py), Layer);
-                Layer.Renderer.GetImageCoordinate(LayerPosition.X, LayerPosition.Y, out Ix, out Iy);
+                Lx = double.NaN;
+                Ly = double.NaN;
             }
+        }
+        /// <summary>
+        /// Translates the specified position in the specified element to the image coordinate.
+        /// </summary>
+        /// <param name="RelativeFrom">The specified element.</param>
+        /// <param name="Px">The x-coordinate of the specified point in this element.</param>
+        /// <param name="Py">The y-coordinate of the specified point in this element.</param>
+        /// <param name="Ix">The x-coordinate of the image coordinate.</param>
+        /// <param name="Iy">The y-coordinate of the image coordinate.</param>
+        public void TranslatePoint(UIElement RelativeFrom, double Px, double Py, out double Ix, out double Iy)
+        {
+            if (GetParentLayer() is ImageViewerLayer Layer)
+                Layer.TranslatePoint(RelativeFrom, Px, Py, out Ix, out Iy);
             else
             {
                 Ix = double.NaN;
@@ -86,17 +78,16 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
         /// <summary>
-        /// Gets the image coordinate of the mouse position.
+        /// Translates the specified position in this object to the image coordinate.
         /// </summary>
-        /// <param name="Ix">The x-coordinate in image.</param>
-        /// <param name="Iy">The y-coordinate in image.</param>
-        public void GetImageCoordinate(out double Ix, out double Iy)
+        /// <param name="Px">The x-coordinate of the specified point in this object.</param>
+        /// <param name="Py">The y-coordinate of the specified point in this object.</param>
+        /// <param name="Ix">The x-coordinate of the image coordinate.</param>
+        /// <param name="Iy">The y-coordinate of the image coordinate.</param>
+        public void TranslatePoint(double Px, double Py, out double Ix, out double Iy)
         {
-            if (this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault() is ImageViewerLayer Layer)
-            {
-                Point Location = Mouse.GetPosition(Layer);
-                Layer.Renderer.GetImageCoordinate(Location.X, Location.Y, out Ix, out Iy);
-            }
+            if (GetParentLayer() is ImageViewerLayer Layer)
+                Layer.TranslatePoint(this, Px, Py, out Ix, out Iy);
             else
             {
                 Ix = double.NaN;
@@ -108,7 +99,22 @@ namespace MenthaAssembly.Views.Primitives
         /// Gets the scale of the ImageViewer.
         /// </summary>
         protected internal double GetScale()
-            => this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault() is ImageViewerLayer Layer ? Layer.Renderer.Scale : 1d;
+            => GetParentLayer()?.Renderer.Scale ?? 1d;
+
+        private ImageViewerLayer OwnerLayer;
+        /// <summary>
+        /// Gets the parent layer of this object.
+        /// </summary>
+        protected internal ImageViewerLayer GetParentLayer()
+            => IsParentChecked ? OwnerLayer : this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault();
+
+        private bool IsParentChecked = false;
+        protected override void OnVisualParentChanged(DependencyObject OldParent)
+        {
+            base.OnVisualParentChanged(OldParent);
+            OwnerLayer = this.FindLogicalParents<ImageViewerLayer>().FirstOrDefault();
+            IsParentChecked = true;
+        }
 
     }
 }

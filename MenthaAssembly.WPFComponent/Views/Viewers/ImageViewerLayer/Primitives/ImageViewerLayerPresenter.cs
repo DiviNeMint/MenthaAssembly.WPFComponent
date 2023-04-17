@@ -34,7 +34,7 @@ namespace MenthaAssembly.Views.Primitives
                 if (Child is ImageViewerLayerElement Element)
                 {
                     Point Location = Element.Location;
-                    LogicalParent.Renderer.GetLayerPosition(Location.X, Location.Y, out double Lx, out double Ly);
+                    LogicalParent.TranslatePoint(out double Lx, out double Ly, Location.X, Location.Y);
 
                     if (double.IsNaN(Lx) || double.IsNaN(Ly))
                         continue;

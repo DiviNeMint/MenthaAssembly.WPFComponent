@@ -234,53 +234,74 @@ namespace MenthaAssembly.Views
             => Renderer.Render(Context);
 
         /// <summary>
-        /// Gets the image coordinate of the mouse position in this layer.
+        /// Translates the specified position in the specified element to the image coordinate.
         /// </summary>
-        public Point GetImageCoordinate()
+        /// <param name="RelativeFrom">The specified element.</param>
+        /// <param name="Px">The x-coordinate of the specified position in the specified element.</param>
+        /// <param name="Py">The y-coordinate of the specified position in the specified element.</param>
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslatePoint(UIElement RelativeFrom, double Px, double Py, out double Ix, out double Iy)
         {
-            Point Position = Mouse.GetPosition(this);
-            return GetImageCoordinate(Position.X, Position.Y);
+            Point LayerPosition = RelativeFrom.TranslatePoint(new Point(Px, Py), this);
+            Renderer.TranslatePoint(LayerPosition.X, LayerPosition.Y, out Ix, out Iy);
         }
         /// <summary>
-        /// Gets the image coordinate of the specified position in this layer.
+        /// Translates the specified position in this layer to the image coordinate.
         /// </summary>
         /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
         /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
-        public Point GetImageCoordinate(double Lx, double Ly)
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslatePoint(double Lx, double Ly, out double Ix, out double Iy)
+            => Renderer.TranslatePoint(Lx, Ly, out Ix, out Iy);
+        /// <summary>
+        /// Translates the specified image coordinate to the position in the specified element.
+        /// </summary>
+        /// <param name="RelativeTo">The specified element.</param>
+        /// <param name="Px">The x-coordinate of the position in the specified element.</param>
+        /// <param name="Py">The y-coordinate of the position in the specified element.</param>
+        /// <param name="Ix">The specified x-coordinate in image.</param>
+        /// <param name="Iy">The specified y-coordinate in image.</param>
+        public void TranslatePoint(UIElement RelativeTo, out double Px, out double Py, double Ix, double Iy)
         {
-            Renderer.GetImageCoordinate(Lx, Ly, out double Ix, out double Iy);
-            return new Point(Ix, Iy);
+            Renderer.TranslatePoint(out double Tx, out double Ty, Ix, Iy);
+            Point p = TranslatePoint(new Point(Tx, Ty), RelativeTo);
+            Px = p.X;
+            Py = p.Y;
         }
+        /// <summary>
+        /// Translates the specified image coordinate to the position in this layer.
+        /// </summary>
+        /// <param name="Lx">The x-coordinate of the position in this layer.</param>
+        /// <param name="Ly">The y-coordinate of the position in this layer.</param>
+        /// <param name="Ix">The specified x-coordinate in image.</param>
+        /// <param name="Iy">The specified y-coordinate in image.</param>
+        public void TranslatePoint(out double Lx, out double Ly, double Ix, double Iy)
+            => Renderer.TranslatePoint(out Lx, out Ly, Ix, Iy);
 
         /// <summary>
-        /// Gets the global image coordinate of the mouse position in this layer.
+        /// Translates the specified position in the specified element to the global image coordinate.
         /// </summary>
-        public Point GetGlobalImageCoordinate()
+        /// <param name="RelativeFrom">The specified element.</param>
+        /// <param name="Px">The x-coordinate of the specified position in the specified element.</param>
+        /// <param name="Py">The y-coordinate of the specified position in the specified element.</param>
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslateGlobalPoint(UIElement RelativeFrom, double Px, double Py, out double Ix, out double Iy)
         {
-            Point Position = Mouse.GetPosition(this);
-            return GetGlobalImageCoordinate(Position.X, Position.Y);
+            Point LayerPosition = RelativeFrom.TranslatePoint(new Point(Px, Py), this);
+            Renderer.TranslateGlobalPoint(LayerPosition.X, LayerPosition.Y, out Ix, out Iy);
         }
         /// <summary>
-        /// Gets the global image coordinate of the specified position in this layer.
+        /// Translates the specified position in this layer to the global image coordinate.
         /// </summary>
         /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
         /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
-        public Point GetGlobalImageCoordinate(double Lx, double Ly)
-        {
-            Renderer.GetGlobalImageCoordinate(Lx, Ly, out double Ix, out double Iy);
-            return new Point(Ix, Iy);
-        }
-
-        /// <summary>
-        /// Gets the position in this layer of the specified image coordinate.
-        /// </summary>
-        /// <param name="Ix">The x-coordinate of the specified image coordinate.</param>
-        /// <param name="Iy">The y-coordinate of the specified image coordinate.</param>
-        public Point GetLayerPosition(double Ix, double Iy)
-        {
-            Renderer.GetLayerPosition(Ix, Iy, out double Lx, out double Ly);
-            return new Point(Lx, Ly);
-        }
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslateGlobalPoint(double Lx, double Ly, out double Ix, out double Iy)
+            => Renderer.TranslateGlobalPoint(Lx, Ly, out Ix, out Iy);
 
     }
 }

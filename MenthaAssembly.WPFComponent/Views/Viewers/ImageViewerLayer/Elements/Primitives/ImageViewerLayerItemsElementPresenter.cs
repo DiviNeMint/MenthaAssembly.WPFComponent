@@ -29,25 +29,21 @@ namespace MenthaAssembly.Views.Primitives
             Rect Rect = new(FinalSize);
             int Count = Children.Count;
 
-            double Scale = LogicalParent.GetScale();
-            LogicalParent.GetLayerPosition(0d, 0d, out double ILx, out double ILy);
             for (int i = 0; i < Count; i++)
             {
                 UIElement Child = Children[i];
                 if (Child is ImageViewerLayerElement Element)
                 {
                     Point Location = Element.Location;
-                    double Lx = Location.X * Scale + ILx,
-                           Ly = Location.Y * Scale + ILy,
-                           Ew, Eh, Px, Py;
+                    LogicalParent.TranslatePoint(this, out double Lx, out double Ly, Location.X, Location.Y);
 
                     if (double.IsNaN(Lx) || double.IsNaN(Ly))
                         continue;
 
                     Size ElementSize = Element.ZoomedDesiredSize;
-                    Ew = ElementSize.Width;
-                    Eh = ElementSize.Height;
-
+                    double Ew = ElementSize.Width,
+                           Eh = ElementSize.Height,
+                           Px, Py;
                     Px = Element.HorizontalAlignment switch
                     {
                         HorizontalAlignment.Left => Lx,

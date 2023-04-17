@@ -782,7 +782,7 @@ namespace MenthaAssembly.Views.Primitives
 
                     if (HasMarks)
                     {
-                        GetImageCoordinate(0d, 0d, out double Ix, out double Iy);
+                        TranslatePoint(0d, 0d, out double Ix, out double Iy);
                         Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
                         foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                             RenderMark(Mark, Context, Viewport, Scale);
@@ -796,7 +796,7 @@ namespace MenthaAssembly.Views.Primitives
                     {
                         Context.PushClip(ClipGeometry);
 
-                        GetImageCoordinate(0d, 0d, out double Ix, out double Iy);
+                        TranslatePoint(0d, 0d, out double Ix, out double Iy);
                         Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
                         foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                             RenderMark(Mark, Context, Viewport, Scale);
@@ -845,7 +845,7 @@ namespace MenthaAssembly.Views.Primitives
 
                 if (HasMarks)
                 {
-                    GetImageCoordinate(0d, 0d, out double Ix, out double Iy);
+                    TranslatePoint(0d, 0d, out double Ix, out double Iy);
                     Rect Viewport = new(Ix, Iy, Lw / Scale, Lh / Scale);
                     foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                         RenderMark(Mark, Context, Viewport, Scale);
@@ -898,7 +898,14 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
-        public void GetImageCoordinate(double Lx, double Ly, out double Ix, out double Iy)
+        /// <summary>
+        /// Translates the specified position in this layer to the image coordinate.
+        /// </summary>
+        /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
+        /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslatePoint(double Lx, double Ly, out double Ix, out double Iy)
         {
             if (HasImage)
             {
@@ -938,22 +945,14 @@ namespace MenthaAssembly.Views.Primitives
                 Iy = double.NaN;
             }
         }
-        public void GetGlobalImageCoordinate(double Lx, double Ly, out double Ix, out double Iy)
-        {
-            if (Layer.Parent is ImageViewer Viewer)
-            {
-                GetImageCoordinate(Lx, Ly, out Ix, out Iy);
-                if (!double.IsNaN(Ix) && !double.IsNaN(Iy))
-                    AlignContextLocation(Viewer, Layer, Iw, Ih, ref Ix, ref Iy);
-            }
-            else
-            {
-                Ix = double.NaN;
-                Iy = double.NaN;
-            }
-        }
-
-        public void GetLayerPosition(double Ix, double Iy, out double Lx, out double Ly)
+        /// <summary>
+        /// Translates the specified image coordinate to the position in this layer.
+        /// </summary>
+        /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
+        /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslatePoint(out double Lx, out double Ly, double Ix, double Iy)
         {
             if (HasImage)
             {
@@ -992,6 +991,27 @@ namespace MenthaAssembly.Views.Primitives
             {
                 Lx = double.NaN;
                 Ly = double.NaN;
+            }
+        }
+        /// <summary>
+        /// Translates the specified position in this layer to the global image coordinate.
+        /// </summary>
+        /// <param name="Lx">The x-coordinate of the specified position in this layer.</param>
+        /// <param name="Ly">The y-coordinate of the specified position in this layer.</param>
+        /// <param name="Ix">The x-coordinate in image.</param>
+        /// <param name="Iy">The y-coordinate in image.</param>
+        public void TranslateGlobalPoint(double Lx, double Ly, out double Ix, out double Iy)
+        {
+            if (Layer.Parent is ImageViewer Viewer)
+            {
+                TranslatePoint(Lx, Ly, out Ix, out Iy);
+                if (!double.IsNaN(Ix) && !double.IsNaN(Iy))
+                    AlignContextLocation(Viewer, Layer, Iw, Ih, ref Ix, ref Iy);
+            }
+            else
+            {
+                Ix = double.NaN;
+                Iy = double.NaN;
             }
         }
 
