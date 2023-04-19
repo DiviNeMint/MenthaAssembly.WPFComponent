@@ -353,6 +353,7 @@ namespace MenthaAssembly.Views.Primitives
                     {
                         IsRefresh = this.Image != null;
                         this.Image = null;
+                        ImageHashCode = 0;
                     }
 
                     return IsRefresh || NewMarks || IsVisibleChanged;
@@ -442,7 +443,7 @@ namespace MenthaAssembly.Views.Primitives
                 Ih = Region.Height;
 
                 if (NewImage ||
-                    Image is null ||
+                    this.Image is null ||
                     this.Image.Width < Iw ||
                     this.Image.Height < Ih)
                     this.Image = CreateImage(Image, (int)Iw, (int)Ih);

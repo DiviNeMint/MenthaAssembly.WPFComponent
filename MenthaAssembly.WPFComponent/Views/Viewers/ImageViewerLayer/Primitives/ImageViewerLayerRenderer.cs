@@ -130,6 +130,9 @@ namespace MenthaAssembly.Views.Primitives
                     {
                         HasImage = false;
                         HasImageContext = false;
+                        Iw = double.NaN;
+                        Ih = double.NaN;
+                        ImageHash = 0;
                         Layer.InvalidateVisual();
                     }
 
@@ -137,7 +140,6 @@ namespace MenthaAssembly.Views.Primitives
                         Layer.InvalidateVisual();
 
                 }
-
             }
             finally
             {
