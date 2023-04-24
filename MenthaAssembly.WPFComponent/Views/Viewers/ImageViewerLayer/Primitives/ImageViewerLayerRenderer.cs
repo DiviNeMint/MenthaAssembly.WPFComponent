@@ -433,7 +433,8 @@ namespace MenthaAssembly.Views.Primitives
                                     if (!TryGetCacheCanvas(Index, out Canvas))
                                     {
                                         Canvas = GetCanvas();
-                                        Canvas.Lock();
+                                        if (TryLockCanvas(Canvas))
+                                            continue;
 
                                         byte* pDest0 = (byte*)Canvas.BackBuffer;
                                         long Stride = Canvas.BackBufferStride;
@@ -475,10 +476,8 @@ namespace MenthaAssembly.Views.Primitives
                 if (!IsRefresh)
                     Layer.InvalidateVisual();
 
-                // Free some unused canvas.
-                int UnusedCount = UnusedCanvas.Count >> 1;
-                for (int i = 0; i < UnusedCount; i++)
-                    _ = UnusedCanvas.Dequeue();
+                // Free unused canvas.
+                UnusedCanvas.Clear();
             }
         }
         private unsafe void RefreshContext(IImageContext Image, ImageViewer Viewer)
@@ -663,7 +662,8 @@ namespace MenthaAssembly.Views.Primitives
                                     if (!TryGetCacheCanvas(Index, out Canvas))
                                     {
                                         Canvas = GetCanvas();
-                                        Canvas.Lock();
+                                        if (TryLockCanvas(Canvas))
+                                            continue;
 
                                         byte* pDest0 = (byte*)Canvas.BackBuffer;
                                         long Stride = Canvas.BackBufferStride;
@@ -714,10 +714,8 @@ namespace MenthaAssembly.Views.Primitives
                 }
             }
 
-            // Free some unused canvas.
-            int UnusedCount = UnusedCanvas.Count >> 1;
-            for (int i = 0; i < UnusedCount; i++)
-                _ = UnusedCanvas.Dequeue();
+            // Free unused canvas.
+            UnusedCanvas.Clear();
         }
 
         private readonly Dictionary<int, WriteableBitmap> RecyclableCanvas = new();
@@ -768,6 +766,22 @@ namespace MenthaAssembly.Views.Primitives
             }
 
             return new WriteableBitmap(RenderBlockSize, RenderBlockSize, 96d, 96d, PixelFormats.Bgra32, null);
+        }
+        private bool TryLockCanvas(WriteableBitmap Canvas)
+        {
+            for (int t = 0; t < 3; t++)
+            {
+                try
+                {
+                    Canvas.Lock();
+                    return true;
+                }
+                catch
+                {
+                }
+            }
+
+            return false;
         }
 
         public void Render(DrawingContext Context)
