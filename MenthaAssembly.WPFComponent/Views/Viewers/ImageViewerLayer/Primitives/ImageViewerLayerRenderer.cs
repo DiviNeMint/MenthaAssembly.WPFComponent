@@ -404,7 +404,6 @@ namespace MenthaAssembly.Views.Primitives
                 double Ix,
                        Iy = SIy;
 
-                bool IsRefresh = false;
                 NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntSIw, IntSIh);
                 for (int j = 0; j < IBr; j++, Sy += RenderBlockSize, Iy += RenderBlockSize)
                 {
@@ -457,12 +456,10 @@ namespace MenthaAssembly.Views.Primitives
 
                                 Block.Bitmap = Bw == RenderBlockSize && Bh == RenderBlockSize ? Canvas :
                                                                                                 new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, Bw, Bh));
-                                Layer.InvalidateVisual();
                             }
                             finally
                             {
                                 Block.IsRendering = false;
-                                IsRefresh = true;
                             }
                         }
 
@@ -473,8 +470,7 @@ namespace MenthaAssembly.Views.Primitives
                     }
                 }
 
-                if (!IsRefresh)
-                    Layer.InvalidateVisual();
+                Layer.InvalidateVisual();
 
                 // Free unused canvas.
                 UnusedCanvas.Clear();
@@ -632,7 +628,6 @@ namespace MenthaAssembly.Views.Primitives
                        Ix,
                        Iy = Math.Round(Sy - Dy);
 
-                bool IsRefresh = false;
                 NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntSIw, IntSIh);
                 for (int j = LBT; j <= LBB; j++, Index0 += IBc, Sy += RenderBlockSize, Iy += RenderBlockSize)
                 {
@@ -686,15 +681,10 @@ namespace MenthaAssembly.Views.Primitives
 
                                 Block.Bitmap = Bw == RenderBlockSize && Bh == RenderBlockSize ? Canvas :
                                                                                                 new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, Bw, Bh));
-                                if (NewScale)
-                                    Layer.Dispatcher.Invoke(Layer.InvalidateVisual, DispatcherPriority.ApplicationIdle);
-                                else
-                                    Layer.InvalidateVisual();
                             }
                             finally
                             {
                                 Block.IsRendering = false;
-                                IsRefresh = true;
                             }
                         }
 
@@ -705,13 +695,10 @@ namespace MenthaAssembly.Views.Primitives
                     }
                 }
 
-                if (!IsRefresh)
-                {
-                    if (NewScale)
-                        Layer.Dispatcher.Invoke(Layer.InvalidateVisual, DispatcherPriority.ApplicationIdle);
-                    else
-                        Layer.InvalidateVisual();
-                }
+                if (NewScale)
+                    Layer.Dispatcher.Invoke(Layer.InvalidateVisual, DispatcherPriority.ApplicationIdle);
+                else
+                    Layer.InvalidateVisual();
             }
 
             // Free unused canvas.
