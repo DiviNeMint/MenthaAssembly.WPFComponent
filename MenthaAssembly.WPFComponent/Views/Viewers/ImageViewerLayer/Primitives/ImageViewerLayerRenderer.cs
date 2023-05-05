@@ -1,4 +1,5 @@
-﻿using MenthaAssembly.Media.Imaging;
+﻿//#define EnableBlockGrid     // Debug
+using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Media.Imaging.Utils;
 using System;
 using System.Collections.Generic;
@@ -369,21 +370,24 @@ namespace MenthaAssembly.Views.Primitives
                 }
 
                 int IBc = (int)Math.Ceiling(SIw / RenderBlockSize),
-                    IBr = (int)Math.Ceiling(SIh / RenderBlockSize);
-
-                // Invalidates all blocks.
-                foreach (WriteableBitmap Canvas in RecyclableCanvas.Values)
-                    EnqueueBlockCanvas(Canvas, -1);
-
-                RecyclableCanvas.Clear();
-
-                foreach (ImageViewerLayerRenderBlock Block in RenderBlocks.Values)
-                    EnqueueBlockCanvas(Block, -1);
-
-                // Checks that enough blocks.
-                int LastCount = Math.Max(this.IBc * this.IBr, RenderBlocks.Count),
+                    IBr = (int)Math.Ceiling(SIh / RenderBlockSize),
+                    LastCount = Math.Max(this.IBc * this.IBr, RenderBlocks.Count),
                     Count = IBc * IBr;
 
+                // Invalidates all blocks.
+                if (CacheCanvas.Count > 0)
+                {
+                    foreach (KeyValuePair<int, WriteableBitmap> Canvas in CacheCanvas)
+                        InvalidateCanvas(Canvas.Value, Canvas.Key < Count ? Canvas.Key : -1);
+
+                    CacheCanvas.Clear();
+                }
+
+                if (RenderBlocks.Count > 0)
+                    foreach (KeyValuePair<int, ImageViewerLayerRenderBlock> Block in RenderBlocks)
+                        InvalidateCanvas(Block.Value, Block.Key < Count ? Block.Key : -1);
+
+                // Checks that enough blocks.
                 for (; LastCount < Count; LastCount++)
                     RenderBlocks.Add(LastCount, new ImageViewerLayerRenderBlock());
 
@@ -431,7 +435,7 @@ namespace MenthaAssembly.Views.Primitives
                                 {
                                     if (!TryGetCacheCanvas(Index, out Canvas))
                                     {
-                                        Canvas = GetCanvas();
+                                        Canvas = GetCanvas(Index);
                                         if (TryLockCanvas(Canvas))
                                             continue;
 
@@ -471,9 +475,6 @@ namespace MenthaAssembly.Views.Primitives
                 }
 
                 Layer.InvalidateVisual();
-
-                // Free unused canvas.
-                UnusedCanvas.Clear();
             }
         }
         private unsafe void RefreshContext(IImageContext Image, ImageViewer Viewer)
@@ -508,22 +509,23 @@ namespace MenthaAssembly.Views.Primitives
                 IBc = (int)Math.Ceiling(SIw / RenderBlockSize);
                 IBr = (int)Math.Ceiling(SIh / RenderBlockSize);
 
-                // Invalidates all blocks.
-                if (RecyclableCanvas.Count > 0)
-                {
-                    foreach (WriteableBitmap Canvas in RecyclableCanvas.Values)
-                        EnqueueBlockCanvas(Canvas, -1);
+                int LastCount = Math.Max(this.IBc * this.IBr, RenderBlocks.Count),
+                    Count = IBc * IBr;
 
-                    RecyclableCanvas.Clear();
+                // Invalidates all blocks.
+                if (CacheCanvas.Count > 0)
+                {
+                    foreach (KeyValuePair<int, WriteableBitmap> Canvas in CacheCanvas)
+                        InvalidateCanvas(Canvas.Value, Canvas.Key < Count ? Canvas.Key : -1);
+
+                    CacheCanvas.Clear();
                 }
 
                 if (RenderBlocks.Count > 0)
-                    foreach (ImageViewerLayerRenderBlock Block in RenderBlocks.Values)
-                        EnqueueBlockCanvas(Block, -1);
+                    foreach (KeyValuePair<int, ImageViewerLayerRenderBlock> Block in RenderBlocks)
+                        InvalidateCanvas(Block.Value, Block.Key < Count ? Block.Key : -1);
 
                 // Checks that enough blocks.
-                int LastCount = Math.Max(this.IBc * this.IBr, RenderBlocks.Count),
-                    Count = IBc * IBr;
                 for (; LastCount < Count; LastCount++)
                     RenderBlocks.Add(LastCount, new ImageViewerLayerRenderBlock());
 
@@ -577,40 +579,24 @@ namespace MenthaAssembly.Views.Primitives
             if (NewSize || this.LBL != LBL || this.LBT != LBT || this.LBR != LBR || this.LBB != LBB)
             {
                 NewRegion = true;
-
-                if (!NewImage && !NewScale)
-                {
-                    // Recyclable blocks
-                    int j = 0,
-                        Index = 0;
-
-                    // Up
-                    for (; j < LBT; j++)
-                        for (int i = 0; i < IBc; i++, Index++)
-                            EnqueueBlockCanvas(RenderBlocks[Index], Index);
-
-                    for (; j <= LBB; j++)
-                    {
-                        // Left
-                        for (int i = 0; i < LBL; i++, Index++)
-                            EnqueueBlockCanvas(RenderBlocks[Index], Index);
-
-                        // Right
-                        Index += LBR - LBL + 1;
-                        for (int i = LBR + 1; i < IBc; i++, Index++)
-                            EnqueueBlockCanvas(RenderBlocks[Index], Index);
-                    }
-
-                    // Bottom
-                    for (; j < IBr; j++)
-                        for (int i = 0; i < IBc; i++, Index++)
-                            EnqueueBlockCanvas(RenderBlocks[Index], Index);
-                }
-
                 this.LBL = LBL;
                 this.LBT = LBT;
                 this.LBR = LBR;
                 this.LBB = LBB;
+
+                // Cache Canvas
+                if (!NewImage && !NewScale)
+                    ExcludeBlockRange(LBT, LBL, LBR, LBB, i => EnqueueCacheCanvas(RenderBlocks[i], i));
+
+                // Extra Canvas
+                ExcludeBlockRange(LBT - 1, LBL - 1, LBR + 1, LBB + 1, i =>
+                {
+                    if (InvalidCanvas.TryGetValue(i, out WriteableBitmap Canvas))
+                    {
+                        InvalidateCanvas(Canvas, -1);
+                        InvalidCanvas.Remove(i);
+                    }
+                });
             }
 
             // Refresh Blocks
@@ -656,7 +642,7 @@ namespace MenthaAssembly.Views.Primitives
                                 {
                                     if (!TryGetCacheCanvas(Index, out Canvas))
                                     {
-                                        Canvas = GetCanvas();
+                                        Canvas = GetCanvas(Index);
                                         if (TryLockCanvas(Canvas))
                                             continue;
 
@@ -700,40 +686,88 @@ namespace MenthaAssembly.Views.Primitives
                 else
                     Layer.InvalidateVisual();
             }
+        }
+        private void ExcludeBlockRange(int T, int L, int R, int B, Action<int> Handler)
+        {
+            int j = 0,
+                Index = 0;
 
-            // Free unused canvas.
-            UnusedCanvas.Clear();
+            // Up
+            for (; j < T; j++)
+                for (int i = 0; i < IBc; i++, Index++)
+                    Handler(Index);
+
+            for (; j <= B; j++)
+            {
+                // Left
+                for (int i = 0; i < L; i++, Index++)
+                    Handler(Index);
+
+                // Right
+                Index += R - L + 1;
+                for (int i = R + 1; i < IBc; i++, Index++)
+                    Handler(Index);
+            }
+
+            // Bottom
+            for (; j < IBr; j++)
+                for (int i = 0; i < IBc; i++, Index++)
+                    Handler(Index);
         }
 
-        private readonly Dictionary<int, WriteableBitmap> RecyclableCanvas = new();
-        private readonly Queue<WriteableBitmap> UnusedCanvas = new();
-        private void EnqueueBlockCanvas(ImageViewerLayerRenderBlock Block, int Index)
+        private readonly Dictionary<int, WriteableBitmap> CacheCanvas = new();
+        private void EnqueueCacheCanvas(ImageViewerLayerRenderBlock Block, int Index)
         {
             if (!Block.IsRendering && Block.Canvas != null)
             {
-                EnqueueBlockCanvas(Block.Canvas, Index);
+                EnqueueCacheCanvas(Block.Canvas, Index);
                 Block.Canvas = null;
             }
         }
-        private void EnqueueBlockCanvas(WriteableBitmap Canvas, int Index)
+        private void EnqueueCacheCanvas(WriteableBitmap Canvas, int Index)
         {
             if (Index == -1)
                 UnusedCanvas.Enqueue(Canvas);
             else
-                RecyclableCanvas[Index] = Canvas;
+                CacheCanvas[Index] = Canvas;
         }
         private bool TryGetCacheCanvas(int Index, out WriteableBitmap Canvas)
         {
-            if (RecyclableCanvas.TryGetValue(Index, out Canvas))
+            if (CacheCanvas.TryGetValue(Index, out Canvas))
             {
-                _ = RecyclableCanvas.Remove(Index);
+                _ = CacheCanvas.Remove(Index);
                 return true;
             }
 
             return false;
         }
-        private WriteableBitmap GetCanvas()
+
+        private readonly Queue<WriteableBitmap> UnusedCanvas = new();
+        private readonly Dictionary<int, WriteableBitmap> InvalidCanvas = new();
+        private void InvalidateCanvas(ImageViewerLayerRenderBlock Block, int Index)
         {
+            if (!Block.IsRendering && Block.Canvas != null)
+            {
+                InvalidateCanvas(Block.Canvas, Index);
+                Block.Canvas = null;
+            }
+        }
+        private void InvalidateCanvas(WriteableBitmap Canvas, int Index)
+        {
+            if (Index == -1)
+                UnusedCanvas.Enqueue(Canvas);
+            else
+                InvalidCanvas[Index] = Canvas;
+        }
+
+        private WriteableBitmap GetCanvas(int Index)
+        {
+            if (InvalidCanvas.TryGetValue(Index, out WriteableBitmap Invalid))
+            {
+                InvalidCanvas.Remove(Index);
+                return Invalid;
+            }
+
 #if NET462
             if (UnusedCanvas.Count > 0)
             {
@@ -745,10 +779,10 @@ namespace MenthaAssembly.Views.Primitives
                 return Canvas;
 #endif
 
-            if (RecyclableCanvas.Count > 0)
+            if (CacheCanvas.Count > 0)
             {
-                KeyValuePair<int, WriteableBitmap> Datas = RecyclableCanvas.LastOrDefault();
-                _ = RecyclableCanvas.Remove(Datas.Key);
+                KeyValuePair<int, WriteableBitmap> Datas = CacheCanvas.FirstOrDefault();
+                _ = CacheCanvas.Remove(Datas.Key);
                 return Datas.Value;
             }
 
@@ -816,7 +850,7 @@ namespace MenthaAssembly.Views.Primitives
                     Index = Index0;
 
                 // Guild Line
-                GuidelineSet GuideLines = new GuidelineSet();
+                GuidelineSet GuideLines = new();
                 for (int i = LBL; i <= LBR; i++, Index++)
                 {
                     Block = RenderBlocks[Index];
@@ -853,6 +887,18 @@ namespace MenthaAssembly.Views.Primitives
                     foreach (ImageViewerLayerMark Mark in Layer.Marks.Where(i => i.Visible))
                         RenderMark(Mark, Context, Viewport, Scale);
                 }
+
+#if EnableBlockGrid
+
+                // EnableBlockGrid
+                Pen GridPen = new Pen(Brushes.Red, 1d);
+                foreach (double X in GuideLines.GuidelinesX)
+                    Context.DrawLine(GridPen, new Point(X, 0), new Point(X, Layer.ActualHeight));
+
+                foreach (double Y in GuideLines.GuidelinesY)
+                    Context.DrawLine(GridPen, new Point(0, Y), new Point(Layer.ActualWidth, Y));
+
+#endif
             }
 
             else if (HasMarks &&
