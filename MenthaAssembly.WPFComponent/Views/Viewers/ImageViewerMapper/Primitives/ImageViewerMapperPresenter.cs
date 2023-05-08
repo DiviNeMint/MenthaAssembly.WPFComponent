@@ -404,7 +404,7 @@ namespace MenthaAssembly.Views.Primitives
 
                 return NewImage || NewScale || NewLocation;
             }
-            private bool PrepareImageContext(ImageViewer Viewer, ImageViewerLayer Layer, IImageContext Image, double Scale)
+            private unsafe bool PrepareImageContext(ImageViewer Viewer, ImageViewerLayer Layer, IImageContext Image, double Scale)
             {
                 bool NewImage = false;
                 int ImageHashCode = Image.GetHashCode();
@@ -421,8 +421,6 @@ namespace MenthaAssembly.Views.Primitives
                 {
                     NewScale = true;
                     this.Scale = Scale;
-                    Region.Width = Math.Round(Iw * Scale);
-                    Region.Height = Math.Round(Ih * Scale);
                 }
 
                 bool NewLocation = false;
@@ -439,45 +437,79 @@ namespace MenthaAssembly.Views.Primitives
                     Region.Y = Iy * Scale;
                 }
 
-                Iw = Region.Width;
-                Ih = Region.Height;
+                bool NewSize = false;
+                Iw = Math.Round(Iw * Scale);
+                Ih = Math.Round(Ih * Scale);
+                if (Iw != Region.Width || Ih != Region.Height)
+                {
+                    NewSize = true;
+                    Region.Width = Iw;
+                    Region.Height = Ih;
+                }
 
-                if (NewImage ||
-                    this.Image is null ||
-                    this.Image.Width < Iw ||
-                    this.Image.Height < Ih)
-                    this.Image = CreateImage(Image, (int)Iw, (int)Ih);
+                if (this.Image is null || NewImage || NewSize)
+                {
+                    int IntIw = (int)Iw,
+                        IntIh = (int)Ih;
+                    WriteableBitmap Canvas = GetCanvas(IntIw, IntIh);
+                    if (TryLockCanvas(Canvas))
+                    {
+                        try
+                        {
+                            NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntIw, IntIh);
+                            byte* pDest0 = (byte*)Canvas.BackBuffer;
+                            long Stride = Canvas.BackBufferStride;
 
-                return NewImage || NewScale || NewLocation;
+                            _ = Parallel.For(0, IntIh, j =>
+                            {
+                                PixelAdapter<BGRA> Adapter = Adapter0.Clone();
+                                Adapter.InternalMove(0, j);
+
+                                BGRA* pDest = (BGRA*)(pDest0 + j * Stride);
+                                for (int i = 0; i < IntIw; i++, Adapter.InternalMoveNext())
+                                    Adapter.OverlayTo(pDest++);
+                            });
+                        }
+                        finally
+                        {
+                            Canvas.AddDirtyRect(new Int32Rect(0, 0, IntIw, IntIh));
+                            Canvas.Unlock();
+                        }
+
+                        this.Image = Canvas;
+                        return true;
+                    }
+                }
+
+                return NewLocation;
             }
 
-            private unsafe WriteableBitmap CreateImage(IImageContext ImageContext, int Iw, int Ih)
+            private WriteableBitmap LastCanvas;
+            private WriteableBitmap GetCanvas(int Iw, int Ih)
             {
-                WriteableBitmap Bitmap = new(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
-                Bitmap.Lock();
-                try
-                {
-                    NearestResizePixelAdapter<BGRA> Adapter0 = new(ImageContext, Iw, Ih);
-                    byte* pDest0 = (byte*)Bitmap.BackBuffer;
-                    long Stride = Bitmap.BackBufferStride;
+                if (LastCanvas is WriteableBitmap Canvas &&
+                    Canvas.PixelWidth == Iw &&
+                    Canvas.PixelHeight == Ih)
+                    return Canvas;
 
-                    _ = Parallel.For(0, Ih, j =>
+                LastCanvas = new WriteableBitmap(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
+                return LastCanvas;
+            }
+            private bool TryLockCanvas(WriteableBitmap Canvas)
+            {
+                for (int t = 0; t < 3; t++)
+                {
+                    try
                     {
-                        PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                        Adapter.InternalMove(0, j);
-
-                        BGRA* pDest = (BGRA*)(pDest0 + j * Stride);
-                        for (int i = 0; i < Iw; i++, Adapter.InternalMoveNext())
-                            Adapter.OverlayTo(pDest++);
-                    });
-                }
-                finally
-                {
-                    Bitmap.AddDirtyRect(new Int32Rect(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight));
-                    Bitmap.Unlock();
+                        Canvas.Lock();
+                        return true;
+                    }
+                    catch
+                    {
+                    }
                 }
 
-                return Bitmap;
+                return false;
             }
 
         }
