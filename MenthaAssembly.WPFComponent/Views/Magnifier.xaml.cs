@@ -122,7 +122,7 @@ namespace MenthaAssembly.Views
             if (Screenshot is null)
                 return;
 
-            PART_Root.Background = new ImageBrush(BitmapSource.Create(Screenshot_Width, Screenshot_Height, 96, 96, PixelFormats.Bgr24, null, Screenshot.Scan0, (int)(Screenshot.Stride * Screenshot.Height), (int)Screenshot.Stride));
+            PART_Root.Background = new ImageBrush(BitmapSource.Create(Screenshot_Width, Screenshot_Height, 96, 96, PixelFormats.Bgr24, null, Screenshot.Scan0[0], (int)(Screenshot.Stride * Screenshot.Height), (int)Screenshot.Stride));
         }
 
     }
