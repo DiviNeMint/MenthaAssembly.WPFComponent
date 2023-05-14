@@ -50,7 +50,7 @@ namespace MenthaAssembly
             if (Action is null)
                 return -1;
 
-            Stopwatch Sw = new Stopwatch();
+            Stopwatch Sw = new();
             try
             {
                 Sw.Start();
@@ -61,7 +61,11 @@ namespace MenthaAssembly
                 Sw.Stop();
 
                 if (WriteLine)
+#if DEBUG
                     Debug.WriteLine($"Total : {Sw.Elapsed.TotalMilliseconds} ms.");
+#else
+                    Trace.WriteLine($"Total : {Sw.Elapsed.TotalMilliseconds} ms.");
+#endif
             }
 
             return Sw.Elapsed.TotalMilliseconds;
