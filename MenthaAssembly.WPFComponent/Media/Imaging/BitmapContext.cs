@@ -9,7 +9,7 @@ using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly
 {
-    public unsafe class BitmapContext : IImageContext, IReadOnlyImageContext
+    public unsafe class BitmapContext : IImageContext
     {
         public WriteableBitmap Bitmap { get; }
 
@@ -20,33 +20,21 @@ namespace MenthaAssembly
             this.Bitmap = Bitmap;
             if (PixelFormats.Bgr24.Equals(Bitmap.Format))
             {
-                Context = new ImageContext<BGR>(Bitmap.PixelWidth,
-                                                Bitmap.PixelHeight,
-                                                Bitmap.BackBuffer,
-                                                Bitmap.BackBufferStride);
+                Context = new ImageContext<BGR>(Bitmap.PixelWidth, Bitmap.PixelHeight, Bitmap.BackBuffer, Bitmap.BackBufferStride);
             }
             else if (PixelFormats.Bgr32.Equals(Bitmap.Format) ||
                      PixelFormats.Bgra32.Equals(Bitmap.Format) ||
                      PixelFormats.Pbgra32.Equals(Bitmap.Format))
             {
-                Context = new ImageContext<BGRA>(Bitmap.PixelWidth,
-                                                 Bitmap.PixelHeight,
-                                                 Bitmap.BackBuffer,
-                                                 Bitmap.BackBufferStride);
+                Context = new ImageContext<BGRA>(Bitmap.PixelWidth, Bitmap.PixelHeight, Bitmap.BackBuffer, Bitmap.BackBufferStride);
             }
             else if (PixelFormats.Rgb24.Equals(Bitmap.Format))
             {
-                Context = new ImageContext<RGB>(Bitmap.PixelWidth,
-                                                Bitmap.PixelHeight,
-                                                Bitmap.BackBuffer,
-                                                Bitmap.BackBufferStride);
+                Context = new ImageContext<RGB>(Bitmap.PixelWidth, Bitmap.PixelHeight, Bitmap.BackBuffer, Bitmap.BackBufferStride);
             }
             else if (PixelFormats.Gray8.Equals(Bitmap.Format))
             {
-                Context = new ImageContext<Gray8>(Bitmap.PixelWidth,
-                                                  Bitmap.PixelHeight,
-                                                  Bitmap.BackBuffer,
-                                                  Bitmap.BackBufferStride);
+                Context = new ImageContext<Gray8>(Bitmap.PixelWidth, Bitmap.PixelHeight, Bitmap.BackBuffer, Bitmap.BackBufferStride);
             }
             else
             {
@@ -62,17 +50,9 @@ namespace MenthaAssembly
 
         public int BitsPerPixel => Context.BitsPerPixel;
 
-        public int Channels => Context.Channels;
-
         public Type PixelType => Context.PixelType;
 
-        public Type StructType => Context.StructType;
-
-        public IntPtr Scan0 => Context.Scan0;
-        IntPtr IImageContext.ScanA => throw new NotSupportedException();
-        IntPtr IImageContext.ScanR => throw new NotSupportedException();
-        IntPtr IImageContext.ScanG => throw new NotSupportedException();
-        IntPtr IImageContext.ScanB => throw new NotSupportedException();
+        public IntPtr[] Scan0 => Context.Scan0;
 
         public IReadOnlyPixel this[int X, int Y]
         {
@@ -465,8 +445,8 @@ namespace MenthaAssembly
 
         public PixelAdapter<T> GetAdapter<T>(int X, int Y) where T : unmanaged, IPixel
             => Context.GetAdapter<T>(X, Y);
-        public IReadOnlyPixelAdapter GetAdapter(int X, int Y)
-            => ((IReadOnlyImageContext)Context).GetAdapter(X, Y);
+        public IPixelAdapter GetAdapter(int X, int Y)
+            => Context.GetAdapter(X, Y);
 
         protected bool IsLocked { set; get; }
 
@@ -514,6 +494,11 @@ namespace MenthaAssembly
             => AddDirtyRect(new Int32Rect(X, Y, Size.Width, Size.Height));
         public void AddDirtyRect(Point<int> Point, Size<int> Size)
             => AddDirtyRect(new Int32Rect(Point.X, Point.Y, Size.Width, Size.Height));
+
+        public IImageContext Clone()
+            => Context.Clone();
+        object ICloneable.Clone()
+            => Clone();
 
         public static implicit operator ImageSource(BitmapContext Target) => Target?.Bitmap;
         public static implicit operator BitmapContext(WriteableBitmap Target) => Target is null ? null : new BitmapContext(Target);

@@ -436,7 +436,7 @@ namespace MenthaAssembly.Views.Primitives
                                     if (!TryGetCacheCanvas(Index, out Canvas))
                                     {
                                         Canvas = GetCanvas(Index);
-                                        if (TryLockCanvas(Canvas))
+                                        if (!TryLockCanvas(Canvas))
                                             continue;
 
                                         byte* pDest0 = (byte*)Canvas.BackBuffer;
@@ -444,10 +444,10 @@ namespace MenthaAssembly.Views.Primitives
                                         _ = Parallel.For(0, Bh, y =>
                                         {
                                             PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                            Adapter.InternalMove(Sx, Sy + y);
+                                            Adapter.DangerousMove(Sx, Sy + y);
 
                                             BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
-                                            for (int x = 0; x < Bw; x++, Adapter.InternalMoveNext(), pDest++)
+                                            for (int x = 0; x < Bw; x++, Adapter.DangerousMoveNextX(), pDest++)
                                                 Adapter.OverrideTo(pDest);
                                         });
 
@@ -643,7 +643,7 @@ namespace MenthaAssembly.Views.Primitives
                                     if (!TryGetCacheCanvas(Index, out Canvas))
                                     {
                                         Canvas = GetCanvas(Index);
-                                        if (TryLockCanvas(Canvas))
+                                        if (!TryLockCanvas(Canvas))
                                             continue;
 
                                         byte* pDest0 = (byte*)Canvas.BackBuffer;
@@ -651,10 +651,10 @@ namespace MenthaAssembly.Views.Primitives
                                         _ = Parallel.For(0, Bh, y =>
                                         {
                                             PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                            Adapter.InternalMove(Sx, Sy + y);
+                                            Adapter.DangerousMove(Sx, Sy + y);
 
                                             BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
-                                            for (int x = 0; x < Bw; x++, Adapter.InternalMoveNext(), pDest++)
+                                            for (int x = 0; x < Bw; x++, Adapter.DangerousMoveNextX(), pDest++)
                                                 Adapter.OverrideTo(pDest);
                                         });
 

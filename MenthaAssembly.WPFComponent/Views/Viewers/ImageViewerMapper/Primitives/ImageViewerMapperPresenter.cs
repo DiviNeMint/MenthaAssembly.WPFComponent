@@ -463,10 +463,10 @@ namespace MenthaAssembly.Views.Primitives
                             _ = Parallel.For(0, IntIh, j =>
                             {
                                 PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                Adapter.InternalMove(0, j);
+                                Adapter.DangerousMove(0, j);
 
                                 BGRA* pDest = (BGRA*)(pDest0 + j * Stride);
-                                for (int i = 0; i < IntIw; i++, Adapter.InternalMoveNext())
+                                for (int i = 0; i < IntIw; i++, Adapter.DangerousMoveNextX())
                                     Adapter.OverlayTo(pDest++);
                             });
                         }

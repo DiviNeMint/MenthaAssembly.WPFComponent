@@ -35,7 +35,7 @@ namespace MenthaAssembly
                     throw new NotImplementedException();
 
                 int Stride = (int)Image.Stride;
-                Bmp.CopyPixels(Int32Rect.Empty, Image.Scan0, Stride * Image.Height, Stride);
+                Bmp.CopyPixels(Int32Rect.Empty, Image.Scan0[0], Stride * Image.Height, Stride);
                 return Image;
             }
 
@@ -56,7 +56,7 @@ namespace MenthaAssembly
                 RenderBitmap.Render(Visual);
 
                 int Stride = (int)Image.Stride;
-                RenderBitmap.CopyPixels(Int32Rect.Empty, Image.Scan0, Stride * Height, Stride);
+                RenderBitmap.CopyPixels(Int32Rect.Empty, Image.Scan0[0], Stride * Height, Stride);
                 return Image;
             }
 
