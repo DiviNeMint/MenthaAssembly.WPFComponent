@@ -451,8 +451,8 @@ namespace MenthaAssembly.Views.Primitives
                 {
                     int IntIw = (int)Iw,
                         IntIh = (int)Ih;
-                    WriteableBitmap Canvas = GetCanvas(IntIw, IntIh);
-                    if (TryLockCanvas(Canvas))
+                    if (GetCanvas(IntIw, IntIh) is WriteableBitmap Canvas &&
+                        TryLockCanvas(Canvas))
                     {
                         try
                         {
@@ -487,6 +487,9 @@ namespace MenthaAssembly.Views.Primitives
             private WriteableBitmap LastCanvas;
             private WriteableBitmap GetCanvas(int Iw, int Ih)
             {
+                if (Iw == 0 || Ih == 0)
+                    return null;
+
                 if (LastCanvas is WriteableBitmap Canvas &&
                     Canvas.PixelWidth == Iw &&
                     Canvas.PixelHeight == Ih)
