@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
@@ -25,9 +26,15 @@ namespace MenthaAssembly.MarkupExtensions
                             InteropHelper.EnsureHandle();
 
                         if (e.NewValue is true)
+                        {
                             HwndSource.FromHwnd(InteropHelper.Handle).AddHook(FixSizeWindowProc);
+                            AttachWindowState(This);
+                        }
                         else
+                        {
                             HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(FixSizeWindowProc);
+                            DetachWindowState(This);
+                        }
 
                         //if (e.NewValue is true)
                         //{
@@ -46,44 +53,6 @@ namespace MenthaAssembly.MarkupExtensions
         public static void SetFixSize(Window obj, bool value)
             => obj.SetValue(FixSizeProperty, value);
 
-        //private static bool AttachFixSize(Window Window)
-        //{
-        //    IntPtr Handle = new WindowInteropHelper(Window).Handle;
-        //    if (Handle != IntPtr.Zero)
-        //    {
-        //        HwndSource.FromHwnd(Handle).AddHook(FixSizeWindowProc);
-        //        return true;
-        //    }
-        //    return false;
-        //}
-        //private static bool DetachFixSize(Window Window)
-        //{
-        //    IntPtr Handle = new WindowInteropHelper(Window).Handle;
-        //    if (Handle != IntPtr.Zero)
-        //    {
-        //        HwndSource.FromHwnd(Handle).RemoveHook(FixSizeWindowProc);
-        //        return true;
-        //    }
-        //    return false;
-        //}
-
-        //private static void OnAttachFixSizeSourceInitialized(object sender, EventArgs e)
-        //{
-        //    if (sender is Window This)
-        //    {
-        //        This.SourceInitialized -= OnAttachFixSizeSourceInitialized;
-        //        AttachFixSize(This);
-        //    }
-        //}
-        //private static void OnDetachFixSizeSourceInitialized(object sender, EventArgs e)
-        //{
-        //    if (sender is Window This)
-        //    {
-        //        This.SourceInitialized -= OnDetachFixSizeSourceInitialized;
-        //        DetachFixSize(This);
-        //    }
-        //}
-
         private static unsafe IntPtr FixSizeWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             switch ((Win32Messages)msg)
@@ -94,10 +63,11 @@ namespace MenthaAssembly.MarkupExtensions
                     {
                         WindowMinMaxInfo* pInfo = (WindowMinMaxInfo*)lParam;
                         pInfo->ptMaxPosition = new Point<int>(Info.WorkArea.Left - Info.Bound.Left,
-                                                              Info.WorkArea.Left - Info.Bound.Left);
+                                                              Info.WorkArea.Top - Info.Bound.Top);
 
                         pInfo->ptMaxSize = new Size<int>(Info.WorkArea.Right - Info.WorkArea.Left,
                                                          Info.WorkArea.Bottom - Info.WorkArea.Top);
+                        pInfo->ptMaxTrackSize = pInfo->ptMaxSize;
                     }
                     break;
             }
@@ -107,6 +77,32 @@ namespace MenthaAssembly.MarkupExtensions
 
         public static void FixSize(this Window This)
             => SetFixSize(This, true);
+
+        #endregion
+
+        #region WindowState
+        /// <summary>
+        /// Because of the binding delay bug at WindowState, we create this property.
+        /// </summary>
+        public static readonly DependencyPropertyKey WindowStatePropertyKey =
+            DependencyProperty.RegisterAttachedReadOnly("WindowState", typeof(WindowState), typeof(WindowEx), new PropertyMetadata(WindowState.Normal));
+
+        public static WindowState GetWindowState(Window obj)
+            => (WindowState)obj.GetValue(WindowStatePropertyKey.DependencyProperty);
+
+        private static void AttachWindowState(Window Window)
+        {
+            Window.StateChanged += OnWindowStateChanged;
+            Window.SetValue(WindowStatePropertyKey, Window.WindowState);
+        }
+        private static void DetachWindowState(Window Window)
+            => Window.StateChanged -= OnWindowStateChanged;
+
+        private static void OnWindowStateChanged(object sender, EventArgs e)
+        {
+            if (sender is Window This)
+                This.SetValue(WindowStatePropertyKey, This.WindowState);
+        }
 
         #endregion
 
@@ -260,40 +256,49 @@ namespace MenthaAssembly.MarkupExtensions
                         if (InteropHelper.Handle == IntPtr.Zero)
                             InteropHelper.EnsureHandle();
 
+                        IntPtr OnTitleBarContextMenuWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+                        {
+                            switch ((Win32Messages)msg)
+                            {
+                                case Win32Messages.WM_InitMenuPopup:
+                                    {
+                                        Win32.System.SendMessage(hwnd, Win32Messages.WM_CancelMode, IntPtr.Zero, IntPtr.Zero);
+                                        if (This.ContextMenu is ContextMenu Menu)
+                                            Menu.IsOpen = true;
+
+                                        handled = true;
+                                        break;
+                                    }
+                                    //case Win32Messages.WM_NCRButtonDown:
+                                    //    {
+                                    //        switch ((WindowHitTests)wParam.ToInt32())
+                                    //        {
+                                    //            case WindowHitTests.Caption:
+                                    //            case WindowHitTests.Size:
+                                    //            case WindowHitTests.MinButton:
+                                    //            case WindowHitTests.MaxButton:
+                                    //            case WindowHitTests.Close:
+                                    //            case WindowHitTests.Help:
+                                    //                handled = true;
+                                    //                return (IntPtr)1;
+                                    //        }
+                                    //        break;
+                                    //    }
+                            }
+
+                            return IntPtr.Zero;
+                        }
+
                         if (e.NewValue is true)
-                            HwndSource.FromHwnd(InteropHelper.Handle).AddHook(TitleBarContextMenuWindowProc);
+                            HwndSource.FromHwnd(InteropHelper.Handle).AddHook(OnTitleBarContextMenuWindowProc);
                         else
-                            HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(TitleBarContextMenuWindowProc);
+                            HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(OnTitleBarContextMenuWindowProc);
                     }
                 }));
         public static bool GetDisableTitleBarContextMenu(Window obj)
             => (bool)obj.GetValue(DisableTitleBarContextMenuProperty);
         public static void SetDisableTitleBarContextMenu(Window obj, bool value)
             => obj.SetValue(DisableTitleBarContextMenuProperty, value);
-
-        private static unsafe IntPtr TitleBarContextMenuWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            switch ((Win32Messages)msg)
-            {
-                case Win32Messages.WM_NCRButtonDown:
-                    {
-                        switch ((WindowHitTests)wParam.ToInt32())
-                        {
-                            case WindowHitTests.Caption:
-                            case WindowHitTests.Size:
-                            case WindowHitTests.MinButton:
-                            case WindowHitTests.MaxButton:
-                            case WindowHitTests.Close:
-                            case WindowHitTests.Help:
-                                handled = true;
-                                break;
-                        }
-                        break;
-                    }
-            }
-
-            return IntPtr.Zero;
-        }
 
         #endregion
 
