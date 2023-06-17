@@ -3,6 +3,9 @@
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
     <ResourceDictionary.MergedDictionaries>
         
+        <!--Button-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Buttons/Button.xaml"/>
+
         <!--ColorEditor-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor/ColorEditor.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor/Primitives/ColorEyedropper.xaml"/>

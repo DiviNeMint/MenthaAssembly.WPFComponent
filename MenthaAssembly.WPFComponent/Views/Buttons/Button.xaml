@@ -1,0 +1,73 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:MenthaAssembly.Views">
+
+    <Style TargetType="{x:Type local:Button}">
+        <Setter Property="Background" Value="#FFDDDDDD"/>
+        <Setter Property="BorderBrush" Value="#FF707070"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="MouseOverBackground" Value="#FFBEE6FD"/>
+        <Setter Property="MouseOverBorderBrush" Value="#FF3C7FB1"/>
+        <Setter Property="MousePressBackground" Value="#FFC4E5F6"/>
+        <Setter Property="MousePressBorderBrush" Value="#FF2C628B"/>
+        <Setter Property="DisabledBackground" Value="#FFF4F4F4"/>
+        <Setter Property="DisabledForeground" Value="#FF838383"/>
+        <Setter Property="DisabledBorderBrush" Value="#FFADB2B5"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:Button}">
+                    <Border x:Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="PART_Presenter"
+                                          Margin="{TemplateBinding Padding}"
+                                          Focusable="False"
+                                          RecognizesAccessKey="True"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="EnableAnimate" Value="False"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PART_Root" Property="Background" Value="{Binding MouseOverBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MouseOverBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding MouseOverForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="EnableAnimate" Value="True"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsEnabled" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="IsAnimating" Value="True"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsPressedWhenAnimating" Value="True">
+                            <Setter TargetName="PART_Root" Property="Background" Value="{Binding MouseOverBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MouseOverBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding MouseOverForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="PART_Root" Property="Background" Value="{Binding MousePressBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MousePressBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding MousePressForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="PART_Root" Property="Background" Value="{Binding DisabledBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding DisabledBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding DisabledForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+</ResourceDictionary>
