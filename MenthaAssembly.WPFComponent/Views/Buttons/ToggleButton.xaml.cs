@@ -6,10 +6,10 @@ using System.Windows.Media.Animation;
 
 namespace MenthaAssembly.Views
 {
-    public class Button : System.Windows.Controls.Button
+    public class ToggleButton : System.Windows.Controls.Primitives.ToggleButton
     {
         public static readonly DependencyProperty EnableAnimateProperty =
-            DependencyProperty.Register("EnableAnimate", typeof(bool), typeof(Button), new PropertyMetadata(true));
+            DependencyProperty.Register("EnableAnimate", typeof(bool), typeof(ToggleButton), new PropertyMetadata(true));
         public bool EnableAnimate
         {
             get => (bool)GetValue(EnableAnimateProperty);
@@ -17,7 +17,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty AnimationDurationProperty =
-              DependencyProperty.Register("AnimationDuration", typeof(Duration), typeof(Button), new PropertyMetadata((Duration)TimeSpan.FromMilliseconds(150d)));
+              DependencyProperty.Register("AnimationDuration", typeof(Duration), typeof(ToggleButton), new PropertyMetadata((Duration)TimeSpan.FromMilliseconds(150d)));
         public Duration AnimationDuration
         {
             get => (Duration)GetValue(AnimationDurationProperty);
@@ -25,7 +25,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MouseOverBackgroundProperty =
-            DependencyProperty.Register("MouseOverBackground", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("MouseOverBackground", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush MouseOverBackground
         {
             get => (Brush)GetValue(MouseOverBackgroundProperty);
@@ -33,7 +33,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MouseOverForegroundProperty =
-            DependencyProperty.Register("MouseOverForeground", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("MouseOverForeground", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush MouseOverForeground
         {
             get => (Brush)GetValue(MouseOverForegroundProperty);
@@ -41,7 +41,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MouseOverBorderBrushProperty =
-            DependencyProperty.Register("MouseOverBorderBrush", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("MouseOverBorderBrush", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush MouseOverBorderBrush
         {
             get => (Brush)GetValue(MouseOverBorderBrushProperty);
@@ -49,7 +49,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MousePressBackgroundProperty =
-            DependencyProperty.Register("MousePressBackground", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("MousePressBackground", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush MousePressBackground
         {
             get => (Brush)GetValue(MousePressBackgroundProperty);
@@ -57,7 +57,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MousePressForegroundProperty =
-            DependencyProperty.Register("MousePressForeground", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("MousePressForeground", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush MousePressForeground
         {
             get => (Brush)GetValue(MousePressForegroundProperty);
@@ -65,7 +65,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MousePressBorderBrushProperty =
-            DependencyProperty.Register("MousePressBorderBrush", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("MousePressBorderBrush", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush MousePressBorderBrush
         {
             get => (Brush)GetValue(MousePressBorderBrushProperty);
@@ -73,7 +73,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty DisabledBackgroundProperty =
-            DependencyProperty.Register("DisabledBackground", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("DisabledBackground", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush DisabledBackground
         {
             get => (Brush)GetValue(DisabledBackgroundProperty);
@@ -81,7 +81,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty DisabledForegroundProperty =
-            DependencyProperty.Register("DisabledForeground", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("DisabledForeground", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush DisabledForeground
         {
             get => (Brush)GetValue(DisabledForegroundProperty);
@@ -89,7 +89,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty DisabledBorderBrushProperty =
-            DependencyProperty.Register("DisabledBorderBrush", typeof(Brush), typeof(Button), new PropertyMetadata(null));
+            DependencyProperty.Register("DisabledBorderBrush", typeof(Brush), typeof(ToggleButton), new PropertyMetadata(null));
         public Brush DisabledBorderBrush
         {
             get => (Brush)GetValue(DisabledBorderBrushProperty);
@@ -97,10 +97,10 @@ namespace MenthaAssembly.Views
         }
 
         private static readonly DependencyProperty IsAnimatingProperty =
-              DependencyProperty.Register("IsAnimating", typeof(bool), typeof(Button),
+              DependencyProperty.Register("IsAnimating", typeof(bool), typeof(ToggleButton),
                   new PropertyMetadata(false, (d, e) =>
                   {
-                      if (d is Button This)
+                      if (d is ToggleButton This)
                           This.OnIsAnimatingChanged(e.NewValue is true);
                   }));
         internal bool IsAnimating
@@ -109,17 +109,17 @@ namespace MenthaAssembly.Views
             set => SetValue(IsAnimatingProperty, value);
         }
 
-        private static readonly DependencyProperty IsPressedWhenAnimatingProperty =
-              DependencyProperty.Register("IsPressedWhenAnimating", typeof(bool), typeof(Button), new PropertyMetadata(false));
-        internal bool IsPressedWhenAnimating
+        private static readonly DependencyProperty UncheckedWhenAnimatingProperty =
+              DependencyProperty.Register("UncheckedWhenAnimating", typeof(bool), typeof(ToggleButton), new PropertyMetadata(false));
+        internal bool UncheckedWhenAnimating
         {
-            get => (bool)GetValue(IsPressedWhenAnimatingProperty);
-            set => SetValue(IsPressedWhenAnimatingProperty, value);
+            get => (bool)GetValue(UncheckedWhenAnimatingProperty);
+            set => SetValue(UncheckedWhenAnimatingProperty, value);
         }
 
-        static Button()
+        static ToggleButton()
         {
-            DefaultStyleKeyProperty.OverrideMetadata(typeof(Button), new FrameworkPropertyMetadata(typeof(Button)));
+            DefaultStyleKeyProperty.OverrideMetadata(typeof(ToggleButton), new FrameworkPropertyMetadata(typeof(ToggleButton)));
         }
 
         private Storyboard StartStoryboard, EndStoryboard, StartToEndStoryboard;
@@ -220,9 +220,18 @@ namespace MenthaAssembly.Views
 
         private void OnIsAnimatingChanged(bool Start)
         {
-            bool IsPressed = IsPressedWhenAnimating;
-            IsPressedWhenAnimating = false;
-            (Start ? StartStoryboard : IsPressed ? StartToEndStoryboard : EndStoryboard)?.Begin();
+            if (UncheckedWhenAnimating)
+            {
+                if (!Start)
+                {
+                    UncheckedWhenAnimating = false;
+                    StartToEndStoryboard?.Begin();
+                }
+            }
+            else if (Start)
+                StartStoryboard?.Begin();
+            else if (IsChecked is not true)
+                EndStoryboard?.Begin();
         }
 
         protected override void OnIsPressedChanged(DependencyPropertyChangedEventArgs e)
@@ -230,8 +239,8 @@ namespace MenthaAssembly.Views
             base.OnIsPressedChanged(e);
 
             if (e.NewValue is false &&
-                IsAnimating)
-                IsPressedWhenAnimating = true;
+                IsChecked is true)
+                UncheckedWhenAnimating = true;
         }
 
     }

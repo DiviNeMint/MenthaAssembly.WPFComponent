@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
-    <Style TargetType="{x:Type local:Button}">
+    <Style TargetType="{x:Type local:ToggleButton}">
         <Setter Property="Background" Value="#FFDDDDDD"/>
         <Setter Property="Foreground" Value="Black"/>
         <Setter Property="BorderBrush" Value="#FF707070"/>
@@ -20,7 +20,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:Button}">
+                <ControlTemplate TargetType="{x:Type local:ToggleButton}">
                     <Border x:Name="PART_Root"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -39,6 +39,7 @@
                             <MultiTrigger.Conditions>
                                 <Condition Property="EnableAnimate" Value="False"/>
                                 <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsChecked" Value="False"/>
                             </MultiTrigger.Conditions>
                             <Setter TargetName="PART_Root" Property="Background" Value="{Binding MouseOverBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MouseOverBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
@@ -49,15 +50,21 @@
                                 <Condition Property="EnableAnimate" Value="True"/>
                                 <Condition Property="IsMouseOver" Value="True"/>
                                 <Condition Property="IsEnabled" Value="True"/>
+                                <Condition Property="IsChecked" Value="False"/>
                             </MultiTrigger.Conditions>
                             <Setter Property="IsAnimating" Value="True"/>
                         </MultiTrigger>
-                        <Trigger Property="IsPressedWhenAnimating" Value="True">
+                        <Trigger Property="UncheckedWhenAnimating" Value="True">
                             <Setter TargetName="PART_Root" Property="Background" Value="{Binding MouseOverBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MouseOverBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding MouseOverForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="PART_Root" Property="Background" Value="{Binding MousePressBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MousePressBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding MousePressForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="PART_Root" Property="Background" Value="{Binding MousePressBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="PART_Root" Property="BorderBrush" Value="{Binding MousePressBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
                             <Setter TargetName="PART_Presenter" Property="TextElement.Foreground" Value="{Binding MousePressForeground, RelativeSource={RelativeSource TemplatedParent}}"/>

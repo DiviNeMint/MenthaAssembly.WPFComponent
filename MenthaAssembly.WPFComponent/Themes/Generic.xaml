@@ -6,6 +6,9 @@
         <!--Button-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Buttons/Button.xaml"/>
 
+        <!--ToggleButton-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Buttons/ToggleButton.xaml"/>
+
         <!--ColorEditor-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor/ColorEditor.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor/Primitives/ColorEyedropper.xaml"/>
