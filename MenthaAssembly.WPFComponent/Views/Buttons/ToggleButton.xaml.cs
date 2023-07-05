@@ -220,18 +220,28 @@ namespace MenthaAssembly.Views
 
         private void OnIsAnimatingChanged(bool Start)
         {
-            if (UncheckedWhenAnimating)
+            if (!IsVisible)
+                return;
+
+            try
             {
-                if (!Start)
+                if (UncheckedWhenAnimating)
                 {
-                    UncheckedWhenAnimating = false;
-                    StartToEndStoryboard?.Begin();
+                    if (!Start)
+                    {
+                        UncheckedWhenAnimating = false;
+                        StartToEndStoryboard?.Begin();
+                    }
                 }
+                else if (Start)
+                    StartStoryboard?.Begin();
+                else if (IsChecked is not true)
+                    EndStoryboard?.Begin();
             }
-            else if (Start)
-                StartStoryboard?.Begin();
-            else if (IsChecked is not true)
-                EndStoryboard?.Begin();
+            catch (InvalidOperationException)
+            {
+
+            }
         }
 
         protected override void OnIsPressedChanged(DependencyPropertyChangedEventArgs e)

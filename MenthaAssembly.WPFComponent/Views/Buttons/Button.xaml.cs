@@ -220,6 +220,9 @@ namespace MenthaAssembly.Views
 
         private void OnIsAnimatingChanged(bool Start)
         {
+            if (!IsVisible)
+                return;
+
             bool IsPressed = IsPressedWhenAnimating;
             IsPressedWhenAnimating = false;
             (Start ? StartStoryboard : IsPressed ? StartToEndStoryboard : EndStoryboard)?.Begin();
