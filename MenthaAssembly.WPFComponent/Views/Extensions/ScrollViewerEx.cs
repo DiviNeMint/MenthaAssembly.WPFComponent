@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace MenthaAssembly.MarkupExtensions
@@ -9,27 +10,43 @@ namespace MenthaAssembly.MarkupExtensions
             DependencyProperty.RegisterAttached("AutoScrollToEnd", typeof(bool), typeof(ScrollViewerEx), new PropertyMetadata(false,
                 (d, e) =>
                 {
-                    if (d is ScrollViewer This)
+                    if (d is ScrollViewer Viewer)
                     {
-                        if (This != null)
+                        if (e.NewValue is true)
                         {
-                            if (e.NewValue is true)
+                            Viewer.ScrollToEnd();
+                            Viewer.ScrollChanged += OnScrollChanged;
+                        }
+                        else
+                        {
+                            Viewer.ScrollChanged -= OnScrollChanged;
+                        }
+                    }
+                    else if (d is FrameworkElement Element &&
+                            !Element.IsLoaded)
+                    {
+                        if (Element.IsLoaded)
+                        {
+                            if (d.FindVisualChildren<ScrollViewer>().FirstOrDefault() is ScrollViewer Child)
+                                SetAutoScrollToEnd(Child, true);
+                        }
+                        else
+                        {
+                            Element.Loaded += OnElementLoaded;
+                            void OnElementLoaded(object sender, RoutedEventArgs e)
                             {
-                                This.ScrollToEnd();
-                                This.ScrollChanged += OnScrollChanged;
-                            }
-                            else
-                            {
-                                This.ScrollChanged -= OnScrollChanged;
+                                Element.Loaded -= OnElementLoaded;
+                                if (Element.FindVisualChildren<ScrollViewer>().FirstOrDefault() is ScrollViewer Child)
+                                    SetAutoScrollToEnd(Child, true);
                             }
                         }
                     }
                 }));
-        public static bool GetAutoScrollToEnd(ScrollViewer obj)
-            => (bool)obj.GetValue(AutoScrollToEndProperty);
-        public static void SetAutoScrollToEnd(ScrollViewer obj, bool value)
-            => obj.SetValue(AutoScrollToEndProperty, value);
 
+        public static bool GetAutoScrollToEnd(DependencyObject obj)
+            => (bool)obj.GetValue(AutoScrollToEndProperty);
+        public static void SetAutoScrollToEnd(DependencyObject obj, bool value)
+            => obj.SetValue(AutoScrollToEndProperty, value);
 
         public static readonly DependencyProperty IsScrolledToEndProperty =
             DependencyProperty.RegisterAttached("IsScrolledToEnd", typeof(bool), typeof(ScrollViewerEx), new PropertyMetadata(true));
