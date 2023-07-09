@@ -1,4 +1,5 @@
 ﻿using MenthaAssembly.Media.Imaging;
+using MenthaAssembly.Media.Imaging.Utils;
 using MenthaAssembly.Win32;
 using System;
 using System.Windows;
@@ -8,7 +9,7 @@ using System.Windows.Media.Imaging;
 
 namespace MenthaAssembly
 {
-    public static class ImageHelper
+    public static unsafe class ImageHelper
     {
         public static IImageContext ToImageContext(this ImageSource This)
         {
@@ -18,64 +19,63 @@ namespace MenthaAssembly
             if (This is BitmapSource Bmp)
             {
                 IImageContext Image;
-                int Width = Bmp.PixelWidth,
-                    Height = Bmp.PixelHeight;
+                int Iw = Bmp.PixelWidth,
+                    Ih = Bmp.PixelHeight;
 
                 if (PixelFormats.Bgr24.Equals(Bmp.Format))
-                    Image = new ImageContext<BGR>(Width, Height);
+                    Image = new ImageContext<BGR>(Iw, Ih);
+
                 else if (PixelFormats.Bgr32.Equals(Bmp.Format) ||
                          PixelFormats.Bgra32.Equals(Bmp.Format) ||
                          PixelFormats.Pbgra32.Equals(Bmp.Format))
-                    Image = new ImageContext<BGRA>(Width, Height);
-                else if (PixelFormats.Rgb24.Equals(Bmp.Format))
-                    Image = new ImageContext<RGB>(Width, Height);
-                else if (PixelFormats.Gray8.Equals(Bmp.Format))
-                    Image = new ImageContext<Gray8>(Width, Height);
-                else
-                    throw new NotImplementedException();
+                    Image = new ImageContext<BGRA>(Iw, Ih);
 
-                int Stride = (int)Image.Stride;
-                Bmp.CopyPixels(Int32Rect.Empty, Image.Scan0[0], Stride * Image.Height, Stride);
+                else Image = PixelFormats.Rgb24.Equals(Bmp.Format)
+                    ? new ImageContext<RGB>(Iw, Ih)
+                    : PixelFormats.Gray8.Equals(Bmp.Format) ? (IImageContext)new ImageContext<Gray8>(Iw, Ih) : throw new NotImplementedException();
+
+                long Stride = Image.Stride;
+                Bmp.CopyPixels(Int32Rect.Empty, Image.Scan0[0], (int)(Stride * Ih), (int)Stride);
                 return Image;
             }
 
             if (This is DrawingImage Drawing)
             {
-                int Width = (int)Drawing.Width,
-                    Height = (int)Drawing.Height;
-                IImageContext Image = new ImageContext<BGRA>(Width, Height);
+                int Iw = (int)Math.Ceiling(Drawing.Width),
+                    Ih = (int)Math.Ceiling(Drawing.Height);
+                IImageContext Image = new ImageContext<BGRA>(Iw, Ih);
 
-                DrawingVisual Visual = new DrawingVisual();
+                DrawingVisual Visual = new();
                 using (DrawingContext Context = Visual.RenderOpen())
                 {
                     Context.DrawDrawing(Drawing.Drawing);
-                    Context.Pop();
                 }
 
-                RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
+                RenderTargetBitmap RenderBitmap = new(Iw, Ih, 96, 96, PixelFormats.Pbgra32);
                 RenderBitmap.Render(Visual);
 
-                int Stride = (int)Image.Stride;
-                RenderBitmap.CopyPixels(Int32Rect.Empty, Image.Scan0[0], Stride * Height, Stride);
+                long Stride = Image.Stride;
+                RenderBitmap.CopyPixels(Int32Rect.Empty, Image.Scan0[0], (int)(Stride * Ih), (int)Stride);
+                ReapplyOpacity(Image, 1d);
                 return Image;
             }
 
             throw new NotSupportedException();
         }
 
-        public unsafe static WriteableBitmap ToBitmapSource(this IImageContext This)
+        public static WriteableBitmap ToBitmapSource(this IImageContext This)
         {
             int Iw = This.Width,
                 Ih = This.Height;
-            WriteableBitmap Bitmap = new WriteableBitmap(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
+            WriteableBitmap Bitmap = new(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
             try
             {
                 Bitmap.Lock();
-                This.BlockCopy<BGRA>(0, 0, Iw, Ih, (byte*)Bitmap.BackBuffer, Bitmap.BackBufferStride, null);
+                This.BlockCopy<BGRA>(0, 0, Iw, Ih, Bitmap.BackBuffer, Bitmap.BackBufferStride, null);
+                Bitmap.AddDirtyRect(new Int32Rect(0, 0, Iw, Ih));
             }
             finally
             {
-                Bitmap.AddDirtyRect(new Int32Rect(0, 0, Iw, Ih));
                 Bitmap.Unlock();
             }
 
@@ -83,6 +83,8 @@ namespace MenthaAssembly
         }
 
         public static RenderTargetBitmap ToBitmapSource(this UIElement This)
+            => ToBitmapSource(This, 0, 0);
+        public static RenderTargetBitmap ToBitmapSource(this UIElement This, int Width, int Height)
         {
             bool IsCalculate = false;
             if (!This.IsMeasureValid ||
@@ -93,14 +95,7 @@ namespace MenthaAssembly
                 IsCalculate = true;
             }
 
-            HwndSource Source = null;
-            bool CreateSource = false;
-            if (!This.IsVisible)
-            {
-                CreateSource = true;
-                Source = new HwndSource(new HwndSourceParameters()) { RootVisual = This };
-                //Source.Dispatcher.Invoke(DispatcherPriority.Loaded, new Action(() => { }));
-            }
+            HwndSource Source = This.IsVisible ? null : new HwndSource(new HwndSourceParameters()) { RootVisual = This };
 
             try
             {
@@ -109,18 +104,26 @@ namespace MenthaAssembly
                 DrawingVisual Drawing = new();
                 using (DrawingContext Context = Drawing.RenderOpen())
                 {
-                    Context.DrawRectangle(new VisualBrush(This), null, Bound);
+                    if ((Width == 0 && Height == 0) ||
+                        (Width == Bound.Width && Height == Bound.Height))
+                    {
+                        Context.DrawRectangle(new VisualBrush(This), null, Bound);
+                    }
+                    else
+                    {
+                        Context.PushTransform(new ScaleTransform(Width / Bound.Width, Height / Bound.Height, 0, 0));
+                        Context.DrawRectangle(new VisualBrush(This), null, Bound);
+                        Context.Pop();
+                    }
                 }
 
-                RenderTargetBitmap Image = new((int)Math.Round(Bound.Right), (int)Math.Round(Bound.Bottom), 96d, 96d, PixelFormats.Pbgra32);
+                RenderTargetBitmap Image = new(Width, Height, 96d, 96d, PixelFormats.Pbgra32);
                 Image.Render(Drawing);
                 return Image;
             }
             finally
             {
-                if (CreateSource)
-                    Source.Dispose();
-
+                Source?.Dispose();
                 if (IsCalculate)
                 {
                     This.InvalidateMeasure();
@@ -128,104 +131,166 @@ namespace MenthaAssembly
                 }
             }
         }
-        public static RenderTargetBitmap ToBitmapSource(UIElement Element, double Dpi)
-        {
-            bool IsCalculate = false;
-            if (!Element.IsMeasureValid ||
-                !Element.IsArrangeValid)
-            {
-                Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                Element.Arrange(new Rect(Element.DesiredSize));
-                Element.UpdateLayout();
-                IsCalculate = true;
-            }
-
-            try
-            {
-                Rect Bound = VisualTreeHelper.GetDescendantBounds(Element);
-
-                double Scale = Dpi / 96d,
-                       Width = Bound.Right * Scale,
-                       Height = Bound.Bottom * Scale;
-
-                DrawingVisual Drawing = new();
-                using DrawingContext Context = Drawing.RenderOpen();
-                Context.DrawRectangle(new VisualBrush(Element), null, new Rect(Bound.TopLeft, new Point(Width / Scale, Height / Scale)));
-
-                RenderTargetBitmap Bitmap = new((int)Math.Round(Width), (int)Math.Round(Height), Dpi, Dpi, PixelFormats.Pbgra32);
-                Bitmap.Render(Drawing);
-                return Bitmap;
-            }
-            finally
-            {
-                if (IsCalculate)
-                {
-                    Element.InvalidateMeasure();
-                    Element.InvalidateArrange();
-                }
-            }
-        }
 
         public static IntPtr CreateHBitmap(this UIElement This, int Width, int Height)
+            => CreateHBitmap(This, Width, Height, 1d);
+        public static IntPtr CreateHBitmap(this UIElement This, int Width, int Height, double Opacity)
         {
-            Rect Bound = VisualTreeHelper.GetDescendantBounds(This);
+            IImageContext Image = This.ToBitmapSource(Width, Height)
+                                      .ToImageContext();
 
-            DrawingVisual Drawing = new DrawingVisual();
-            using (DrawingContext Context = Drawing.RenderOpen())
-            {
-                double Sx = Width / Bound.Width,
-                       Sy = Height / Bound.Height;
-                Context.PushTransform(new ScaleTransform(Sx, Sy, 0, 0));
-                Context.DrawRectangle(new VisualBrush(This), null, Bound);
-                Context.Pop();
-            }
-
-            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(Width, Height, 96d, 96d, PixelFormats.Pbgra32);
-            RenderBitmap.Render(Drawing);
-
-            return RenderBitmap.ToImageContext().CreateHBitmap();
+            ReapplyOpacity(Image, Opacity);
+            return Image.CreateHBitmap();
         }
+
         public static IntPtr CreateHBitmap(this DrawingImage This, int Width, int Height, double Angle)
-            => CreateHBitmap(This, Width, Height, Width, Height, Angle);
-        public static IntPtr CreateHBitmap(this DrawingImage This, int RenderWidth, int RenderHeight, int IconWidth, int IconHeight, double Angle)
+            => CreateHBitmap(This, Width, Height, Angle, 1d);
+        public static IntPtr CreateHBitmap(this DrawingImage This, int Width, int Height, double Angle, double Opacity)
         {
-            DrawingVisual Visual = new DrawingVisual();
+            double Iw = This.Width,
+                   Ih = This.Height;
+
+            DrawingVisual Visual = new();
             using (DrawingContext Context = Visual.RenderOpen())
             {
-                double Sx = RenderWidth / This.Width,
-                       Sy = RenderHeight / This.Height;
-                Context.PushTransform(new ScaleTransform(Sx, Sy, 0, 0));
+                bool HasPush = false;
+                if ((Width != 0 || Height != 0) &&
+                    (Width != Iw || Height != Ih))
+                {
+                    Context.PushTransform(new ScaleTransform(Width / Iw, Height / Ih, 0, 0));
+                    HasPush = true;
+                }
 
                 if (Angle != 0)
                 {
-                    double Cx = This.Width * 0.5d,
-                           Cy = This.Height * 0.5d;
-                    Context.PushTransform(new RotateTransform(Angle, Cx, Cy));
+                    Context.PushTransform(new RotateTransform(Angle, Iw / 2d, Ih / 2d));
+                    HasPush = true;
                 }
 
                 Context.DrawDrawing(This.Drawing);
-                Context.Pop();
+
+                if (HasPush)
+                    Context.Pop();
             }
 
-            RenderTargetBitmap RenderBitmap = new RenderTargetBitmap(IconWidth, IconHeight, 96, 96, PixelFormats.Pbgra32);
+            RenderTargetBitmap RenderBitmap = new(Width, Height, 96, 96, PixelFormats.Pbgra32);
             RenderBitmap.Render(Visual);
 
-            return RenderBitmap.ToImageContext().CreateHBitmap();
+            IImageContext Image = RenderBitmap.ToImageContext();
+            ReapplyOpacity(Image, Opacity);
+            return Image.CreateHBitmap();
+        }
+
+        private static void ReapplyOpacity(IImageContext Image, double Opacity)
+        {
+            Opacity = MathHelper.Clamp(Opacity, 0d, 1d);
+            byte Alpha = (byte)Math.Round(byte.MaxValue * Opacity);
+            int Iw = Image.Width,
+                Ih = Image.Height;
+
+            BGRA Color;
+            PixelAdapter<BGRA> Adapter = Image.GetAdapter<BGRA>(0, 0);
+            for (int y = 0; y < Ih; y++, Adapter.DangerousMoveNextY())
+            {
+                for (int x = 0; x < Iw; x++, Adapter.DangerousMoveNextX())
+                {
+                    Adapter.OverrideTo(&Color);
+
+                    byte A = Color.A;
+                    if (A == byte.MaxValue)
+                    {
+                        // Apply
+                        if (Alpha < byte.MaxValue)
+                        {
+                            Color.A = Alpha;
+                            Adapter.Override(Color);
+                        }
+                    }
+                    else
+                    {
+                        // Invert
+                        double Factor = 255d / A;
+                        Color.R = (byte)Math.Round(Color.R * Factor);
+                        Color.G = (byte)Math.Round(Color.G * Factor);
+                        Color.B = (byte)Math.Round(Color.B * Factor);
+
+                        // Apply
+                        if (Opacity < 1d)
+                            Color.A = (byte)Math.Round(A * Opacity);
+
+                        Adapter.Override(Color);
+                    }
+                }
+
+                Adapter.DangerousOffsetX(-Iw);
+            }
         }
 
         public static IntPtr CreateHIcon(this UIElement This, int Width, int Height)
-            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
+            => CreateHIcon(This, Width, Height, 1d);
+        public static IntPtr CreateHIcon(this UIElement This, int Width, int Height, double Opacity)
+        {
+            IntPtr HColor = This.CreateHBitmap(Width, Height, Opacity),
+                   HMask = Graphic.CreateBitmap(Width, Height, 1, 1, IntPtr.Zero);
+            try
+            {
+                return Graphic.CreateHIcon(HColor, HMask);
+            }
+            finally
+            {
+                Graphic.DeleteObject(HColor);
+                Graphic.DeleteObject(HMask);
+            }
+        }
         public static IntPtr CreateHIcon(this UIElement This, int Width, int Height, int xHotSpot, int yHotSpot)
-            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
+            => CreateHIcon(This, Width, Height, xHotSpot, yHotSpot, 1d);
+        public static IntPtr CreateHIcon(this UIElement This, int Width, int Height, int xHotSpot, int yHotSpot, double Opacity)
+        {
+            IntPtr HColor = This.CreateHBitmap(Width, Height, Opacity),
+                   HMask = Graphic.CreateBitmap(Width, Height, 1, 1, IntPtr.Zero);
+            try
+            {
+                return Graphic.CreateHIcon(HColor, HMask, xHotSpot, yHotSpot);
+            }
+            finally
+            {
+                Graphic.DeleteObject(HColor);
+                Graphic.DeleteObject(HMask);
+            }
+        }
+
         public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle)
-            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap());
+            => CreateHIcon(This, Width, Height, Angle, 1d);
+        public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle, double Opacity)
+        {
+            IntPtr HColor = This.CreateHBitmap(Width, Height, Angle, Opacity),
+                   HMask = Graphic.CreateBitmap(Width, Height, 1, 1, IntPtr.Zero);
+            try
+            {
+                return Graphic.CreateHIcon(HColor, HMask);
+            }
+            finally
+            {
+                Graphic.DeleteObject(HColor);
+                Graphic.DeleteObject(HMask);
+            }
+        }
         public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle, int xHotSpot, int yHotSpot)
-            => Graphic.CreateHIcon(This.CreateHBitmap(Width, Height, Angle), new ImageContext<BGRA>(Width, Height).CreateHBitmap(), xHotSpot, yHotSpot);
-        public static IntPtr CreateHIcon(this DrawingImage This, int RenderWidth, int RenderHeight, int IconWidth, int IconHeight, double Angle, int xHotSpot, int yHotSpot)
-            => Graphic.CreateHIcon(This.CreateHBitmap(RenderWidth, RenderHeight, IconWidth, IconHeight, Angle),
-                                   new ImageContext<BGRA>(IconWidth, IconHeight).CreateHBitmap(),
-                                   xHotSpot,
-                                   yHotSpot);
+            => CreateHIcon(This, Width, Height, Angle, xHotSpot, yHotSpot, 1d);
+        public static IntPtr CreateHIcon(this DrawingImage This, int Width, int Height, double Angle, int xHotSpot, int yHotSpot, double Opacity)
+        {
+            IntPtr HColor = This.CreateHBitmap(Width, Height, Angle, Opacity),
+                   HMask = Graphic.CreateBitmap(Width, Height, 1, 1, IntPtr.Zero);
+            try
+            {
+                return Graphic.CreateHIcon(HColor, HMask, xHotSpot, yHotSpot);
+            }
+            finally
+            {
+                Graphic.DeleteObject(HColor);
+                Graphic.DeleteObject(HMask);
+            }
+        }
 
     }
 }
