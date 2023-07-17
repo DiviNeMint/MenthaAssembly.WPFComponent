@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace MenthaAssembly.Devices
 {
-    public class CursorInfo
+    public class CursorInfo : IDisposable
     {
         public Cursor Cursor { get; }
 
@@ -14,13 +14,14 @@ namespace MenthaAssembly.Devices
         public CursorInfo(Cursor Cursor, SafeHandle Handle)
         {
             this.Cursor = Cursor;
-            this._Handle = Handle;
+            _Handle = Handle;
         }
 
-        ~CursorInfo()
-        {
-            _Handle?.Dispose();
-        }
+        public void Dispose()
+            => _Handle.Dispose();
+
+        public static implicit operator Cursor(CursorInfo This)
+            => This.Cursor;
 
     }
 }

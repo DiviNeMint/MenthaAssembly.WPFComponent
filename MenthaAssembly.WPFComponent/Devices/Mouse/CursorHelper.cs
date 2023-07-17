@@ -62,23 +62,28 @@ namespace MenthaAssembly.Devices
             => CreateCursor(Resource.RotateArrow, 13, 13, 315d);
 
         public static CursorInfo CreateCursor(UIElement Element, int xHotSpot, int yHotSpot)
+            => CreateCursor(Element, (int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, xHotSpot, yHotSpot, 1d);
+        public static CursorInfo CreateCursor(UIElement Element, int Width, int Height, int xHotSpot, int yHotSpot)
+            => CreateCursor(Element, Width, Height, xHotSpot, yHotSpot, 1d);
+        public static CursorInfo CreateCursor(UIElement Element, int Width, int Height, int xHotSpot, int yHotSpot, double Opacity)
         {
-            IntPtr HIcon = Element.CreateHIcon((int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, xHotSpot, yHotSpot);
-            SafeIconHandle HCursor = new SafeIconHandle(HIcon);
+            IntPtr HIcon = Element.CreateHIcon(Width, Height, xHotSpot, yHotSpot, Opacity);
+            SafeIconHandle HCursor = new(HIcon);
 
             return new CursorInfo(CursorInteropHelper.Create(HCursor), HCursor);
         }
-        public static CursorInfo CreateCursor(DrawingImage Image, int xHotSpot, int yHotSpot, double Angle)
-        {
-            double IconWidth = Math.Round(SystemParameters.CursorWidth),
-                   IconHeight = Math.Round(SystemParameters.CursorHeight),
-                   RenderWidth = Math.Min(Image.Width, IconWidth),
-                   RenderHeight = Math.Min(Image.Height, IconHeight),
-                   CursorX = Math.Round(xHotSpot * RenderWidth / Image.Width),
-                   CursorY = Math.Round(yHotSpot * RenderHeight / Image.Height);
 
-            IntPtr HIcon = Image.CreateHIcon((int)RenderWidth, (int)RenderHeight, (int)IconWidth, (int)IconHeight, Angle, (int)CursorX, (int)CursorY);
-            SafeIconHandle HCursor = new SafeIconHandle(HIcon);
+        public static CursorInfo CreateCursor(DrawingImage Image, int xHotSpot, int yHotSpot, double Angle)
+            => CreateCursor(Image, (int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, xHotSpot, yHotSpot, Angle, 1d);
+        public static CursorInfo CreateCursor(DrawingImage Image, int Width, int Height, int xHotSpot, int yHotSpot, double Angle)
+            => CreateCursor(Image, Width, Height, xHotSpot, yHotSpot, Angle, 1d);
+        public static CursorInfo CreateCursor(DrawingImage Image, int Width, int Height, int xHotSpot, int yHotSpot, double Angle, double Opacity)
+        {
+            double CursorX = Math.Round(xHotSpot * Math.Min(Image.Width, Width) / Image.Width),
+                   CursorY = Math.Round(yHotSpot * Math.Min(Image.Height, Height) / Image.Height);
+
+            IntPtr HIcon = Image.CreateHIcon(Width, Height, Angle, (int)CursorX, (int)CursorY, Opacity);
+            SafeIconHandle HCursor = new(HIcon);
 
             return new CursorInfo(CursorInteropHelper.Create(HCursor), HCursor);
         }
