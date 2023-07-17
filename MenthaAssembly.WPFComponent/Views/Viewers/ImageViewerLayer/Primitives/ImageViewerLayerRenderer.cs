@@ -681,10 +681,7 @@ namespace MenthaAssembly.Views.Primitives
                     }
                 }
 
-                if (NewScale)
-                    Layer.Dispatcher.Invoke(Layer.InvalidateVisual, DispatcherPriority.ApplicationIdle);
-                else
-                    Layer.InvalidateVisual();
+                Layer.InvalidateVisual();
             }
         }
         private void ExcludeBlockRange(int T, int L, int R, int B, Action<int> Handler)
