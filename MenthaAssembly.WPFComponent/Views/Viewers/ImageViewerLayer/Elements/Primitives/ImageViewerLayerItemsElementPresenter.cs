@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 
 namespace MenthaAssembly.Views.Primitives
 {
@@ -26,52 +27,58 @@ namespace MenthaAssembly.Views.Primitives
 
         protected override Size ArrangeOverride(Size FinalSize)
         {
-            Rect Rect = new(FinalSize);
-            int Count = Children.Count;
-
-            for (int i = 0; i < Count; i++)
+            void OnLayoutUpdated(object sender, EventArgs e)
             {
-                UIElement Child = Children[i];
-                if (Child is ImageViewerLayerElement Element)
+                LayoutUpdated -= OnLayoutUpdated;
+
+                Rect Rect = new(FinalSize);
+                int Count = Children.Count;
+
+                for (int i = 0; i < Count; i++)
                 {
-                    Point Location = Element.Location;
-                    LogicalParent.TranslatePoint(this, out double Lx, out double Ly, Location.X, Location.Y);
-
-                    if (double.IsNaN(Lx) || double.IsNaN(Ly))
-                        continue;
-
-                    Size ElementSize = Element.ZoomedDesiredSize;
-                    double Ew = ElementSize.Width,
-                           Eh = ElementSize.Height,
-                           Px, Py;
-                    Px = Element.HorizontalAlignment switch
+                    UIElement Child = Children[i];
+                    if (Child is ImageViewerLayerElement Element)
                     {
-                        HorizontalAlignment.Left => Lx,
-                        HorizontalAlignment.Right => Lx - Ew,
-                        _ => Lx - Ew / 2d,
-                    };
-                    Py = Element.VerticalAlignment switch
+                        Point Location = Element.Location;
+                        LogicalParent.TranslatePoint(this, out double Lx, out double Ly, Location.X, Location.Y);
+
+                        if (double.IsNaN(Lx) || double.IsNaN(Ly))
+                            continue;
+
+                        Size ElementSize = Element.ZoomedDesiredSize;
+                        double Ew = ElementSize.Width,
+                               Eh = ElementSize.Height,
+                               Px, Py;
+                        Px = Element.HorizontalAlignment switch
+                        {
+                            HorizontalAlignment.Left => Lx,
+                            HorizontalAlignment.Right => Lx - Ew,
+                            _ => Lx - Ew / 2d,
+                        };
+                        Py = Element.VerticalAlignment switch
+                        {
+                            VerticalAlignment.Top => Ly,
+                            VerticalAlignment.Bottom => Ly - Eh,
+                            _ => Ly - Eh / 2d,
+                        };
+
+                        if (Element.IsArrangeValid)
+                            Element.InvalidateArrange();
+
+                        Element.Arrange(new Rect(Px, Py, Ew, Eh));
+                    }
+
+                    else
                     {
-                        VerticalAlignment.Top => Ly,
-                        VerticalAlignment.Bottom => Ly - Eh,
-                        _ => Ly - Eh / 2d,
-                    };
+                        if (Child.IsArrangeValid)
+                            Child.InvalidateArrange();
 
-                    if (Element.IsArrangeValid)
-                        Element.InvalidateArrange();
-
-                    Element.Arrange(new Rect(Px, Py, Ew, Eh));
-                }
-
-                else
-                {
-                    if (Child.IsArrangeValid)
-                        Child.InvalidateArrange();
-
-                    Child.Arrange(Rect);
+                        Child.Arrange(Rect);
+                    }
                 }
             }
 
+            LayoutUpdated += OnLayoutUpdated;
             return FinalSize;
         }
 
