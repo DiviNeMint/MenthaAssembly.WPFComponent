@@ -2,6 +2,7 @@
 using MenthaAssembly.Media.Imaging;
 using MenthaAssembly.Media.Imaging.Utils;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,37 +16,58 @@ namespace MenthaAssembly.Views.Primitives
     internal class ImageViewerLayerRenderer
     {
         private const int RenderBlockSize = 200;
+        private const double RenderInterval = 20d;
+        private readonly DispatcherTimer Timer;
 
+        private readonly ConcurrentDictionary<BlockIndex, Action> BlockRenderActionTable = new();
         public bool HasViewer, HasImage, HasImageContext, HasMarks;
         public double Lw, Lh, Iw, Ih, Scale, Vx, Vy;   // LayerWidth, LayerHeight, ImageWidth, ImageHeight, LayerScale, ViewportX, ViewportY
         public int IBc, IBr, LBL, LBT, LBR, LBB;       // ImageBlockColumn, ImageBlockRow, LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
+        public WriteableBitmap Thumbnail;
+        public double ThumbnailScale;
 
         private readonly ImageViewerLayer Layer;
         private readonly ImageViewerLayerPresenter LayerPresenter;
         public ImageViewerLayerRenderer(ImageViewerLayer Layer, ImageViewerLayerPresenter LayerPresenter)
         {
+            Timer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(RenderInterval),
+            };
+            Timer.Tick += OnRenderTimerTick;
+
             this.Layer = Layer;
             this.LayerPresenter = LayerPresenter;
 
             Lw = Lh = Iw = Ih = Scale = Vx = Vy = double.NaN;
-            IBc = IBr = LBL = LBT = LBR = LBB = 0;
+            IBc = IBr = LBL = LBT = LBR = LBB = -1;
+        }
+
+        private void OnRenderTimerTick(object sender, EventArgs e)
+        {
+            try
+            {
+                ICollection<BlockIndex> Keys = BlockRenderActionTable.Keys;
+                while (Keys.Count > 0)
+                {
+                    foreach (BlockIndex Index in Keys)
+                        if (BlockRenderActionTable.TryRemove(Index, out Action RenderAction))
+                            RenderAction.Invoke();
+
+                    Keys = BlockRenderActionTable.Keys;
+                }
+            }
+            finally
+            {
+                Timer.Stop();
+            }
         }
 
         private bool IsValid = true;
         public void Invalidate()
         {
             if (IsValid && Layer.IsVisible)
-            {
-                Dispatcher Dispatcher = Layer.Dispatcher;
-                if (Dispatcher.CheckAccess())
-                    Refresh();
-                else
-#if NET462
-                    Dispatcher.BeginInvoke(new Action(Refresh), DispatcherPriority.Render);
-#else
-                    Dispatcher.BeginInvoke(Refresh, DispatcherPriority.Render);
-#endif
-            }
+                Layer.Invoke(Refresh, DispatcherPriority.Render);
         }
 
         private bool IsMarksValid = true;
@@ -309,16 +331,18 @@ namespace MenthaAssembly.Views.Primitives
         }
 
         private readonly Int32Rect DirtyRect = new(0, 0, RenderBlockSize, RenderBlockSize);
-        private readonly Dictionary<int, ImageViewerLayerRenderBlock> RenderBlocks = new();
+        private readonly Dictionary<BlockIndex, ImageViewerLayerRenderBlock> RenderBlocks = new();
         private unsafe void RefreshContext(IImageContext Image)
         {
-            bool NewImage = false;
+            bool NewImage = false,
+                 NewThumbnail = false;
             int ImageHash = Image.GetHashCode();
             double Iw = Image.Width,
                    Ih = Image.Height;
             if (this.ImageHash != ImageHash)
             {
                 NewImage = true;
+                NewThumbnail = true;
                 this.ImageHash = ImageHash;
                 this.Iw = Iw;
                 this.Ih = Ih;
@@ -330,6 +354,7 @@ namespace MenthaAssembly.Views.Primitives
             if (ClipGeometry is null)
             {
                 NewSize = true;
+                NewThumbnail = true;
                 ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
                 this.Lw = Lw;
                 this.Lh = Lh;
@@ -338,18 +363,44 @@ namespace MenthaAssembly.Views.Primitives
             else if (this.Lw != Lw || this.Lh != Lh)
             {
                 NewSize = true;
+                NewThumbnail = true;
                 ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
                 this.Lw = Lw;
                 this.Lh = Lh;
             }
 
+            // Refresh Thumbnail
+            if (NewThumbnail)
+            {
+                double TScale = Math.Max(Iw / Lw, Ih / Lh);
+                if (TScale > 1d)
+                {
+                    do
+                    {
+                        TScale /= 1.5d;
+                    } while (TScale > 1d);
+
+                    TScale = TScale * Lw / Iw;
+                }
+                else
+                {
+                    TScale = 1d;
+                }
+
+                if (NewImage || TScale / ThumbnailScale > 1.5d)
+                    RefreshThumbnail(Image, TScale);
+            }
+
             if (NewImage || NewSize)
             {
+                BlockIndex Index = new();
+                bool IsBlockInvalid = false;
                 double ScaleX = Lw / Iw,
                        ScaleY = Lh / Ih,
                        SIx, SIy, SIw, SIh;
                 if (ScaleX < ScaleY)
                 {
+                    IsBlockInvalid = NewImage || !ScaleX.Equals(Scale);
                     Scale = ScaleX;
                     Ih *= ScaleX;
 
@@ -360,6 +411,7 @@ namespace MenthaAssembly.Views.Primitives
                 }
                 else
                 {
+                    IsBlockInvalid = NewImage || !ScaleY.Equals(Scale);
                     Scale = ScaleY;
                     Iw *= ScaleY;
 
@@ -370,46 +422,56 @@ namespace MenthaAssembly.Views.Primitives
                 }
 
                 int IBc = (int)Math.Ceiling(SIw / RenderBlockSize),
-                    IBr = (int)Math.Ceiling(SIh / RenderBlockSize),
-                    LastCount = Math.Max(this.IBc * this.IBr, RenderBlocks.Count),
-                    Count = IBc * IBr;
+                    IBr = (int)Math.Ceiling(SIh / RenderBlockSize);
 
-                // Invalidates all blocks.
-                if (CacheCanvas.Count > 0)
+                if (IsBlockInvalid)
                 {
-                    foreach (KeyValuePair<int, WriteableBitmap> Canvas in CacheCanvas)
-                        InvalidateCanvas(Canvas.Value, Canvas.Key < Count ? Canvas.Key : -1);
+                    // Invalidates all blocks.
+                    ICollection<WriteableBitmap> CacheCanvas = this.CacheCanvas.Values;
+                    if (CacheCanvas.Count > 0)
+                    {
+                        this.CacheCanvas.Clear();
+                        foreach (WriteableBitmap Canvas in CacheCanvas)
+                            InvalidateCanvas(Canvas);
+                    }
 
-                    CacheCanvas.Clear();
+                    if (RenderBlocks.Count > 0)
+                        foreach (ImageViewerLayerRenderBlock Block in RenderBlocks.Values)
+                            InvalidateCanvas(Block);
+
+                    // Invalidates all RenderActions
+                    BlockRenderActionTable.Clear();
                 }
 
-                if (RenderBlocks.Count > 0)
-                    foreach (KeyValuePair<int, ImageViewerLayerRenderBlock> Block in RenderBlocks)
-                        InvalidateCanvas(Block.Value, Block.Key < Count ? Block.Key : -1);
-
                 // Checks that enough blocks.
-                for (; LastCount < Count; LastCount++)
-                    RenderBlocks.Add(LastCount, new ImageViewerLayerRenderBlock());
+                for (int i = this.IBc + 1; i <= IBc; i++)
+                    for (int j = 0; j <= this.IBr; j++)
+                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
+
+                for (int j = this.IBr + 1; j <= IBr; j++)
+                    for (int i = 0; i <= IBc; i++)
+                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
 
                 // Refresh BlockInfos
                 LBL = LBT = 0;
                 LBR = IBc - 1;
                 LBB = IBr - 1;
-                this.IBc = IBc;
-                this.IBr = IBr;
+                this.IBc = Math.Max(this.IBc, IBc);
+                this.IBr = Math.Max(this.IBr, IBr);
 
                 // Refresh Blocks
                 int IntSIw = (int)SIw,
                     IntSIh = (int)SIh,
-                    Index = 0,
                     Sx, Sy = 0,
                     Bw, Bh;
 
                 double Ix,
-                       Iy = SIy;
+                       Iy = SIy,
+                       ThumbnailFactor = ThumbnailScale / Scale;
 
                 NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntSIw, IntSIh);
-                for (int j = 0; j < IBr; j++, Sy += RenderBlockSize, Iy += RenderBlockSize)
+                Index.Row = 0;
+                for (int j = LBT; j <= LBB; j++, Index.Row++, Sy += RenderBlockSize, Iy += RenderBlockSize)
                 {
                     Sx = 0;
                     Ix = SIx;
@@ -417,60 +479,80 @@ namespace MenthaAssembly.Views.Primitives
                     if (Bh <= 0)
                         break;
 
-                    for (int i = 0; i < IBc; i++, Index++, Sx += RenderBlockSize, Ix += RenderBlockSize)
+                    Index.Column = 0;
+                    for (int i = LBL; i <= LBR; i++, Index.Column++, Sx += RenderBlockSize, Ix += RenderBlockSize)
                     {
                         Bw = Sx + RenderBlockSize <= IntSIw ? RenderBlockSize : IntSIw - Sx;
                         if (Bw <= 0)
                             break;
 
                         ImageViewerLayerRenderBlock Block = RenderBlocks[Index];
-                        if (!Block.IsValid)
-                        {
-                            try
-                            {
-                                Block.IsRendering = true;
-
-                                WriteableBitmap Canvas = Block.Canvas;
-                                if (Canvas is null)
-                                {
-                                    if (!TryGetCacheCanvas(Index, out Canvas))
-                                    {
-                                        Canvas = GetCanvas(Index);
-                                        if (!TryLockCanvas(Canvas))
-                                            continue;
-
-                                        byte* pDest0 = (byte*)Canvas.BackBuffer;
-                                        long Stride = Canvas.BackBufferStride;
-                                        _ = Parallel.For(0, Bh, y =>
-                                        {
-                                            PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                            Adapter.DangerousMove(Sx, Sy + y);
-
-                                            BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
-                                            for (int x = 0; x < Bw; x++, Adapter.DangerousMoveNextX(), pDest++)
-                                                Adapter.OverrideTo(pDest);
-                                        });
-
-                                        Canvas.AddDirtyRect(DirtyRect);
-                                        Canvas.Unlock();
-                                    }
-
-                                    Block.Canvas = Canvas;
-                                }
-
-                                Block.Bitmap = Bw == RenderBlockSize && Bh == RenderBlockSize ? Canvas :
-                                                                                                new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, Bw, Bh));
-                            }
-                            finally
-                            {
-                                Block.IsRendering = false;
-                            }
-                        }
-
                         Block.Region.X = Ix;
                         Block.Region.Y = Iy;
                         Block.Region.Width = Bw;
                         Block.Region.Height = Bh;
+
+                        if (Block.Canvas is not WriteableBitmap Canvas)
+                        {
+                            Int32Rect ThumbnailRegion = new((int)(Sx * ThumbnailFactor),
+                                                            (int)(Sy * ThumbnailFactor),
+                                                            (int)(Bw * ThumbnailFactor),
+                                                            (int)(Bh * ThumbnailFactor));
+                            if (Block.Bitmap is not CroppedBitmap Thumbnail ||
+                                !this.Thumbnail.Equals(Thumbnail.Source) ||
+                                !Thumbnail.SourceRect.Equals(ThumbnailRegion))
+                                Block.Bitmap = new CroppedBitmap(this.Thumbnail, ThumbnailRegion);
+
+                            if (ThumbnailScale != 1d && !Block.IsRendering)
+                            {
+                                BlockIndex ActionIndex = Index;
+                                int TSx = Sx,
+                                    TSy = Sy,
+                                    TBw = Bw,
+                                    TBh = Bh;
+                                void RenderAction()
+                                {
+                                    try
+                                    {
+                                        Block.IsRendering = true;
+                                        if (!DequeueCacheCanvas(ActionIndex, out Canvas))
+                                        {
+                                            Canvas = GetCanvas();
+                                            Canvas.Lock();
+
+                                            byte* pDest0 = (byte*)Canvas.BackBuffer;
+                                            long Stride = Canvas.BackBufferStride;
+
+                                            PixelAdapter<BGRA> Adapter = Adapter0.Clone();
+                                            for (int y = 0; y < TBh; y++)
+                                            {
+                                                Adapter.DangerousMove(TSx, TSy + y);
+
+                                                BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
+                                                for (int x = 0; x < TBw; x++, Adapter.DangerousMoveNextX(), pDest++)
+                                                    Adapter.OverrideTo(pDest);
+                                            }
+
+                                            Canvas.AddDirtyRect(DirtyRect);
+                                            Canvas.Unlock();
+                                        }
+
+                                        Block.Canvas = Canvas;
+                                        Block.Bitmap = TBw == RenderBlockSize && TBh == RenderBlockSize ? Canvas :
+                                                                                                          new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, TBw, TBh));
+
+                                        Layer.InvalidateVisual();
+                                    }
+                                    finally
+                                    {
+                                        Block.IsRendering = false;
+                                    }
+                                }
+
+                                BlockRenderActionTable.AddOrUpdate(ActionIndex, RenderAction, (o, v) => RenderAction);
+                                Timer.Start();
+                            }
+                        }
                     }
                 }
 
@@ -479,13 +561,15 @@ namespace MenthaAssembly.Views.Primitives
         }
         private unsafe void RefreshContext(IImageContext Image, ImageViewer Viewer)
         {
-            bool NewImage = false;
+            bool NewImage = false,
+                 NewThumbnail = false;
             int ImageHash = Image.GetHashCode();
             double Iw = Image.Width,
                    Ih = Image.Height;
             if (this.ImageHash != ImageHash)
             {
                 NewImage = true;
+                NewThumbnail = true;
                 this.ImageHash = ImageHash;
                 this.Iw = Iw;
                 this.Ih = Ih;
@@ -509,28 +593,33 @@ namespace MenthaAssembly.Views.Primitives
                 IBc = (int)Math.Ceiling(SIw / RenderBlockSize);
                 IBr = (int)Math.Ceiling(SIh / RenderBlockSize);
 
-                int LastCount = Math.Max(this.IBc * this.IBr, RenderBlocks.Count),
-                    Count = IBc * IBr;
-
                 // Invalidates all blocks.
+                ICollection<WriteableBitmap> CacheCanvas = this.CacheCanvas.Values;
                 if (CacheCanvas.Count > 0)
                 {
-                    foreach (KeyValuePair<int, WriteableBitmap> Canvas in CacheCanvas)
-                        InvalidateCanvas(Canvas.Value, Canvas.Key < Count ? Canvas.Key : -1);
-
-                    CacheCanvas.Clear();
+                    this.CacheCanvas.Clear();
+                    foreach (WriteableBitmap Canvas in CacheCanvas)
+                        InvalidateCanvas(Canvas);
                 }
 
                 if (RenderBlocks.Count > 0)
-                    foreach (KeyValuePair<int, ImageViewerLayerRenderBlock> Block in RenderBlocks)
-                        InvalidateCanvas(Block.Value, Block.Key < Count ? Block.Key : -1);
+                    foreach (ImageViewerLayerRenderBlock Block in RenderBlocks.Values)
+                        InvalidateCanvas(Block);
+
+                // Invalidates all RenderActions
+                BlockRenderActionTable.Clear();
 
                 // Checks that enough blocks.
-                for (; LastCount < Count; LastCount++)
-                    RenderBlocks.Add(LastCount, new ImageViewerLayerRenderBlock());
+                for (int i = this.IBc + 1; i <= IBc; i++)
+                    for (int j = 0; j <= this.IBr; j++)
+                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
 
-                this.IBc = IBc;
-                this.IBr = IBr;
+                for (int j = this.IBr + 1; j <= IBr; j++)
+                    for (int i = 0; i <= IBc; i++)
+                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
+
+                this.IBc = Math.Max(this.IBc, IBc);
+                this.IBr = Math.Max(this.IBr, IBr);
             }
 
             bool NewSize = false;
@@ -539,17 +628,40 @@ namespace MenthaAssembly.Views.Primitives
             if (ClipGeometry is null)
             {
                 NewSize = true;
+                NewThumbnail = true;
                 ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
                 this.Lw = Lw;
                 this.Lh = Lh;
             }
-
             else if (this.Lw != Lw || this.Lh != Lh)
             {
                 NewSize = true;
+                NewThumbnail = true;
                 ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
                 this.Lw = Lw;
                 this.Lh = Lh;
+            }
+
+            // Refresh Thumbnail
+            if (NewThumbnail)
+            {
+                double TScale = Math.Max(Iw / Lw, Ih / Lh);
+                if (TScale > 1d)
+                {
+                    do
+                    {
+                        TScale /= 1.5d;
+                    } while (TScale > 1d);
+
+                    TScale = TScale * Lw / Iw;
+                }
+                else
+                {
+                    TScale = 1d;
+                }
+
+                if (NewImage || TScale / ThumbnailScale > 1.5d)
+                    RefreshThumbnail(Image, TScale);
             }
 
             bool NewRegion = false;
@@ -584,136 +696,196 @@ namespace MenthaAssembly.Views.Primitives
                 this.LBR = LBR;
                 this.LBB = LBB;
 
-                // Cache Canvas
-                if (!NewImage && !NewScale)
-                    ExcludeBlockRange(LBT, LBL, LBR, LBB, i => EnqueueCacheCanvas(RenderBlocks[i], i));
+                int ExL = LBL - 1,
+                    ExR = LBR + 1,
+                    ExT = LBT - 1,
+                    ExB = LBB + 1;
 
-                // Extra Canvas
-                ExcludeBlockRange(LBT - 1, LBL - 1, LBR + 1, LBB + 1, i =>
+                foreach (KeyValuePair<BlockIndex, ImageViewerLayerRenderBlock> BlockInfo in RenderBlocks.Where(i => i.Value.Canvas != null))
                 {
-                    if (InvalidCanvas.TryGetValue(i, out WriteableBitmap Canvas))
+                    BlockIndex Index = BlockInfo.Key;
+                    if (ExL <= Index.Column && Index.Column <= ExR)
                     {
-                        InvalidateCanvas(Canvas, -1);
-                        InvalidCanvas.Remove(i);
+                        if (ExT == Index.Row || Index.Row == ExB)
+                        {
+                            // OnBorder
+                            EnqueueCacheCanvas(BlockInfo.Value, Index);
+                            continue;
+                        }
                     }
-                });
+                    else
+                    {
+                        // Outside
+                        InvalidateCanvas(BlockInfo.Value);
+                        continue;
+                    }
+
+                    if (ExT <= Index.Row && Index.Row <= ExB)
+                    {
+                        if (ExL == Index.Column || Index.Column == ExR)
+                        {
+                            // OnBorder
+                            EnqueueCacheCanvas(BlockInfo.Value, Index);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // Outside
+                        InvalidateCanvas(BlockInfo.Value);
+                        continue;
+                    }
+                }
             }
 
             // Refresh Blocks
             if (NewImage || NewScale || NewRegion)
             {
-                int Index0 = LBT * IBc + LBL,
-                    Index, Sx,
-                    S0 = LBL * RenderBlockSize,
+                BlockIndex Index = new();
+                int S0 = LBL * RenderBlockSize,
                     Sy = LBT * RenderBlockSize,
                     IntSIw = (int)SIw,
                     IntSIh = (int)SIh,
-                    Bw, Bh;
+                    Sx, Bw, Bh;
 
                 double I0 = Math.Round(S0 - Dx),
                        Ix,
-                       Iy = Math.Round(Sy - Dy);
+                       Iy = Math.Round(Sy - Dy),
+                       ThumbnailFactor = ThumbnailScale / Scale;
+
+                int ThumbIw = Thumbnail.PixelWidth,
+                    ThumbIh = Thumbnail.PixelHeight,
+                    ThumbBSize = (int)(RenderBlockSize * ThumbnailFactor),
+                    ThumbS0 = (int)(S0 * ThumbnailFactor),
+                    ThumbSy = (int)(Sy * ThumbnailFactor),
+                    ThumbSx, ThumbBw, ThumbBh;
 
                 NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntSIw, IntSIh);
-                for (int j = LBT; j <= LBB; j++, Index0 += IBc, Sy += RenderBlockSize, Iy += RenderBlockSize)
+                Index.Row = LBT;
+                for (int j = LBT; j <= LBB; j++, Index.Row++, Sy += RenderBlockSize, Iy += RenderBlockSize, ThumbSy += ThumbBSize)
                 {
-                    Index = Index0;
                     Sx = S0;
+                    ThumbSx = ThumbS0;
                     Ix = I0;
                     Bh = Sy + RenderBlockSize <= IntSIh ? RenderBlockSize : IntSIh - Sy;
+                    ThumbBh = ThumbSy + ThumbBSize <= ThumbIh ? ThumbBSize : ThumbIh - ThumbSy;
                     if (Bh <= 0)
                         break;
 
-                    for (int i = LBL; i <= LBR; i++, Index++, Sx += RenderBlockSize, Ix += RenderBlockSize)
+                    Index.Column = LBL;
+                    for (int i = LBL; i <= LBR; i++, Index.Column++, Sx += RenderBlockSize, Ix += RenderBlockSize, ThumbSx += ThumbBSize)
                     {
                         Bw = Sx + RenderBlockSize <= IntSIw ? RenderBlockSize : IntSIw - Sx;
+                        ThumbBw = ThumbSx + ThumbBSize <= ThumbIw ? ThumbBSize : ThumbIw - ThumbSx;
                         if (Bw <= 0)
                             break;
 
                         ImageViewerLayerRenderBlock Block = RenderBlocks[Index];
-                        if (!Block.IsValid)
-                        {
-                            try
-                            {
-                                Block.IsRendering = true;
-
-                                WriteableBitmap Canvas = Block.Canvas;
-                                if (Canvas is null)
-                                {
-                                    if (!TryGetCacheCanvas(Index, out Canvas))
-                                    {
-                                        Canvas = GetCanvas(Index);
-                                        if (!TryLockCanvas(Canvas))
-                                            continue;
-
-                                        byte* pDest0 = (byte*)Canvas.BackBuffer;
-                                        long Stride = Canvas.BackBufferStride;
-                                        _ = Parallel.For(0, Bh, y =>
-                                        {
-                                            PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                            Adapter.DangerousMove(Sx, Sy + y);
-
-                                            BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
-                                            for (int x = 0; x < Bw; x++, Adapter.DangerousMoveNextX(), pDest++)
-                                                Adapter.OverrideTo(pDest);
-                                        });
-
-                                        Canvas.AddDirtyRect(DirtyRect);
-                                        Canvas.Unlock();
-                                    }
-
-                                    Block.Canvas = Canvas;
-                                }
-
-                                Block.Bitmap = Bw == RenderBlockSize && Bh == RenderBlockSize ? Canvas :
-                                                                                                new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, Bw, Bh));
-                            }
-                            finally
-                            {
-                                Block.IsRendering = false;
-                            }
-                        }
-
                         Block.Region.X = Ix;
                         Block.Region.Y = Iy;
                         Block.Region.Width = Bw;
                         Block.Region.Height = Bh;
+
+                        if (Block.Canvas is not WriteableBitmap Canvas)
+                        {
+                            Int32Rect ThumbnailRegion = new(ThumbSx, ThumbSy, ThumbBw, ThumbBh);
+                            if (Block.Bitmap is not CroppedBitmap Thumbnail ||
+                                !this.Thumbnail.Equals(Thumbnail.Source) ||
+                                !Thumbnail.SourceRect.Equals(ThumbnailRegion))
+                                Block.Bitmap = new CroppedBitmap(this.Thumbnail, ThumbnailRegion);
+
+                            if (ThumbnailScale != 1d && !Block.IsRendering)
+                            {
+                                BlockIndex ActionIndex = Index;
+                                int TSx = Sx,
+                                    TSy = Sy,
+                                    TBw = Bw,
+                                    TBh = Bh;
+                                void RenderAction()
+                                {
+                                    try
+                                    {
+                                        Block.IsRendering = true;
+                                        if (!DequeueCacheCanvas(ActionIndex, out Canvas))
+                                        {
+                                            Canvas = GetCanvas();
+                                            Canvas.Lock();
+
+                                            byte* pDest0 = (byte*)Canvas.BackBuffer;
+                                            long Stride = Canvas.BackBufferStride;
+
+                                            PixelAdapter<BGRA> Adapter = Adapter0.Clone();
+                                            for (int y = 0; y < TBh; y++)
+                                            {
+                                                Adapter.DangerousMove(TSx, TSy + y);
+
+                                                BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
+                                                for (int x = 0; x < TBw; x++, Adapter.DangerousMoveNextX(), pDest++)
+                                                    Adapter.OverrideTo(pDest);
+                                            }
+
+                                            Canvas.AddDirtyRect(DirtyRect);
+                                            Canvas.Unlock();
+                                        }
+
+                                        Block.Canvas = Canvas;
+                                        Block.Bitmap = TBw == RenderBlockSize && TBh == RenderBlockSize ? Canvas :
+                                                                                                          new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, TBw, TBh));
+
+                                        Layer.InvalidateVisual();
+                                    }
+                                    finally
+                                    {
+                                        Block.IsRendering = false;
+                                    }
+                                }
+
+                                BlockRenderActionTable.AddOrUpdate(ActionIndex, RenderAction, (o, v) => RenderAction);
+                                Timer.Start();
+                            }
+                        }
                     }
                 }
 
                 Layer.InvalidateVisual();
             }
         }
-        private void ExcludeBlockRange(int T, int L, int R, int B, Action<int> Handler)
+
+        private unsafe void RefreshThumbnail(IImageContext Image, double Scale)
         {
-            int j = 0,
-                Index = 0;
+            ThumbnailScale = Scale;
+            int Iw = (int)Math.Round(Image.Width * Scale),
+                Ih = (int)Math.Round(Image.Height * Scale);
 
-            // Up
-            for (; j < T; j++)
-                for (int i = 0; i < IBc; i++, Index++)
-                    Handler(Index);
+            if (Thumbnail is null || Thumbnail.PixelWidth < Iw || Thumbnail.PixelHeight < Ih)
+                Thumbnail = new WriteableBitmap(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
 
-            for (; j <= B; j++)
+            try
             {
-                // Left
-                for (int i = 0; i < L; i++, Index++)
-                    Handler(Index);
+                Thumbnail.Lock();
+                NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, Iw, Ih);
 
-                // Right
-                Index += R - L + 1;
-                for (int i = R + 1; i < IBc; i++, Index++)
-                    Handler(Index);
+                byte* pDest0 = (byte*)Thumbnail.BackBuffer;
+                long Stride = Thumbnail.BackBufferStride;
+                _ = Parallel.For(0, Ih, y =>
+                {
+                    PixelAdapter<BGRA> Adapter = Adapter0.Clone();
+                    Adapter.DangerousMove(0, y);
+
+                    BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
+                    for (int x = 0; x < Iw; x++, Adapter.DangerousMoveNextX(), pDest++)
+                        Adapter.OverrideTo(pDest);
+                });
             }
-
-            // Bottom
-            for (; j < IBr; j++)
-                for (int i = 0; i < IBc; i++, Index++)
-                    Handler(Index);
+            finally
+            {
+                Thumbnail.AddDirtyRect(new Int32Rect(0, 0, Iw, Ih));
+                Thumbnail.Unlock();
+            }
         }
 
-        private readonly Dictionary<int, WriteableBitmap> CacheCanvas = new();
-        private void EnqueueCacheCanvas(ImageViewerLayerRenderBlock Block, int Index)
+        private readonly ConcurrentDictionary<BlockIndex, WriteableBitmap> CacheCanvas = new();
+        private void EnqueueCacheCanvas(ImageViewerLayerRenderBlock Block, BlockIndex Index)
         {
             if (!Block.IsRendering && Block.Canvas != null)
             {
@@ -721,86 +893,32 @@ namespace MenthaAssembly.Views.Primitives
                 Block.Canvas = null;
             }
         }
-        private void EnqueueCacheCanvas(WriteableBitmap Canvas, int Index)
+        private void EnqueueCacheCanvas(WriteableBitmap Canvas, BlockIndex Index)
         {
-            if (Index == -1)
-                UnusedCanvas.Enqueue(Canvas);
+            if (Index.Equals(BlockIndex.Invalid))
+                InvalidCanvas.Enqueue(Canvas);
             else
-                CacheCanvas[Index] = Canvas;
+                CacheCanvas.AddOrUpdate(Index, Canvas, (o, v) => Canvas);
         }
-        private bool TryGetCacheCanvas(int Index, out WriteableBitmap Canvas)
-        {
-            if (CacheCanvas.TryGetValue(Index, out Canvas))
-            {
-                _ = CacheCanvas.Remove(Index);
-                return true;
-            }
+        private bool DequeueCacheCanvas(BlockIndex Index, out WriteableBitmap Canvas)
+            => CacheCanvas.TryRemove(Index, out Canvas);
 
-            return false;
-        }
-
-        private readonly Queue<WriteableBitmap> UnusedCanvas = new();
-        private readonly Dictionary<int, WriteableBitmap> InvalidCanvas = new();
-        private void InvalidateCanvas(ImageViewerLayerRenderBlock Block, int Index)
+        private readonly ConcurrentQueue<WriteableBitmap> InvalidCanvas = new();
+        private void InvalidateCanvas(ImageViewerLayerRenderBlock Block)
         {
             if (!Block.IsRendering && Block.Canvas != null)
             {
-                InvalidateCanvas(Block.Canvas, Index);
+                InvalidateCanvas(Block.Canvas);
                 Block.Canvas = null;
             }
+
+            Block.Bitmap = null;
         }
-        private void InvalidateCanvas(WriteableBitmap Canvas, int Index)
-        {
-            if (Index == -1)
-                UnusedCanvas.Enqueue(Canvas);
-            else
-                InvalidCanvas[Index] = Canvas;
-        }
-
-        private WriteableBitmap GetCanvas(int Index)
-        {
-            if (InvalidCanvas.TryGetValue(Index, out WriteableBitmap Invalid))
-            {
-                InvalidCanvas.Remove(Index);
-                return Invalid;
-            }
-
-#if NET462
-            if (UnusedCanvas.Count > 0)
-            {
-                WriteableBitmap Canvas = UnusedCanvas.Dequeue();
-                return Canvas;
-            }
-#else
-            if (UnusedCanvas.TryDequeue(out WriteableBitmap Canvas))
-                return Canvas;
-#endif
-
-            if (CacheCanvas.Count > 0)
-            {
-                KeyValuePair<int, WriteableBitmap> Datas = CacheCanvas.FirstOrDefault();
-                _ = CacheCanvas.Remove(Datas.Key);
-                return Datas.Value;
-            }
-
-            return new WriteableBitmap(RenderBlockSize, RenderBlockSize, 96d, 96d, PixelFormats.Bgra32, null);
-        }
-        private bool TryLockCanvas(WriteableBitmap Canvas)
-        {
-            for (int t = 0; t < 3; t++)
-            {
-                try
-                {
-                    Canvas.Lock();
-                    return true;
-                }
-                catch
-                {
-                }
-            }
-
-            return false;
-        }
+        private void InvalidateCanvas(WriteableBitmap Canvas)
+            => InvalidCanvas.Enqueue(Canvas);
+        private WriteableBitmap GetCanvas()
+            => InvalidCanvas.TryDequeue(out WriteableBitmap Invalid) ? Invalid :
+                                                                       new WriteableBitmap(RenderBlockSize, RenderBlockSize, 96d, 96d, PixelFormats.Bgra32, null);
 
         public void Render(DrawingContext Context)
         {
@@ -843,20 +961,18 @@ namespace MenthaAssembly.Views.Primitives
                 Context.PushClip(ClipGeometry);
 
                 ImageViewerLayerRenderBlock Block = null;
-                int Index0 = LBT * IBc + LBL,
-                    Index = Index0;
+                BlockIndex Index = new(LBL, LBT);
 
                 // Guild Line
                 GuidelineSet GuideLines = new();
-                for (int i = LBL; i <= LBR; i++, Index++)
+                for (int i = LBL; i <= LBR; i++, Index.Column++)
                 {
                     Block = RenderBlocks[Index];
                     GuideLines.GuidelinesX.Add(Block.Region.Left);
                 }
                 GuideLines.GuidelinesX.Add(Block.Region.Right);
 
-                Index = Index0;
-                for (int j = LBT; j <= LBB; j++, Index += IBc)
+                for (int j = LBT; j <= LBB; j++, Index.Row++)
                 {
                     Block = RenderBlocks[Index];
                     GuideLines.GuidelinesY.Add(Block.Region.Top);
@@ -866,14 +982,21 @@ namespace MenthaAssembly.Views.Primitives
                 Context.PushGuidelineSet(GuideLines);
 
                 // Image
-                for (int j = LBT; j <= LBB; j++, Index0 += IBc)
+                Index.Row = LBT;
+                for (int j = LBT; j <= LBB; j++, Index.Row++)
                 {
-                    Index = Index0;
-                    for (int i = LBL; i <= LBR; i++, Index++)
+                    Index.Column = LBL;
+                    for (int i = LBL; i <= LBR; i++, Index.Column++)
                     {
                         Block = RenderBlocks[Index];
-                        if (Block.IsValid)
-                            Context.DrawImage(Block.Bitmap, Block.Region);
+                        Context.DrawImage(Block.Bitmap, Block.Region);
+                        //if (!Block.IsRendering && Block.Canvas != null)
+                        //{
+                        //}
+                        //else
+                        //{
+                        //    Context.DrawRectangle(Brushes.Red, null, Block.Region);
+                        //}
                     }
                 }
 
@@ -894,8 +1017,8 @@ namespace MenthaAssembly.Views.Primitives
 
                 foreach (double Y in GuideLines.GuidelinesY)
                     Context.DrawLine(GridPen, new Point(0, Y), new Point(Layer.ActualWidth, Y));
-
 #endif
+
             }
 
             else if (HasMarks &&
@@ -971,15 +1094,18 @@ namespace MenthaAssembly.Views.Primitives
 
             else if (HasImageContext)
             {
+                BlockIndex Index = new();
                 if (HasViewer)
                 {
-                    Rect Region = RenderBlocks[LBT * IBc + LBL].Region;
+                    Index.Row = LBT;
+                    Index.Column = LBL;
+                    Rect Region = RenderBlocks[Index].Region;
                     Ix = (LBL * RenderBlockSize + Lx - Region.X) / Scale;
                     Iy = (LBT * RenderBlockSize + Ly - Region.Y) / Scale;
                 }
                 else
                 {
-                    Rect Region = RenderBlocks[0].Region;
+                    Rect Region = RenderBlocks[Index].Region;
                     Ix = (Lx - Region.X) / Scale;
                     Iy = (Ly - Region.Y) / Scale;
                 }
@@ -1019,15 +1145,18 @@ namespace MenthaAssembly.Views.Primitives
 
             else if (HasImageContext)
             {
+                BlockIndex Index = new();
                 if (HasViewer)
                 {
-                    Rect Region = RenderBlocks[LBT * IBc + LBL].Region;
+                    Index.Row = LBT;
+                    Index.Column = LBL;
+                    Rect Region = RenderBlocks[Index].Region;
                     Lx = Ix * Scale - LBL * RenderBlockSize + Region.X;
                     Ly = Iy * Scale - LBT * RenderBlockSize + Region.Y;
                 }
                 else
                 {
-                    Rect Region = RenderBlocks[0].Region;
+                    Rect Region = RenderBlocks[Index].Region;
                     Lx = Ix * Scale + Region.X;
                     Ly = Iy * Scale + Region.Y;
                 }
@@ -1112,13 +1241,47 @@ namespace MenthaAssembly.Views.Primitives
 
             public Rect Region;
 
-            public bool IsValid
-                => !IsRendering && Canvas != null;
-
             public bool IsRendering;
 
             public override string ToString()
-                => $"IsValid : {IsValid}";
+                => $"Region : {Region}, IsRendering : {IsRendering}";
+
+        }
+
+        private struct BlockIndex
+        {
+            public static BlockIndex Invalid { get; } = new BlockIndex(int.MinValue, int.MinValue);
+
+            public int Column { set; get; }
+
+            public int Row { set; get; }
+
+            public BlockIndex(int Column, int Row)
+            {
+                this.Column = Column;
+                this.Row = Row;
+            }
+
+            public bool Inside(int Left, int Top, int Right, int Bottom)
+                => Left <= Column && Column <= Right && Top <= Row && Row <= Bottom;
+
+            public bool OnBorder(int Left, int Top, int Right, int Bottom)
+                => Left <= Column && Column <= Right ? Top == Row || Row == Bottom :
+                                                       Top <= Row && Row <= Bottom && (Left == Column || Column == Right);
+
+            public override int GetHashCode()
+            {
+                int hashCode = 656739706;
+                hashCode = hashCode * -1521134295 + Column.GetHashCode();
+                hashCode = hashCode * -1521134295 + Row.GetHashCode();
+                return hashCode;
+            }
+
+            public override bool Equals(object obj)
+                => obj is BlockIndex Target && Column == Target.Column && Row == Target.Row;
+
+            public override string ToString()
+                => $"Column : {Column}, Row : {Row}";
 
         }
 

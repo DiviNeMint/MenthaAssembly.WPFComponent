@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace MenthaAssembly
@@ -10,7 +12,7 @@ namespace MenthaAssembly
             => DelayAction(Milliseconds, Action, DispatcherPriority.Normal);
         public static DelayActionToken DelayAction(double Milliseconds, Action Action, DispatcherPriority Priority)
         {
-            DispatcherTimer Timer = new DispatcherTimer(Priority)
+            DispatcherTimer Timer = new(Priority)
             {
                 Interval = TimeSpan.FromMilliseconds(Milliseconds),
                 Tag = Action
@@ -28,7 +30,7 @@ namespace MenthaAssembly
             => DelayAction(Milliseconds, Action, CancelAction, DispatcherPriority.Normal);
         public static DelayActionToken DelayAction(double Milliseconds, Action Action, Action CancelAction, DispatcherPriority Priority)
         {
-            DispatcherTimer Timer = new DispatcherTimer(Priority)
+            DispatcherTimer Timer = new(Priority)
             {
                 Interval = TimeSpan.FromMilliseconds(Milliseconds),
                 Tag = Action
@@ -71,13 +73,24 @@ namespace MenthaAssembly
             return Sw.Elapsed.TotalMilliseconds;
         }
 
-        public static void InvokeSync(this Dispatcher This, Action Action)
+        public static void Invoke(this DispatcherObject This, Action Action)
         {
             if (This.CheckAccess())
                 Action.Invoke();
             else
-                This.Invoke(Action);
+                This.Dispatcher.Invoke(Action);
         }
+        public static void Invoke(this DispatcherObject This, Action Action, DispatcherPriority Priority)
+        {
+            if (This.CheckAccess())
+                Action.Invoke();
+            else
+                This.Dispatcher.Invoke(Action, Priority);
+        }
+        public static T Invoke<T>(this DispatcherObject This, Func<T> Function)
+            => This.CheckAccess() ? Function.Invoke() : This.Dispatcher.Invoke(Function);
+        public static T Invoke<T>(this DispatcherObject This, Func<T> Function, DispatcherPriority Priority)
+            => This.CheckAccess() ? Function.Invoke() : This.Dispatcher.Invoke(Function, Priority);
 
         private static void OnTimerTick(object sender, EventArgs e)
         {

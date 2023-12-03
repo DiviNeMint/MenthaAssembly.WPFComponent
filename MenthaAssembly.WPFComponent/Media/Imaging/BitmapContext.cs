@@ -701,7 +701,7 @@ namespace MenthaAssembly
                 return;
 
             if (IsLocked)
-                Bitmap.Dispatcher.InvokeSync(() => Bitmap.AddDirtyRect(Rect));
+                Bitmap.Invoke(() => Bitmap.AddDirtyRect(Rect));
         }
         public void AddDirtyRect(int X, int Y, int Width, int Height)
             => AddDirtyRect(new Int32Rect(X, Y, Width, Height));
