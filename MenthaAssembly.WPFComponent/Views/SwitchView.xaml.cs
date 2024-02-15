@@ -16,8 +16,8 @@ namespace MenthaAssembly.Views
     public class SwitchView : Control
     {
         public static readonly RoutedEvent ToggleChangedEvent =
-            EventManager.RegisterRoutedEvent("ToggleChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<bool>), typeof(SwitchView));
-        public event RoutedPropertyChangedEventHandler<bool> ToggleChanged
+            EventManager.RegisterRoutedEvent("ToggleChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<bool?>), typeof(SwitchView));
+        public event RoutedPropertyChangedEventHandler<bool?> ToggleChanged
         {
             add { AddHandler(ToggleChangedEvent, value); }
             remove { RemoveHandler(ToggleChangedEvent, value); }
@@ -100,6 +100,7 @@ namespace MenthaAssembly.Views
             bool? Value = e.NewValue;
             GradientStopOffsetTo(Value.HasValue ? Value.Value ? 1d : 0d : 0.5d);
             ThumbMoveTo(Value.HasValue ? Value.Value ? HorizontalAlignment.Right : HorizontalAlignment.Left : HorizontalAlignment.Center);
+            RaiseEvent(e);
         }
 
         private void GradientStopOffsetTo(double To)
