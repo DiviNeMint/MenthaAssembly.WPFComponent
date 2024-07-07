@@ -164,34 +164,33 @@ namespace MenthaAssembly.MarkupExtensions
                         return Result;
                 }
 
+                // Windows System Build-in String
+                Result = LanguageManager.CurrentWindowsSystem[Path];
+                if (!string.IsNullOrEmpty(Result))
+                    return Result;
+
+                // GoogleTranslate
                 string ToCulture = LanguageManager.Current?.CultureCode;
-                if (!string.IsNullOrEmpty(ToCulture))
+                if (!string.IsNullOrEmpty(ToCulture) &&
+                    LanguageManager.CanGoogleTranslate &&
+                    Values[0] is true)
                 {
-                    Result = LanguageManager.GetWindowsBuildInString(Path, ToCulture);
-                    if (!string.IsNullOrEmpty(Result))
-                        return Result;
-
-                    // EnableGoogleTranslate
-                    if (LanguageManager.CanGoogleTranslate &&
-                        Values[0] is true)
+                    if (CacheTranslate.TryGetValue(ToCulture, out Dictionary<string, string> Caches))
                     {
-                        if (CacheTranslate.TryGetValue(ToCulture, out Dictionary<string, string> Caches))
-                        {
-                            if (Caches.TryGetValue(Path, out Result))
-                                return Result;
-                        }
-                        else
-                        {
-                            Caches = [];
-                            CacheTranslate.Add(ToCulture, Caches);
-                        }
-
-                        Result = LanguageManager.GoogleTranslate(Path, "en-US", ToCulture);
-                        if (!string.IsNullOrEmpty(Result))
-                        {
-                            Caches.Add(Path, Result);
+                        if (Caches.TryGetValue(Path, out Result))
                             return Result;
-                        }
+                    }
+                    else
+                    {
+                        Caches = [];
+                        CacheTranslate.Add(ToCulture, Caches);
+                    }
+
+                    Result = LanguageManager.GoogleTranslate(Path, "en-US", ToCulture);
+                    if (!string.IsNullOrEmpty(Result))
+                    {
+                        Caches.Add(Path, Result);
+                        return Result;
                     }
                 }
 
