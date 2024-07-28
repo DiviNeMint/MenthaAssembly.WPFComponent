@@ -36,8 +36,7 @@ namespace MenthaAssembly.Views
             if (double.IsNaN(Scale) || double.IsNaN(Scale))
                 return;
 
-            if (GetPen() is Pen Pen)
-                Context.DrawEllipse(null, Pen, new(Cx, Cy), RadiusA * Scale, RadiusB * Scale);
+            Context.DrawEllipse(Fill, GetPen(), new(Cx, Cy), RadiusA * Scale, RadiusB * Scale);
         }
 
     }

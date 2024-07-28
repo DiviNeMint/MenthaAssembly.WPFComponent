@@ -31,10 +31,7 @@ namespace MenthaAssembly.Views
                     },
                     (d, v) =>
                     {
-                        if (v is double value)
-                            return value < 1d ? 1d : value;
-
-                        return 2d;
+                        return v is double value ? value < 1d ? 1d : value : (object)2d;
                     }));
         public double ZoomFactor
         {
@@ -61,18 +58,16 @@ namespace MenthaAssembly.Views
         {
             base.OnApplyTemplate();
 
-            if (this.GetTemplateChild("PART_Root") is Border Root)
-                this.PART_Root = Root;
+            if (GetTemplateChild("PART_Root") is Border Root)
+                PART_Root = Root;
 
             void StartGrab()
             {
-                if (MagnifierTimer is null)
-                    MagnifierTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50d), DispatcherPriority.Normal, (s, e) => OnRefreshImage(), this.Dispatcher);   // 20 FPS
-
+                MagnifierTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(50d), DispatcherPriority.Normal, (s, e) => OnRefreshImage(), Dispatcher);   // 20 FPS
                 MagnifierTimer.Start();
             }
 
-            this.IsVisibleChanged += (s, e) =>
+            IsVisibleChanged += (s, e) =>
             {
                 if (e.NewValue is true)
                     StartGrab();
@@ -102,10 +97,10 @@ namespace MenthaAssembly.Views
 
         protected virtual void CalculateScreenshot(out int OffsetX, out int OffsetY, out int Width, out int Height)
         {
-            Thickness Border = this.BorderThickness;
-            double Factor = this.ZoomFactor;
-            Width = (int)Math.Round(this.ActualWidth / Factor - Border.Left - Border.Right);
-            Height = (int)Math.Round(this.ActualHeight / Factor - Border.Top - Border.Bottom);
+            Thickness Border = BorderThickness;
+            double Factor = ZoomFactor;
+            Width = (int)Math.Round(ActualWidth / Factor - Border.Left - Border.Right);
+            Height = (int)Math.Round(ActualHeight / Factor - Border.Top - Border.Bottom);
             OffsetX = Width >> 1;
             OffsetY = Height >> 1;
         }

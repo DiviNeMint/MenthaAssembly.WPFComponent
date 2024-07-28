@@ -9,8 +9,13 @@ namespace MenthaAssembly.Views
 {
     public sealed class ImageViewerLayerTextElement : ImageViewerLayerShape
     {
+        private const FrameworkPropertyMetadataOptions AffectsTextRender = AffectsRenderAndMeasure |
+                                                                           FrameworkPropertyMetadataOptions.AffectsParentArrange |
+                                                                           FrameworkPropertyMetadataOptions.Inherits;
+
         public static readonly DependencyProperty FontFamilyProperty =
-            TextElement.FontFamilyProperty.AddOwner(typeof(ImageViewerLayerTextElement));
+            TextElement.FontFamilyProperty.AddOwner(typeof(ImageViewerLayerTextElement),
+                new FrameworkPropertyMetadata(SystemFonts.MessageFontFamily, AffectsTextRender, OnTextGeometryChanged));
         public FontFamily FontFamily
         {
             get => (FontFamily)GetValue(FontFamilyProperty);
@@ -18,7 +23,8 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty FontStyleProperty =
-            TextElement.FontStyleProperty.AddOwner(typeof(ImageViewerLayerTextElement));
+            TextElement.FontStyleProperty.AddOwner(typeof(ImageViewerLayerTextElement),
+                new FrameworkPropertyMetadata(SystemFonts.MessageFontStyle, AffectsTextRender, OnTextGeometryChanged));
         public FontStyle FontStyle
         {
             get => (FontStyle)GetValue(FontStyleProperty);
@@ -26,7 +32,8 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty FontWeightProperty =
-            TextElement.FontWeightProperty.AddOwner(typeof(ImageViewerLayerTextElement));
+            TextElement.FontWeightProperty.AddOwner(typeof(ImageViewerLayerTextElement),
+                new FrameworkPropertyMetadata(SystemFonts.MessageFontWeight, AffectsTextRender, OnTextGeometryChanged));
         public FontWeight FontWeight
         {
             get => (FontWeight)GetValue(FontWeightProperty);
@@ -34,7 +41,8 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty FontStretchProperty =
-            TextElement.FontStretchProperty.AddOwner(typeof(ImageViewerLayerTextElement));
+            TextElement.FontStretchProperty.AddOwner(typeof(ImageViewerLayerTextElement),
+                new FrameworkPropertyMetadata(FontStretches.Normal, AffectsTextRender, OnTextGeometryChanged));
         public FontStretch FontStretch
         {
             get => (FontStretch)GetValue(FontStretchProperty);
@@ -42,7 +50,8 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty FontSizeProperty =
-            TextElement.FontSizeProperty.AddOwner(typeof(ImageViewerLayerTextElement));
+            TextElement.FontSizeProperty.AddOwner(typeof(ImageViewerLayerTextElement),
+                new FrameworkPropertyMetadata(SystemFonts.MessageFontSize, AffectsTextRender, OnTextGeometryChanged));
         public double FontSize
         {
             get => (double)GetValue(FontSizeProperty);
@@ -50,22 +59,18 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty TextProperty =
-              DependencyProperty.Register("Text", typeof(string), typeof(ImageViewerLayerTextElement),
-                  new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender |
-                                                      FrameworkPropertyMetadataOptions.AffectsMeasure |
-                                                      FrameworkPropertyMetadataOptions.AffectsParentArrange,
-                      (d, e) =>
-                      {
-                          if (d is ImageViewerLayerTextElement This)
-                          {
-                              This.InvalidateTextGeometry();
-                              This.InvalidateFormattedText();
-                          }
-                      }));
+            DependencyProperty.Register("Text", typeof(string), typeof(ImageViewerLayerTextElement),
+                new FrameworkPropertyMetadata(null, AffectsTextRender, OnTextGeometryChanged));
         public string Text
         {
             get => (string)GetValue(TextProperty);
             set => SetValue(TextProperty, value);
+        }
+
+        static ImageViewerLayerTextElement()
+        {
+            VerticalAlignmentProperty.OverrideMetadata(typeof(ImageViewerLayerTextElement), new FrameworkPropertyMetadata(VerticalAlignment.Top, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+            HorizontalAlignmentProperty.OverrideMetadata(typeof(ImageViewerLayerTextElement), new FrameworkPropertyMetadata(HorizontalAlignment.Left, FrameworkPropertyMetadataOptions.AffectsParentArrange));
         }
 
         protected override Size MeasureOverride(Size AvailableSize)
@@ -103,39 +108,50 @@ namespace MenthaAssembly.Views
             if (double.IsNaN(Scale) || double.IsNaN(Scale))
                 return;
 
-            if (GetPen() is Pen Pen &&
-                GetTextGeometry() is Geometry Geometry)
+            if (GetTextGeometry() is Geometry Geometry)
             {
-                // Guild Line
-                GuidelineSet GuideLines = new();
+                //// Guild Line
+                //GuidelineSet GuideLines = new();
 
-                bool UseGuideLine = false;
-                Size ControlSize = ZoomedDesiredSize;
-                double Cw = ControlSize.Width,
-                       Ch = ControlSize.Height;
-                if (!double.IsNaN(Cw) && !double.IsInfinity(Cw) && Cw != 0d)
-                {
-                    GuideLines.GuidelinesX.Add(0d);
-                    GuideLines.GuidelinesX.Add(Cw);
-                    UseGuideLine = true;
-                }
+                //bool UseGuideLine = false;
+                //Size ControlSize = ZoomedDesiredSize;
+                //double Cw = ControlSize.Width,
+                //       Ch = ControlSize.Height;
+                //if (!double.IsNaN(Cw) && !double.IsInfinity(Cw) && Cw != 0d)
+                //{
+                //    GuideLines.GuidelinesX.Add(0d);
+                //    GuideLines.GuidelinesX.Add(Cw);
+                //    UseGuideLine = true;
+                //}
 
-                if (!double.IsNaN(Ch) && !double.IsInfinity(Ch) && Ch != 0d)
-                {
-                    GuideLines.GuidelinesY.Add(0d);
-                    GuideLines.GuidelinesY.Add(Cw);
-                    UseGuideLine = true;
-                }
+                //if (!double.IsNaN(Ch) && !double.IsInfinity(Ch) && Ch != 0d)
+                //{
+                //    GuideLines.GuidelinesY.Add(0d);
+                //    GuideLines.GuidelinesY.Add(Cw);
+                //    UseGuideLine = true;
+                //}
 
-                if (UseGuideLine)
-                    Context.PushGuidelineSet(GuideLines);
+                //if (UseGuideLine)
+                //    Context.PushGuidelineSet(GuideLines);
 
-                Context.DrawGeometry(Fill, Pen, Geometry);
+                if (Zoomable)
+                    Geometry.Transform = new ScaleTransform(Scale, Scale);
+
+                Context.DrawGeometry(Fill, GetPen(), Geometry);
             }
 
             //// Draw the text highlight based on the properties that are set.
             //if (Highlight == true)
             //    Context.DrawGeometry(null, new System.Windows.Media.Pen(Stroke, StrokeThickness), _textHighLightGeometry);
+        }
+
+        private static void OnTextGeometryChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is ImageViewerLayerTextElement This)
+            {
+                This.InvalidateTextGeometry();
+                This.InvalidateFormattedText();
+            }
         }
 
         private Geometry TextGeometry = null;

@@ -24,19 +24,18 @@ namespace MenthaAssembly.Views.Primitives
                 if (Last == Curt)
                     continue;
 
-#if NET462
                 // Checks Next Action
+#if NETCOREAPP3_1_OR_GREATER
+                if (Queue.TryPeek(out ImageViewerAction Next) &&
+                    Next <= Curt)
+                    continue;
+#else
                 if (Queue.Count > 0)
                 {
                     ImageViewerAction Next = Queue.Peek();
                     if (Next <= Curt)
                         continue;
                 }
-#else
-                // Checks Next Action
-                if (Queue.TryPeek(out ImageViewerAction Next) &&
-                    Next <= Curt)
-                    continue;
 #endif
 
                 switch (Curt)

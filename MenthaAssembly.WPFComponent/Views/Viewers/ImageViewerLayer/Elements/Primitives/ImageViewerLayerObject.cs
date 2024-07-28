@@ -5,22 +5,28 @@ namespace MenthaAssembly.Views.Primitives
 {
     public abstract class ImageViewerLayerObject : FrameworkElement
     {
-        public static new readonly DependencyProperty HorizontalAlignmentProperty =
-              DependencyProperty.Register("HorizontalAlignment", typeof(HorizontalAlignment), typeof(ImageViewerLayerObject),
-                  new FrameworkPropertyMetadata(HorizontalAlignment.Center, FrameworkPropertyMetadataOptions.AffectsParentArrange));
-        public new HorizontalAlignment HorizontalAlignment
-        {
-            get => (HorizontalAlignment)GetValue(HorizontalAlignmentProperty);
-            set => SetValue(HorizontalAlignmentProperty, value);
-        }
+        //public static new readonly DependencyProperty HorizontalAlignmentProperty =
+        //      DependencyProperty.Register("HorizontalAlignment", typeof(HorizontalAlignment), typeof(ImageViewerLayerObject),
+        //          new FrameworkPropertyMetadata(HorizontalAlignment.Center, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+        //public new HorizontalAlignment HorizontalAlignment
+        //{
+        //    get => (HorizontalAlignment)GetValue(HorizontalAlignmentProperty);
+        //    set => SetValue(HorizontalAlignmentProperty, value);
+        //}
 
-        public static new readonly DependencyProperty VerticalAlignmentProperty =
-            DependencyProperty.Register("VerticalAlignment", typeof(VerticalAlignment), typeof(ImageViewerLayerObject),
-                new FrameworkPropertyMetadata(VerticalAlignment.Center, FrameworkPropertyMetadataOptions.AffectsParentArrange));
-        public new VerticalAlignment VerticalAlignment
+        //public static new readonly DependencyProperty VerticalAlignmentProperty =
+        //    DependencyProperty.Register("VerticalAlignment", typeof(VerticalAlignment), typeof(ImageViewerLayerObject),
+        //        new FrameworkPropertyMetadata(VerticalAlignment.Center, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+        //public new VerticalAlignment VerticalAlignment
+        //{
+        //    get => (VerticalAlignment)GetValue(VerticalAlignmentProperty);
+        //    set => SetValue(VerticalAlignmentProperty, value);
+        //}
+
+        static ImageViewerLayerObject()
         {
-            get => (VerticalAlignment)GetValue(VerticalAlignmentProperty);
-            set => SetValue(VerticalAlignmentProperty, value);
+            VerticalAlignmentProperty.OverrideMetadata(typeof(ImageViewerLayerObject), new FrameworkPropertyMetadata(VerticalAlignment.Center, FrameworkPropertyMetadataOptions.AffectsParentArrange));
+            HorizontalAlignmentProperty.OverrideMetadata(typeof(ImageViewerLayerObject), new FrameworkPropertyMetadata(HorizontalAlignment.Center, FrameworkPropertyMetadataOptions.AffectsParentArrange));
         }
 
         /// <summary>

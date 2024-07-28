@@ -172,11 +172,11 @@ namespace MenthaAssembly.Views
             base.OnRenderSizeChanged(SizeInfo);
         }
 
-        protected override Size MeasureOverride(Size AvailableSize)
-        {
-            TemplatePresenter.Measure(AvailableSize);
-            return AvailableSize;
-        }
+        //protected override Size MeasureOverride(Size AvailableSize)
+        //{
+        //    TemplatePresenter.Measure(AvailableSize);
+        //    return AvailableSize;
+        //}
         protected override Size ArrangeOverride(Size FinalSize)
         {
             TemplatePresenter.Arrange(new Rect(FinalSize));

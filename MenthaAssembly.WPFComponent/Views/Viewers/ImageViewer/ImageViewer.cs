@@ -176,7 +176,11 @@ namespace MenthaAssembly.Views
             TemplatePresenter = new ImageViewerPresenter(this);
             Layers = new ImageViewerLayerCollection(this, TemplatePresenter.Children);
 
-            TemplateBorder = new Border { Child = TemplatePresenter };
+            TemplateBorder = new Border 
+            {
+                ClipToBounds = true,
+                Child = TemplatePresenter
+            };
             _ = TemplateBorder.SetBinding(BackgroundProperty, new Binding(nameof(Background)) { Source = this });
             _ = TemplateBorder.SetBinding(BorderBrushProperty, new Binding(nameof(BorderBrush)) { Source = this });
             _ = TemplateBorder.SetBinding(BorderThicknessProperty, new Binding(nameof(BorderThickness)) { Source = this });
