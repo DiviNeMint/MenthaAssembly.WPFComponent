@@ -16,50 +16,37 @@ namespace MenthaAssembly.Views.Primitives
     internal class ImageViewerLayerRenderer
     {
         private const int RenderBlockSize = 200;
-        private const double RenderInterval = 20d;
-        private readonly DispatcherTimer Timer;
+        private const int LessRenderBlockSize = RenderBlockSize - 1;
 
-        private readonly ConcurrentDictionary<BlockIndex, Action> BlockRenderActionTable = new();
         public bool HasViewer, HasImage, HasImageContext, HasMarks;
-        public double Lw, Lh, Iw, Ih, Scale, Vx, Vy;   // LayerWidth, LayerHeight, ImageWidth, ImageHeight, LayerScale, ViewportX, ViewportY
-        public int IBc, IBr, LBL, LBT, LBR, LBB;       // ImageBlockColumn, ImageBlockRow, LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
-        public WriteableBitmap Thumbnail;
-        public double ThumbnailScale;
+        public double Lw, Lh, Iw, Ih, Scale, Vx, Vy;    // LayerWidth, LayerHeight, ImageWidth, ImageHeight, LayerScale, ViewportX, ViewportY
+        public int LBL, LBT, LBR, LBB;                  // LayerBlockLeftIndex, LayerBlockTopIndex, LayerBlockRightIndex, LayerBlockBottomIndex
 
         private readonly ImageViewerLayer Layer;
         private readonly ImageViewerLayerPresenter LayerPresenter;
         public ImageViewerLayerRenderer(ImageViewerLayer Layer, ImageViewerLayerPresenter LayerPresenter)
         {
-            Timer = new DispatcherTimer(DispatcherPriority.Background)
-            {
-                Interval = TimeSpan.FromMilliseconds(RenderInterval),
-            };
-            Timer.Tick += OnRenderTimerTick;
+            CompositionTarget.Rendering += OnCompositionTargetRendering;
 
             this.Layer = Layer;
             this.LayerPresenter = LayerPresenter;
 
             Lw = Lh = Iw = Ih = Scale = Vx = Vy = double.NaN;
-            IBc = IBr = LBL = LBT = LBR = LBB = -1;
+            LBL = LBT = LBR = LBB = -1;
         }
 
-        private void OnRenderTimerTick(object sender, EventArgs e)
+        private const int MaxRenderingCount = 3;
+        private readonly Dictionary<object, RenderBlock> RenderingBlockTable = [];
+        private void OnCompositionTargetRendering(object sender, EventArgs e)
         {
-            try
+            foreach (object Key in RenderingBlockTable.Keys.Take(MaxRenderingCount))
             {
-                ICollection<BlockIndex> Keys = BlockRenderActionTable.Keys;
-                while (Keys.Count > 0)
-                {
-                    foreach (BlockIndex Index in Keys)
-                        if (BlockRenderActionTable.TryRemove(Index, out Action RenderAction))
-                            RenderAction.Invoke();
+                RenderBlock Block = RenderingBlockTable[Key];
+                RenderingBlockTable.Remove(Key);
 
-                    Keys = BlockRenderActionTable.Keys;
-                }
-            }
-            finally
-            {
-                Timer.Stop();
+                Block.Render();
+                RenderBlocks[Key] = Block;
+                Layer.InvalidateVisual();
             }
         }
 
@@ -239,342 +226,19 @@ namespace MenthaAssembly.Views.Primitives
 
             return false;
         }
-
-        private ScaleTransform ScaleTransform;
         private bool RefreshSource(ImageSource Image, ImageViewer Viewer)
         {
-            int ImageHash = Image.GetHashCode();
             bool NewImage = false;
-            if (this.ImageHash != ImageHash)
-            {
-                NewImage = true;
-                this.ImageHash = ImageHash;
-            }
-
-            bool NewSize = false;
-            double Lw = Layer.ActualWidth,
-                   Lh = Layer.ActualHeight;
-            if (ClipGeometry is null)
-            {
-                NewSize = true;
-                ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
-                this.Lw = Lw;
-                this.Lh = Lh;
-            }
-
-            else if (this.Lw != Lw || this.Lh != Lh)
-            {
-                NewSize = true;
-                ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
-                this.Lw = Lw;
-                this.Lh = Lh;
-            }
-
-            bool NewScale = false;
-            double LCx = Lw / 2d,
-                   LCy = Lh / 2d,
-                   Scale = Viewer.Scale;
-            if (ScaleTransform is null)
-            {
-                NewScale = true;
-                this.Scale = Scale;
-                ScaleTransform = new ScaleTransform(Scale, Scale, LCx, LCy);
-                LayerPresenter.InvalidateMeasure();
-            }
-            else
-            {
-                if (NewSize)
-                {
-                    ScaleTransform.CenterX = LCx;
-                    ScaleTransform.CenterY = LCy;
-                }
-
-                if (this.Scale != Scale)
-                {
-                    NewScale = true;
-                    this.Scale = Scale;
-                    ScaleTransform.ScaleX = Scale;
-                    ScaleTransform.ScaleY = Scale;
-                    LayerPresenter.InvalidateMeasure();
-                }
-            }
-
-            double Tx = LCx - Viewer.ViewportCx + Viewer.ContextX,
-                   Ty = LCy - Viewer.ViewportCy + Viewer.ContextY,
-                   Iw = Image.Width,
-                   Ih = Image.Height;
-
-            AlignContextLocation(Viewer, Layer, Iw, Ih, ref Tx, ref Ty);
-
-            bool NewLocation = false;
-            if (this.Iw != Iw ||
-                this.Ih != Ih)
-            {
-                NewLocation = true;
-                this.Iw = Iw;
-                this.Ih = Ih;
-                Region.X = Tx;
-                Region.Y = Ty;
-                Region.Width = Iw;
-                Region.Height = Ih;
-            }
-
-            else if (Region.X != Tx ||
-                     Region.Y != Ty)
-            {
-                NewLocation = true;
-                Region.X = Tx;
-                Region.Y = Ty;
-            }
-
-            return NewImage || NewSize || NewScale || NewLocation;
-        }
-
-        private readonly Int32Rect DirtyRect = new(0, 0, RenderBlockSize, RenderBlockSize);
-        private readonly Dictionary<BlockIndex, ImageViewerLayerRenderBlock> RenderBlocks = new();
-        private unsafe void RefreshContext(IImageContext Image)
-        {
-            bool NewImage = false,
-                 NewThumbnail = false;
             int ImageHash = Image.GetHashCode();
             double Iw = Image.Width,
                    Ih = Image.Height;
             if (this.ImageHash != ImageHash)
             {
                 NewImage = true;
-                NewThumbnail = true;
                 this.ImageHash = ImageHash;
                 this.Iw = Iw;
                 this.Ih = Ih;
             }
-
-            bool NewSize = false;
-            double Lw = Layer.ActualWidth,
-                   Lh = Layer.ActualHeight;
-            if (ClipGeometry is null)
-            {
-                NewSize = true;
-                NewThumbnail = true;
-                ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
-                this.Lw = Lw;
-                this.Lh = Lh;
-            }
-
-            else if (this.Lw != Lw || this.Lh != Lh)
-            {
-                NewSize = true;
-                NewThumbnail = true;
-                ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
-                this.Lw = Lw;
-                this.Lh = Lh;
-            }
-
-            // Refresh Thumbnail
-            if (NewThumbnail)
-            {
-                double TScale = Math.Max(Iw / Lw, Ih / Lh);
-                if (TScale > 1d)
-                {
-                    do
-                    {
-                        TScale /= 1.5d;
-                    } while (TScale > 1d);
-
-                    TScale = TScale * Lw / Iw;
-                }
-                else
-                {
-                    TScale = 1d;
-                }
-
-                if (NewImage || TScale / ThumbnailScale > 1.5d)
-                    RefreshThumbnail(Image, TScale);
-            }
-
-            if (NewImage || NewSize)
-            {
-                BlockIndex Index = new();
-                bool IsBlockInvalid = false;
-                double ScaleX = Lw / Iw,
-                       ScaleY = Lh / Ih,
-                       SIx, SIy, SIw, SIh;
-                if (ScaleX < ScaleY)
-                {
-                    IsBlockInvalid = NewImage || !ScaleX.Equals(Scale);
-                    Scale = ScaleX;
-                    Ih *= ScaleX;
-
-                    SIx = 0d;
-                    SIy = Math.Round((Lh - Ih) / 2d);
-                    SIw = Lw;
-                    SIh = Ih;
-                }
-                else
-                {
-                    IsBlockInvalid = NewImage || !ScaleY.Equals(Scale);
-                    Scale = ScaleY;
-                    Iw *= ScaleY;
-
-                    SIx = Math.Round((Lw - Iw) / 2d);
-                    SIy = 0d;
-                    SIw = Iw;
-                    SIh = Lh;
-                }
-
-                int IBc = (int)Math.Ceiling(SIw / RenderBlockSize),
-                    IBr = (int)Math.Ceiling(SIh / RenderBlockSize);
-
-                if (IsBlockInvalid)
-                {
-                    // Invalidates all blocks.
-                    ICollection<WriteableBitmap> CacheCanvas = this.CacheCanvas.Values;
-                    if (CacheCanvas.Count > 0)
-                    {
-                        this.CacheCanvas.Clear();
-                        foreach (WriteableBitmap Canvas in CacheCanvas)
-                            InvalidateCanvas(Canvas);
-                    }
-
-                    if (RenderBlocks.Count > 0)
-                        foreach (ImageViewerLayerRenderBlock Block in RenderBlocks.Values)
-                            InvalidateCanvas(Block);
-
-                    // Invalidates all RenderActions
-                    BlockRenderActionTable.Clear();
-                }
-
-                // Checks that enough blocks.
-                for (int i = this.IBc + 1; i <= IBc; i++)
-                    for (int j = 0; j <= this.IBr; j++)
-                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
-
-                for (int j = this.IBr + 1; j <= IBr; j++)
-                    for (int i = 0; i <= IBc; i++)
-                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
-
-                // Refresh BlockInfos
-                LBL = LBT = 0;
-                LBR = IBc - 1;
-                LBB = IBr - 1;
-                this.IBc = Math.Max(this.IBc, IBc);
-                this.IBr = Math.Max(this.IBr, IBr);
-
-                // Refresh Blocks
-                int IntSIw = (int)SIw,
-                    IntSIh = (int)SIh,
-                    Sx, Sy = 0,
-                    Bw, Bh;
-
-                double Ix,
-                       Iy = SIy,
-                       ThumbnailFactor = ThumbnailScale / Scale;
-
-                NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntSIw, IntSIh);
-                Index.Row = 0;
-                for (int j = LBT; j <= LBB; j++, Index.Row++, Sy += RenderBlockSize, Iy += RenderBlockSize)
-                {
-                    Sx = 0;
-                    Ix = SIx;
-                    Bh = Sy + RenderBlockSize <= IntSIh ? RenderBlockSize : IntSIh - Sy;
-                    if (Bh <= 0)
-                        break;
-
-                    Index.Column = 0;
-                    for (int i = LBL; i <= LBR; i++, Index.Column++, Sx += RenderBlockSize, Ix += RenderBlockSize)
-                    {
-                        Bw = Sx + RenderBlockSize <= IntSIw ? RenderBlockSize : IntSIw - Sx;
-                        if (Bw <= 0)
-                            break;
-
-                        ImageViewerLayerRenderBlock Block = RenderBlocks[Index];
-                        Block.Region.X = Ix;
-                        Block.Region.Y = Iy;
-                        Block.Region.Width = Bw;
-                        Block.Region.Height = Bh;
-
-                        if (Block.Canvas is not WriteableBitmap Canvas)
-                        {
-                            Int32Rect ThumbnailRegion = new((int)(Sx * ThumbnailFactor),
-                                                            (int)(Sy * ThumbnailFactor),
-                                                            (int)(Bw * ThumbnailFactor),
-                                                            (int)(Bh * ThumbnailFactor));
-                            if (Block.Bitmap is not CroppedBitmap Thumbnail ||
-                                !this.Thumbnail.Equals(Thumbnail.Source) ||
-                                !Thumbnail.SourceRect.Equals(ThumbnailRegion))
-                                Block.Bitmap = new CroppedBitmap(this.Thumbnail, ThumbnailRegion);
-
-                            if (ThumbnailScale != 1d && !Block.IsRendering)
-                            {
-                                BlockIndex ActionIndex = Index;
-                                int TSx = Sx,
-                                    TSy = Sy,
-                                    TBw = Bw,
-                                    TBh = Bh;
-                                void RenderAction()
-                                {
-                                    try
-                                    {
-                                        Block.IsRendering = true;
-                                        if (!DequeueCacheCanvas(ActionIndex, out Canvas))
-                                        {
-                                            Canvas = GetCanvas();
-                                            Canvas.Lock();
-
-                                            byte* pDest0 = (byte*)Canvas.BackBuffer;
-                                            long Stride = Canvas.BackBufferStride;
-
-                                            PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                            for (int y = 0; y < TBh; y++)
-                                            {
-                                                Adapter.DangerousMove(TSx, TSy + y);
-
-                                                BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
-                                                for (int x = 0; x < TBw; x++, Adapter.DangerousMoveNextX(), pDest++)
-                                                    Adapter.OverrideTo(pDest);
-                                            }
-
-                                            Canvas.AddDirtyRect(DirtyRect);
-                                            Canvas.Unlock();
-                                        }
-
-                                        Block.Canvas = Canvas;
-                                        Block.Bitmap = TBw == RenderBlockSize && TBh == RenderBlockSize ? Canvas :
-                                                                                                          new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, TBw, TBh));
-
-                                        Layer.InvalidateVisual();
-                                    }
-                                    finally
-                                    {
-                                        Block.IsRendering = false;
-                                    }
-                                }
-
-                                BlockRenderActionTable.AddOrUpdate(ActionIndex, RenderAction, (o, v) => RenderAction);
-                                Timer.Start();
-                            }
-                        }
-                    }
-                }
-
-                Layer.InvalidateVisual();
-            }
-        }
-        private unsafe void RefreshContext(IImageContext Image, ImageViewer Viewer)
-        {
-            bool NewImage = false,
-                 NewThumbnail = false;
-            int ImageHash = Image.GetHashCode();
-            double Iw = Image.Width,
-                   Ih = Image.Height;
-            if (this.ImageHash != ImageHash)
-            {
-                NewImage = true;
-                NewThumbnail = true;
-                this.ImageHash = ImageHash;
-                this.Iw = Iw;
-                this.Ih = Ih;
-            }
-
             bool NewScale = false;
             double Scale = Viewer.Scale;
             if (this.Scale != Scale)
@@ -584,42 +248,11 @@ namespace MenthaAssembly.Views.Primitives
                 LayerPresenter.InvalidateMeasure();
             }
 
-            int IBc = this.IBc,
-                IBr = this.IBr;
-            double SIw = Math.Round(Iw * Scale),
-                   SIh = Math.Round(Ih * Scale);
+            // Refresh Region Size
             if (NewImage || NewScale)
             {
-                IBc = (int)Math.Ceiling(SIw / RenderBlockSize);
-                IBr = (int)Math.Ceiling(SIh / RenderBlockSize);
-
-                // Invalidates all blocks.
-                ICollection<WriteableBitmap> CacheCanvas = this.CacheCanvas.Values;
-                if (CacheCanvas.Count > 0)
-                {
-                    this.CacheCanvas.Clear();
-                    foreach (WriteableBitmap Canvas in CacheCanvas)
-                        InvalidateCanvas(Canvas);
-                }
-
-                if (RenderBlocks.Count > 0)
-                    foreach (ImageViewerLayerRenderBlock Block in RenderBlocks.Values)
-                        InvalidateCanvas(Block);
-
-                // Invalidates all RenderActions
-                BlockRenderActionTable.Clear();
-
-                // Checks that enough blocks.
-                for (int i = this.IBc + 1; i <= IBc; i++)
-                    for (int j = 0; j <= this.IBr; j++)
-                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
-
-                for (int j = this.IBr + 1; j <= IBr; j++)
-                    for (int i = 0; i <= IBc; i++)
-                        RenderBlocks.Add(new(i, j), new ImageViewerLayerRenderBlock());
-
-                this.IBc = Math.Max(this.IBc, IBc);
-                this.IBr = Math.Max(this.IBr, IBr);
+                Region.Width = Math.Floor(Iw * Scale);
+                Region.Height = Math.Floor(Ih * Scale);
             }
 
             bool NewSize = false;
@@ -628,40 +261,17 @@ namespace MenthaAssembly.Views.Primitives
             if (ClipGeometry is null)
             {
                 NewSize = true;
-                NewThumbnail = true;
                 ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
                 this.Lw = Lw;
                 this.Lh = Lh;
             }
+
             else if (this.Lw != Lw || this.Lh != Lh)
             {
                 NewSize = true;
-                NewThumbnail = true;
                 ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
                 this.Lw = Lw;
                 this.Lh = Lh;
-            }
-
-            // Refresh Thumbnail
-            if (NewThumbnail)
-            {
-                double TScale = Math.Max(Iw / Lw, Ih / Lh);
-                if (TScale > 1d)
-                {
-                    do
-                    {
-                        TScale /= 1.5d;
-                    } while (TScale > 1d);
-
-                    TScale = TScale * Lw / Iw;
-                }
-                else
-                {
-                    TScale = 1d;
-                }
-
-                if (NewImage || TScale / ThumbnailScale > 1.5d)
-                    RefreshThumbnail(Image, TScale);
             }
 
             bool NewRegion = false;
@@ -679,183 +289,389 @@ namespace MenthaAssembly.Views.Primitives
                    ContextY = Viewer.ContextY;
             AlignContextLocation(Viewer, Layer, Iw, Ih, ref ContextX, ref ContextY);
 
-            double Dx = (Vx - ContextX) * Scale,
-                   Dy = (Vy - ContextY) * Scale;
-
-            int IBcIndex = IBc - 1,
-                IBrIndex = IBr - 1,
-                LBL = MathHelper.Clamp((int)(Dx / RenderBlockSize), 0, IBcIndex),
-                LBT = MathHelper.Clamp((int)(Dy / RenderBlockSize), 0, IBrIndex),
-                LBR = MathHelper.Clamp((int)((Viewport.Right - ContextX) * Scale / RenderBlockSize), 0, IBcIndex),
-                LBB = MathHelper.Clamp((int)((Viewport.Bottom - ContextY) * Scale / RenderBlockSize), 0, IBrIndex);
-            if (NewSize || this.LBL != LBL || this.LBT != LBT || this.LBR != LBR || this.LBB != LBB)
-            {
-                NewRegion = true;
-                this.LBL = LBL;
-                this.LBT = LBT;
-                this.LBR = LBR;
-                this.LBB = LBB;
-
-                int ExL = LBL - 1,
-                    ExR = LBR + 1,
-                    ExT = LBT - 1,
-                    ExB = LBB + 1;
-
-                foreach (KeyValuePair<BlockIndex, ImageViewerLayerRenderBlock> BlockInfo in RenderBlocks.Where(i => i.Value.Canvas != null))
-                {
-                    BlockIndex Index = BlockInfo.Key;
-                    if (ExL <= Index.Column && Index.Column <= ExR)
-                    {
-                        if (ExT == Index.Row || Index.Row == ExB)
-                        {
-                            // OnBorder
-                            EnqueueCacheCanvas(BlockInfo.Value, Index);
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        // Outside
-                        InvalidateCanvas(BlockInfo.Value);
-                        continue;
-                    }
-
-                    if (ExT <= Index.Row && Index.Row <= ExB)
-                    {
-                        if (ExL == Index.Column || Index.Column == ExR)
-                        {
-                            // OnBorder
-                            EnqueueCacheCanvas(BlockInfo.Value, Index);
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        // Outside
-                        InvalidateCanvas(BlockInfo.Value);
-                        continue;
-                    }
-                }
-            }
-
-            // Refresh Blocks
+            // Refresh Region Location
             if (NewImage || NewScale || NewRegion)
             {
-                BlockIndex Index = new();
-                int S0 = LBL * RenderBlockSize,
-                    Sy = LBT * RenderBlockSize,
-                    IntSIw = (int)SIw,
-                    IntSIh = (int)SIh,
-                    Sx, Bw, Bh;
+                Region.X = (ContextX - Vx) * Scale;
+                Region.Y = (ContextY - Vy) * Scale;
+                return true;
+            }
 
-                double I0 = Math.Round(S0 - Dx),
-                       Ix,
-                       Iy = Math.Round(Sy - Dy),
-                       ThumbnailFactor = ThumbnailScale / Scale;
+            return NewSize;
+        }
 
-                int ThumbIw = Thumbnail.PixelWidth,
-                    ThumbIh = Thumbnail.PixelHeight,
-                    ThumbBSize = (int)(RenderBlockSize * ThumbnailFactor),
-                    ThumbS0 = (int)(S0 * ThumbnailFactor),
-                    ThumbSy = (int)(Sy * ThumbnailFactor),
-                    ThumbSx, ThumbBw, ThumbBh;
+        private void RefreshContext(IImageContext Image)
+        {
+            bool NewThumbnail = false;
+            int ImageHash = Image.GetHashCode();
+            double Iw = Image.Width,
+                   Ih = Image.Height;
+            if (this.ImageHash != ImageHash)
+            {
+                NewThumbnail = true;
+                this.ImageHash = ImageHash;
+                this.Iw = Iw;
+                this.Ih = Ih;
+            }
 
-                NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntSIw, IntSIh);
-                Index.Row = LBT;
-                for (int j = LBT; j <= LBB; j++, Index.Row++, Sy += RenderBlockSize, Iy += RenderBlockSize, ThumbSy += ThumbBSize)
+            double Lw = Layer.ActualWidth,
+                   Lh = Layer.ActualHeight;
+            if (ClipGeometry is null)
+            {
+                NewThumbnail = true;
+                ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
+                this.Lw = Lw;
+                this.Lh = Lh;
+            }
+
+            else if (this.Lw != Lw || this.Lh != Lh)
+            {
+                NewThumbnail = true;
+                ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
+                this.Lw = Lw;
+                this.Lh = Lh;
+            }
+
+            // Refresh Thumbnail
+            if (NewThumbnail)
+            {
+                Scale = Math.Min(Lw / Iw, Lh / Ih);
+
+                double ThumbnailScale = Math.Min(Scale, 1d);
+                if (this.ThumbnailScale < ThumbnailScale)
+                    RefreshThumbnail(Image, ThumbnailScale);
+
+                // Refresh Region
+                double Tw = Math.Floor(Iw * Scale),
+                       Th = Math.Floor(Ih * Scale);
+                Region = new((Lw - Tw) / 2d, (Lh - Th) / 2d, Tw, Th);
+
+                // Reset LayerBlock Index
+                LBL = LBT = LBR = LBB = -1;
+
+                // Refresh RenderBlock
+                if (!RenderBlocks.TryGetValue(Thumbnail, out RenderBlock RenderBlock))
                 {
-                    Sx = S0;
-                    ThumbSx = ThumbS0;
-                    Ix = I0;
-                    Bh = Sy + RenderBlockSize <= IntSIh ? RenderBlockSize : IntSIh - Sy;
-                    ThumbBh = ThumbSy + ThumbBSize <= ThumbIh ? ThumbBSize : ThumbIh - ThumbSy;
-                    if (Bh <= 0)
-                        break;
-
-                    Index.Column = LBL;
-                    for (int i = LBL; i <= LBR; i++, Index.Column++, Sx += RenderBlockSize, Ix += RenderBlockSize, ThumbSx += ThumbBSize)
-                    {
-                        Bw = Sx + RenderBlockSize <= IntSIw ? RenderBlockSize : IntSIw - Sx;
-                        ThumbBw = ThumbSx + ThumbBSize <= ThumbIw ? ThumbBSize : ThumbIw - ThumbSx;
-                        if (Bw <= 0)
-                            break;
-
-                        ImageViewerLayerRenderBlock Block = RenderBlocks[Index];
-                        Block.Region.X = Ix;
-                        Block.Region.Y = Iy;
-                        Block.Region.Width = Bw;
-                        Block.Region.Height = Bh;
-
-                        if (Block.Canvas is not WriteableBitmap Canvas)
-                        {
-                            Int32Rect ThumbnailRegion = new(ThumbSx, ThumbSy, ThumbBw, ThumbBh);
-                            if (Block.Bitmap is not CroppedBitmap Thumbnail ||
-                                !this.Thumbnail.Equals(Thumbnail.Source) ||
-                                !Thumbnail.SourceRect.Equals(ThumbnailRegion))
-                                Block.Bitmap = new CroppedBitmap(this.Thumbnail, ThumbnailRegion);
-
-                            if (ThumbnailScale != 1d && !Block.IsRendering)
-                            {
-                                BlockIndex ActionIndex = Index;
-                                int TSx = Sx,
-                                    TSy = Sy,
-                                    TBw = Bw,
-                                    TBh = Bh;
-                                void RenderAction()
-                                {
-                                    try
-                                    {
-                                        Block.IsRendering = true;
-                                        if (!DequeueCacheCanvas(ActionIndex, out Canvas))
-                                        {
-                                            Canvas = GetCanvas();
-                                            Canvas.Lock();
-
-                                            byte* pDest0 = (byte*)Canvas.BackBuffer;
-                                            long Stride = Canvas.BackBufferStride;
-
-                                            PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                            for (int y = 0; y < TBh; y++)
-                                            {
-                                                Adapter.DangerousMove(TSx, TSy + y);
-
-                                                BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
-                                                for (int x = 0; x < TBw; x++, Adapter.DangerousMoveNextX(), pDest++)
-                                                    Adapter.OverrideTo(pDest);
-                                            }
-
-                                            Canvas.AddDirtyRect(DirtyRect);
-                                            Canvas.Unlock();
-                                        }
-
-                                        Block.Canvas = Canvas;
-                                        Block.Bitmap = TBw == RenderBlockSize && TBh == RenderBlockSize ? Canvas :
-                                                                                                          new CroppedBitmap(Block.Canvas, new Int32Rect(0, 0, TBw, TBh));
-
-                                        Layer.InvalidateVisual();
-                                    }
-                                    finally
-                                    {
-                                        Block.IsRendering = false;
-                                    }
-                                }
-
-                                BlockRenderActionTable.AddOrUpdate(ActionIndex, RenderAction, (o, v) => RenderAction);
-                                Timer.Start();
-                            }
-                        }
-                    }
+                    RenderBlock = new(Thumbnail);
+                    RenderBlocks[Thumbnail] = RenderBlock;
                 }
+
+                RenderBlock.Region = Region;
+                foreach (object Key in RenderBlocks.Keys.Where(i => i != Thumbnail))
+                    RenderBlocks.Remove(Key);
 
                 Layer.InvalidateVisual();
             }
         }
 
+        private LayerCanvas RenderCanvas;
+        private readonly Dictionary<object, RenderBlock> RenderBlocks = [];
+        private void RefreshContext(IImageContext Image, ImageViewer Viewer)
+        {
+            bool NewImage = false;
+            int ImageHash = Image.GetHashCode();
+            double Iw = Image.Width,
+                   Ih = Image.Height;
+            if (this.ImageHash != ImageHash)
+            {
+                NewImage = true;
+                this.ImageHash = ImageHash;
+                this.Iw = Iw;
+                this.Ih = Ih;
+
+                // Reset Cache
+                foreach (LayerCanvas Canvas in RenderCanvases)
+                    Canvas.Reset();
+
+                RenderCanvases.Clear();
+                RenderCanvas = null;
+            }
+
+            bool NewScale = false;
+            double Scale = Viewer.Scale;
+            if (this.Scale != Scale)
+            {
+                NewScale = true;
+                this.Scale = Scale;
+                LayerPresenter.InvalidateMeasure();
+            }
+
+            if (NewImage || NewScale)
+            {
+                // Refresh Region Size
+                Region.Width = Math.Floor(Iw * Scale);
+                Region.Height = Math.Floor(Ih * Scale);
+
+                RenderCanvas = GetLayerCanvas(Image, Scale);
+
+                // Invalidates all RenderActions
+                RenderingBlockTable.Clear();
+            }
+
+            bool NewSize = false;
+            double Lw = Layer.ActualWidth,
+                   Lh = Layer.ActualHeight;
+            if (ClipGeometry is null)
+            {
+                NewSize = true;
+                ClipGeometry = new RectangleGeometry(new Rect(0d, 0d, Lw, Lh));
+                this.Lw = Lw;
+                this.Lh = Lh;
+            }
+            else if (this.Lw != Lw || this.Lh != Lh)
+            {
+                NewSize = true;
+                ClipGeometry.Rect = new Rect(0d, 0d, Lw, Lh);
+                this.Lw = Lw;
+                this.Lh = Lh;
+            }
+
+            // Refresh Thumbnail
+            double MinScale = Viewer.MinScale;
+            if (NewImage || ThumbnailScale < MinScale)
+                RefreshThumbnail(Image, MinScale);
+
+            bool NewRegion = false;
+            Rect Viewport = Viewer.Viewport;
+            double Vx = Viewport.X,
+                   Vy = Viewport.Y;
+            if (this.Vx != Vx || this.Vy != Vy)
+            {
+                NewRegion = true;
+                this.Vx = Viewport.X;
+                this.Vy = Viewport.Y;
+            }
+
+            double ContextX = Viewer.ContextX,
+                   ContextY = Viewer.ContextY;
+            AlignContextLocation(Viewer, Layer, Iw, Ih, ref ContextX, ref ContextY);
+
+            bool NewUsage = NewImage || NewScale;
+            if (Scale >= 1d)
+            {
+                LayerCanvas OriginalCanvas = GetLayerCanvas(Image, 1d);
+                double Dx = Vx - ContextX,
+                       Dy = Vy - ContextY;
+
+                // Refresh Region Location
+                Region.X = -Dx * Scale;
+                Region.Y = -Dy * Scale;
+
+                int IBcIndex = OriginalCanvas.ColumnLength - 1,
+                    IBrIndex = OriginalCanvas.RowLength - 1,
+                    LBL = MathHelper.Clamp((int)(Dx / RenderBlockSize), 0, IBcIndex),
+                    LBT = MathHelper.Clamp((int)(Dy / RenderBlockSize), 0, IBrIndex),
+                    LBR = MathHelper.Clamp((int)((Viewport.Right - ContextX) / RenderBlockSize), 0, IBcIndex),
+                    LBB = MathHelper.Clamp((int)((Viewport.Bottom - ContextY) / RenderBlockSize), 0, IBrIndex);
+                if (NewSize || this.LBL != LBL || this.LBT != LBT || this.LBR != LBR || this.LBB != LBB)
+                {
+                    NewUsage = true;
+                    NewRegion = true;
+                    this.LBL = LBL;
+                    this.LBT = LBT;
+                    this.LBR = LBR;
+                    this.LBB = LBB;
+                }
+
+                // Refresh Blocks
+                if (NewImage || NewScale || NewRegion)
+                {
+                    List<LayerBlock> NewBlocks = [];
+                    foreach ((LayerBlock Block, Rect Region) in SearchReferenceBlock(Scale, OriginalCanvas, Dx, Dy, LBL, LBT, LBR, LBB))
+                    {
+                        NewBlocks.Add(Block);
+                        if (NewUsage)
+                            Block.Usage++;
+
+                        Dictionary<object, RenderBlock> Table = Block.Context is null ? RenderingBlockTable : RenderBlocks;
+                        if (!Table.TryGetValue(Block, out RenderBlock RenderBlock))
+                        {
+                            RenderBlock = new(Block);
+                            Table[Block] = RenderBlock;
+                        }
+
+                        RenderBlock.Region = Region;
+                    }
+
+                    // Remove useless blocks.
+                    foreach (object Old in RenderBlocks.Keys.Except(NewBlocks))
+                    {
+                        RenderBlocks.Remove(Old);
+                        RenderingBlockTable.Remove(Old);
+                    }
+
+                    Layer.InvalidateVisual();
+                }
+            }
+            else if (Scale <= ThumbnailScale)
+            {
+                NewUsage = false;
+                LBL = LBT = LBR = LBB = -1;
+
+                if (!RenderBlocks.TryGetValue(Thumbnail, out RenderBlock RenderBlock))
+                {
+                    RenderBlock = new(Thumbnail);
+                    RenderBlocks[Thumbnail] = RenderBlock;
+                }
+
+                // Refresh Region
+                Region.X = (ContextX - Vx) * Scale;
+                Region.Y = (ContextY - Vy) * Scale;
+                RenderBlock.Region = Region;
+
+                // Remove useless blocks.
+                foreach (object Key in RenderBlocks.Keys.Where(i => i != Thumbnail))
+                    RenderBlocks.Remove(Key);
+
+                Layer.InvalidateVisual();
+            }
+            else
+            {
+                double Dx = (Vx - ContextX) * Scale,
+                       Dy = (Vy - ContextY) * Scale;
+
+                // Refresh Region Location
+                Region.X = -Dx;
+                Region.Y = -Dy;
+
+                int IBcIndex = RenderCanvas.ColumnLength - 1,
+                    IBrIndex = RenderCanvas.RowLength - 1,
+                    LBL = MathHelper.Clamp((int)(Dx / RenderBlockSize), 0, IBcIndex),
+                    LBT = MathHelper.Clamp((int)(Dy / RenderBlockSize), 0, IBrIndex),
+                    LBR = MathHelper.Clamp((int)((Viewport.Right - ContextX) * Scale / RenderBlockSize), 0, IBcIndex),
+                    LBB = MathHelper.Clamp((int)((Viewport.Bottom - ContextY) * Scale / RenderBlockSize), 0, IBrIndex);
+                if (NewSize || this.LBL != LBL || this.LBT != LBT || this.LBR != LBR || this.LBB != LBB)
+                {
+                    NewUsage = true;
+                    NewRegion = true;
+                    this.LBL = LBL;
+                    this.LBT = LBT;
+                    this.LBR = LBR;
+                    this.LBB = LBB;
+                }
+
+                // Refresh Blocks
+                if (NewImage || NewScale || NewRegion)
+                {
+                    List<LayerBlock> NewBlocks = [];
+                    foreach ((LayerBlock Block, Rect Region) in SearchBlock(RenderCanvas, Dx, Dy, LBL, LBT, LBR, LBB))
+                    {
+                        NewBlocks.Add(Block);
+                        if (NewUsage)
+                            Block.Usage++;
+
+                        Dictionary<object, RenderBlock> Table = Block.Context is null ? RenderingBlockTable : RenderBlocks;
+                        if (!Table.TryGetValue(Block, out RenderBlock RenderBlock))
+                        {
+                            RenderBlock = new(Block);
+                            Table[Block] = RenderBlock;
+                        }
+
+                        RenderBlock.Region = Region;
+                    }
+
+                    // Remove useless blocks.
+                    foreach (object Old in RenderBlocks.Keys.Except(NewBlocks))
+                    {
+                        RenderBlocks.Remove(Old);
+                        RenderingBlockTable.Remove(Old);
+                    }
+
+                    Layer.InvalidateVisual();
+                }
+            }
+
+            // Usage
+            if (NewUsage)
+            {
+                // When scale > 1, the LayerCanvas with scale 1 is used, so temporary images will never be generated.
+                foreach (LayerCanvas Canvas in RenderCanvases.Where(i => i.Scale <= 1d))
+                    Canvas.RefreshUsage();
+            }
+        }
+
+        private readonly List<LayerCanvas> RenderCanvases = [];
+        private LayerCanvas GetLayerCanvas(IImageContext Image, double Scale)
+        {
+            if (RenderCanvases.FirstOrDefault(i => i.Scale == Scale) is not LayerCanvas Canvas)
+            {
+                Canvas = new LayerCanvas(Image, Scale);
+                int Index = RenderCanvases.FindIndex(i => i.Scale > Scale);
+                if (Index < 0)
+                    Index = RenderCanvases.Count;
+
+                RenderCanvases.Insert(Index, Canvas);
+            }
+
+            return Canvas;
+        }
+
+        /// <summary>
+        /// Search RenderBlock.
+        /// </summary>
+        /// <param name="Target">The LayerCanvas that is actually rendered.</param>
+        /// <param name="Dx">The x-coordinate offset from the viewport to the image origin at scale 1 in the viewer.</param>
+        /// <param name="Dy">The y-coordinate offset from the viewport to the image origin at scale 1 in the viewer.</param>
+        /// <param name="LBL">The x index of the leftmost block of the reference LayerCanvas.</param>
+        /// <param name="LBT">The y index of the topmost block of the reference LayerCanvas.</param>
+        /// <param name="LBR">The x index of the rightmost block of the reference LayerCanvas.</param>
+        /// <param name="LBB">The y index of the bottommost block of the reference LayerCanvas.</param>
+        private static IEnumerable<(LayerBlock Block, Rect Region)> SearchBlock(LayerCanvas Target, double Dx, double Dy, int LBL, int LBT, int LBR, int LBB)
+        {
+            double I0 = Math.Round(LBL * RenderBlockSize - Dx),
+                   Iy = Math.Round(LBT * RenderBlockSize - Dy);
+
+            double Ix;
+            for (int j = LBT; j <= LBB; j++, Iy += RenderBlockSize)
+            {
+                Ix = I0;
+                for (int i = LBL; i <= LBR; i++, Ix += RenderBlockSize)
+                {
+                    LayerBlock Block = Target[i, j];
+                    Rect Region = new(Ix, Iy, Block.Width, Block.Height);
+
+                    yield return (Block, Region);
+                }
+            }
+        }
+        /// <summary>
+        /// Search RenderBlock by reference LayerCanvas.
+        /// </summary>
+        /// <param name="TargetScale">The scale of LayerCanvas rendered in theory.</param>
+        /// <param name="Reference">The LayerCanvas that is actually rendered.</param>
+        /// <param name="Dx">The x-coordinate offset from the viewport to the image origin at scale 1 in the viewer.</param>
+        /// <param name="Dy">The y-coordinate offset from the viewport to the image origin at scale 1 in the viewer.</param>
+        /// <param name="LBL">The x index of the leftmost block of the reference LayerCanvas.</param>
+        /// <param name="LBT">The y index of the topmost block of the reference LayerCanvas.</param>
+        /// <param name="LBR">The x index of the rightmost block of the reference LayerCanvas.</param>
+        /// <param name="LBB">The y index of the bottommost block of the reference LayerCanvas.</param>
+        private static IEnumerable<(LayerBlock Block, Rect Region)> SearchReferenceBlock(double TargetScale, LayerCanvas Reference, double Dx, double Dy, int LBL, int LBT, int LBR, int LBB)
+        {
+            double ScaledBlockSize = RenderBlockSize / Reference.Scale * TargetScale,
+                   I0 = Math.Round(LBL * ScaledBlockSize - Dx * TargetScale),
+                   Iy = Math.Round(LBT * ScaledBlockSize - Dy * TargetScale);
+
+            double Ix;
+            for (int j = LBT; j <= LBB; j++, Iy += ScaledBlockSize)
+            {
+                Ix = I0;
+                for (int i = LBL; i <= LBR; i++, Ix += ScaledBlockSize)
+                {
+                    LayerBlock Block = Reference[i, j];
+                    Rect Region = new(Ix, Iy, Block.Width * TargetScale, Block.Height * TargetScale);
+
+                    yield return (Block, Region);
+                }
+            }
+        }
+
+        public double ThumbnailScale;
+        public WriteableBitmap Thumbnail;
         private unsafe void RefreshThumbnail(IImageContext Image, double Scale)
         {
             ThumbnailScale = Scale;
-            int Iw = (int)Math.Round(Image.Width * Scale),
-                Ih = (int)Math.Round(Image.Height * Scale);
+            int Iw = (int)Math.Floor(Image.Width * Scale),
+                Ih = (int)Math.Floor(Image.Height * Scale);
 
             if (Thumbnail is null || Thumbnail.PixelWidth < Iw || Thumbnail.PixelHeight < Ih)
                 Thumbnail = new WriteableBitmap(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
@@ -884,42 +700,6 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
-        private readonly ConcurrentDictionary<BlockIndex, WriteableBitmap> CacheCanvas = new();
-        private void EnqueueCacheCanvas(ImageViewerLayerRenderBlock Block, BlockIndex Index)
-        {
-            if (!Block.IsRendering && Block.Canvas != null)
-            {
-                EnqueueCacheCanvas(Block.Canvas, Index);
-                Block.Canvas = null;
-            }
-        }
-        private void EnqueueCacheCanvas(WriteableBitmap Canvas, BlockIndex Index)
-        {
-            if (Index.Equals(BlockIndex.Invalid))
-                InvalidCanvas.Enqueue(Canvas);
-            else
-                CacheCanvas.AddOrUpdate(Index, Canvas, (o, v) => Canvas);
-        }
-        private bool DequeueCacheCanvas(BlockIndex Index, out WriteableBitmap Canvas)
-            => CacheCanvas.TryRemove(Index, out Canvas);
-
-        private readonly ConcurrentQueue<WriteableBitmap> InvalidCanvas = new();
-        private void InvalidateCanvas(ImageViewerLayerRenderBlock Block)
-        {
-            if (!Block.IsRendering && Block.Canvas != null)
-            {
-                InvalidateCanvas(Block.Canvas);
-                Block.Canvas = null;
-            }
-
-            Block.Bitmap = null;
-        }
-        private void InvalidateCanvas(WriteableBitmap Canvas)
-            => InvalidCanvas.Enqueue(Canvas);
-        private WriteableBitmap GetCanvas()
-            => InvalidCanvas.TryDequeue(out WriteableBitmap Invalid) ? Invalid :
-                                                                       new WriteableBitmap(RenderBlockSize, RenderBlockSize, 96d, 96d, PixelFormats.Bgra32, null);
-
         public void Render(DrawingContext Context)
         {
             if (HasImage)
@@ -928,7 +708,6 @@ namespace MenthaAssembly.Views.Primitives
                 if (HasViewer)
                 {
                     Context.PushClip(ClipGeometry);
-                    Context.PushTransform(ScaleTransform);
                     Context.DrawImage(Source, Region);
                     Context.Pop();
 
@@ -960,45 +739,32 @@ namespace MenthaAssembly.Views.Primitives
             {
                 Context.PushClip(ClipGeometry);
 
-                ImageViewerLayerRenderBlock Block = null;
-                BlockIndex Index = new(LBL, LBT);
-
                 // Guild Line
                 GuidelineSet GuideLines = new();
-                for (int i = LBL; i <= LBR; i++, Index.Column++)
+                foreach (Rect Region in RenderBlocks.Values.Select(i => i.Region))
                 {
-                    Block = RenderBlocks[Index];
-                    GuideLines.GuidelinesX.Add(Block.Region.Left);
-                }
-                GuideLines.GuidelinesX.Add(Block.Region.Right);
+                    double Temp = Region.Left;
+                    if (!GuideLines.GuidelinesX.Contains(Temp))
+                        GuideLines.GuidelinesX.Add(Temp);
 
-                for (int j = LBT; j <= LBB; j++, Index.Row++)
-                {
-                    Block = RenderBlocks[Index];
-                    GuideLines.GuidelinesY.Add(Block.Region.Top);
+                    Temp = Region.Right;
+                    if (!GuideLines.GuidelinesX.Contains(Temp))
+                        GuideLines.GuidelinesX.Add(Temp);
+
+                    Temp = Region.Top;
+                    if (!GuideLines.GuidelinesY.Contains(Temp))
+                        GuideLines.GuidelinesY.Add(Temp);
+
+                    Temp = Region.Bottom;
+                    if (!GuideLines.GuidelinesY.Contains(Temp))
+                        GuideLines.GuidelinesY.Add(Temp);
                 }
-                GuideLines.GuidelinesY.Add(Block.Region.Bottom);
 
                 Context.PushGuidelineSet(GuideLines);
 
                 // Image
-                Index.Row = LBT;
-                for (int j = LBT; j <= LBB; j++, Index.Row++)
-                {
-                    Index.Column = LBL;
-                    for (int i = LBL; i <= LBR; i++, Index.Column++)
-                    {
-                        Block = RenderBlocks[Index];
-                        Context.DrawImage(Block.Bitmap, Block.Region);
-                        //if (!Block.IsRendering && Block.Canvas != null)
-                        //{
-                        //}
-                        //else
-                        //{
-                        //    Context.DrawRectangle(Brushes.Red, null, Block.Region);
-                        //}
-                    }
-                }
+                foreach (RenderBlock Block in RenderBlocks.Values)
+                    Context.DrawImage(Block.Context, Block.Region);
 
                 if (HasMarks)
                 {
@@ -1009,9 +775,7 @@ namespace MenthaAssembly.Views.Primitives
                 }
 
 #if EnableBlockGrid
-
-                // EnableBlockGrid
-                Pen GridPen = new Pen(Brushes.Red, 1d);
+                Pen GridPen = new(Brushes.Red, 1d);
                 foreach (double X in GuideLines.GuidelinesX)
                     Context.DrawLine(GridPen, new Point(X, 0), new Point(X, Layer.ActualHeight));
 
@@ -1076,41 +840,11 @@ namespace MenthaAssembly.Views.Primitives
         /// <param name="Iy">The y-coordinate in image.</param>
         public void TranslatePoint(double Lx, double Ly, out double Ix, out double Iy)
         {
-            if (HasImage)
+            if (HasImage || HasImageContext)
             {
-                if (HasViewer)
-                {
-                    double HLw = Lw / 2d,
-                           HLh = Lh / 2d;
-                    Ix = (Lx - HLw) / Scale + HLw - Region.X;
-                    Iy = (Ly - HLh) / Scale + HLh - Region.Y;
-                }
-                else
-                {
-                    Ix = (Lx - Region.X) / Scale;
-                    Iy = (Ly - Region.Y) / Scale;
-                }
+                Ix = (Lx - Region.X) / Scale;
+                Iy = (Ly - Region.Y) / Scale;
             }
-
-            else if (HasImageContext)
-            {
-                BlockIndex Index = new();
-                if (HasViewer)
-                {
-                    Index.Row = LBT;
-                    Index.Column = LBL;
-                    Rect Region = RenderBlocks[Index].Region;
-                    Ix = (LBL * RenderBlockSize + Lx - Region.X) / Scale;
-                    Iy = (LBT * RenderBlockSize + Ly - Region.Y) / Scale;
-                }
-                else
-                {
-                    Rect Region = RenderBlocks[Index].Region;
-                    Ix = (Lx - Region.X) / Scale;
-                    Iy = (Ly - Region.Y) / Scale;
-                }
-            }
-
             else
             {
                 Ix = double.NaN;
@@ -1126,42 +860,11 @@ namespace MenthaAssembly.Views.Primitives
         /// <param name="Iy">The y-coordinate in image.</param>
         public void TranslatePoint(out double Lx, out double Ly, double Ix, double Iy)
         {
-            if (HasImage)
+            if (HasImage || HasImageContext)
             {
-                if (HasViewer)
-                {
-                    double HLw = Lw / 2d,
-                           HLh = Lh / 2d;
-
-                    Lx = (Ix - HLw + Region.X) * Scale + HLw;
-                    Ly = (Iy - HLh + Region.Y) * Scale + HLh;
-                }
-                else
-                {
-                    Lx = Ix * Scale + Region.X;
-                    Ly = Iy * Scale + Region.Y;
-                }
+                Lx = Ix * Scale + Region.X;
+                Ly = Iy * Scale + Region.Y;
             }
-
-            else if (HasImageContext)
-            {
-                BlockIndex Index = new();
-                if (HasViewer)
-                {
-                    Index.Row = LBT;
-                    Index.Column = LBL;
-                    Rect Region = RenderBlocks[Index].Region;
-                    Lx = Ix * Scale - LBL * RenderBlockSize + Region.X;
-                    Ly = Iy * Scale - LBT * RenderBlockSize + Region.Y;
-                }
-                else
-                {
-                    Rect Region = RenderBlocks[Index].Region;
-                    Lx = Ix * Scale + Region.X;
-                    Ly = Iy * Scale + Region.Y;
-                }
-            }
-
             else
             {
                 Lx = double.NaN;
@@ -1233,55 +936,280 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
-        private sealed class ImageViewerLayerRenderBlock
+        private const int MaxRecycleCount = 10;
+        private static readonly ConcurrentQueue<WriteableBitmap> Recycler = new();
+        private static WriteableBitmap Rent()
+            => Recycler.TryDequeue(out WriteableBitmap BlockCanvas) ? BlockCanvas : new WriteableBitmap(RenderBlockSize, RenderBlockSize, 96d, 96d, PixelFormats.Bgra32, null);
+        private static void Return(WriteableBitmap BlockCanvas)
         {
-            public WriteableBitmap Canvas;
-
-            public BitmapSource Bitmap;
-
-            public Rect Region;
-
-            public bool IsRendering;
-
-            public override string ToString()
-                => $"Region : {Region}, IsRendering : {IsRendering}";
-
+            if (Recycler.Count < MaxRecycleCount)
+                Recycler.Enqueue(BlockCanvas);
         }
 
-        private struct BlockIndex
+        private sealed class LayerCanvas
         {
-            public static BlockIndex Invalid { get; } = new BlockIndex(int.MinValue, int.MinValue);
+            public const int OriginalMaxUsage = 20; // Give the original ratio a higher number of usage
+            public const int CommonMaxUsage = 10;
 
-            public int Column { set; get; }
+            private readonly LayerBlock[,] Blocks;
 
-            public int Row { set; get; }
+            public int Width { get; }
 
-            public BlockIndex(int Column, int Row)
+            public int Height { get; }
+
+            public double Scale { get; }
+
+            public int ColumnLength { get; }
+
+            public int RowLength { get; }
+
+            public LayerBlock this[int Column, int Row]
+                => Blocks[Column, Row];
+
+            public LayerCanvas(IImageContext Source, double Scale)
             {
-                this.Column = Column;
-                this.Row = Row;
+                this.Scale = Scale;
+
+                int MaxUsage;
+                if (Scale == 1d)
+                {
+                    Width = Source.Width;
+                    Height = Source.Height;
+                    MaxUsage = OriginalMaxUsage;
+                }
+                else
+                {
+                    Width = (int)(Source.Width * Scale);
+                    Height = (int)(Source.Height * Scale);
+                    MaxUsage = CommonMaxUsage;
+                }
+
+                ColumnLength = (Width + LessRenderBlockSize) / RenderBlockSize;
+                RowLength = (Height + LessRenderBlockSize) / RenderBlockSize;
+
+                Blocks = new LayerBlock[ColumnLength, RowLength];
+                Initialize(Source, Width, Height, MaxUsage);
             }
 
-            public bool Inside(int Left, int Top, int Right, int Bottom)
-                => Left <= Column && Column <= Right && Top <= Row && Row <= Bottom;
-
-            public bool OnBorder(int Left, int Top, int Right, int Bottom)
-                => Left <= Column && Column <= Right ? Top == Row || Row == Bottom :
-                                                       Top <= Row && Row <= Bottom && (Left == Column || Column == Right);
-
-            public override int GetHashCode()
+            private void Initialize(IImageContext Source, int SIw, int SIh, int MaxUsage)
             {
-                int hashCode = 656739706;
-                hashCode = hashCode * -1521134295 + Column.GetHashCode();
-                hashCode = hashCode * -1521134295 + Row.GetHashCode();
-                return hashCode;
+                double ViewportBlockSize = RenderBlockSize / Scale,
+                       Iw = Source.Width,
+                       Ih = Source.Height,
+                       Vx, NVx, Vy, NVy, Vw, Vh;
+
+                int Sx, NSx, Bw, Bh;
+
+                Vy = 0d;
+                NVy = ViewportBlockSize;
+                PixelAdapter<BGRA> Adapter = Scale == 1d ? Source.GetAdapter<BGRA>(0, 0) : new NearestResizePixelAdapter<BGRA>(Source, SIw, SIh);
+                for (int j = 0, Sy = 0, NSy = RenderBlockSize; j < RowLength; j++, NSy += RenderBlockSize, NVy += ViewportBlockSize)
+                {
+                    Sx = 0;
+                    Bh = NSy <= SIh ? RenderBlockSize : SIh - Sy;
+                    if (Bh <= 0)
+                        break;
+
+                    Vx = 0d;
+                    Vh = NVy <= Ih ? ViewportBlockSize : Ih - Vy;
+
+                    NSx = RenderBlockSize;
+                    NVx = ViewportBlockSize;
+                    for (int i = 0; i < ColumnLength; i++, NSx += RenderBlockSize, NVx += ViewportBlockSize)
+                    {
+                        Bw = NSx <= SIw ? RenderBlockSize : SIw - Sx;
+                        if (Bw <= 0)
+                            break;
+
+                        Vw = NVx <= Iw ? ViewportBlockSize : Iw - Vx;
+
+                        Blocks[i, j] = new(Sx, Sy, Bw, Bh, new Rect(Vx, Vy, Vw, Vh), Adapter, MaxUsage);
+
+                        Sx = NSx;
+                        Vx = NVx;
+                    }
+
+                    Sy = NSy;
+                    Vy = NVy;
+                }
+            }
+
+            public void RefreshUsage()
+            {
+                foreach (LayerBlock Block in Blocks)
+                {
+                    if (Block.Context is not null &&
+                        --Block.Usage <= 0)
+                        Block.Reset();
+                }
+            }
+
+            /// <summary>
+            /// Destroy Canvas
+            /// </summary>
+            public void Reset()
+            {
+                foreach (LayerBlock Block in Blocks)
+                    Block.Reset();
             }
 
             public override bool Equals(object obj)
-                => obj is BlockIndex Target && Column == Target.Column && Row == Target.Row;
+                => obj is LayerCanvas canvas && Scale == canvas.Scale;
+            public override int GetHashCode()
+#if NET7_0_OR_GREATER
+                => HashCode.Combine(Scale);
+#else
+                => -16161351 + Scale.GetHashCode();
+#endif
+
+        }
+
+        private sealed class LayerBlock(int Sx, int Sy, int Bw, int Bh, Rect Viewport, PixelAdapter<BGRA> Adapter, int MaxUsage)
+        {
+            private readonly Int32Rect RenderRect = new(0, 0, Bw, Bh);
+            private readonly PixelAdapter<BGRA> Adapter = Adapter;
+            private readonly int MaxUsage = MaxUsage;
+
+            private WriteableBitmap Canvas;
+
+            /// <summary>
+            /// Determines the life cycle.<para/>
+            /// It is released when the number &lt;= 0 and reset when <see cref="Render"/>.
+            /// </summary>
+            public int Usage { get; set; }
+
+            /// <summary>
+            /// Image
+            /// </summary>
+            public BitmapSource Context { get; private set; }
+
+            /// <summary>
+            /// Gets the x-coordinate of the block in the scaled image.
+            /// </summary>
+            public int Sx { get; } = Sx;
+
+            /// <summary>
+            /// Gets the y-coordinate of the block in the scaled image.
+            /// </summary>
+            public int Sy { get; } = Sy;
+
+            /// <summary>
+            /// Gets the width of block.
+            /// </summary>
+            public int Width { get; } = Bw;
+
+            /// <summary>
+            /// Gets the height of block.
+            /// </summary>
+            public int Height { get; } = Bh;
+
+            /// <summary>
+            /// Gets the viewport in the original image.
+            /// </summary>
+            public Rect Viewport { get; } = Viewport;
+
+            private bool IsRendering;
+
+            /// <summary>
+            /// Generate Canvas
+            /// </summary>
+            public unsafe void Render()
+            {
+                if (Canvas is not null ||
+                    IsRendering)
+                    return;
+
+                IsRendering = true;
+                Usage = MaxUsage;
+
+                try
+                {
+                    Canvas = Rent();
+                    Canvas.Lock();
+
+                    byte* pDest0 = (byte*)Canvas.BackBuffer;
+                    long Stride = Canvas.BackBufferStride;
+
+                    PixelAdapter<BGRA> Adapter = this.Adapter.Clone();
+                    for (int y = 0; y < Height; y++)
+                    {
+                        Adapter.DangerousMove(Sx, Sy + y);
+
+                        BGRA* pDest = (BGRA*)(pDest0 + Stride * y);
+                        for (int x = 0; x < Width; x++, Adapter.DangerousMoveNextX(), pDest++)
+                            Adapter.OverrideTo(pDest);
+                    }
+
+                    Canvas.AddDirtyRect(RenderRect);
+                    Canvas.Unlock();
+
+                    Context = Canvas.PixelWidth != Width || Canvas.PixelHeight != Height ? new CroppedBitmap(Canvas, RenderRect) : Canvas;
+                }
+                finally
+                {
+                    IsRendering = false;
+                }
+            }
+
+            /// <summary>
+            /// Destroy Canvas
+            /// </summary>
+            public void Reset()
+            {
+                if (Canvas is null)
+                    return;
+
+                Return(Canvas);
+                Canvas = null;
+                Context = null;
+            }
+
+        }
+
+        private sealed class RenderBlock
+        {
+            public BitmapSource Context { get; private set; }
+
+            public Rect Region { get; set; }
+
+            public bool IsRendered
+                => Context != null;
+
+            public RenderBlock(BitmapSource Context)
+            {
+                this.Context = Context;
+            }
+
+            private readonly LayerBlock Block;
+            public RenderBlock(LayerBlock Block)
+            {
+                this.Block = Block;
+                Context = Block.Context;
+            }
+
+            private bool IsRendering;
+            public void Render()
+            {
+                if (Block is null)
+                    return;
+
+                if (IsRendering)
+                    return;
+
+                IsRendering = true;
+                try
+                {
+                    Block.Render();
+                    Context = Block.Context;
+                }
+                finally
+                {
+                    IsRendering = false;
+                }
+            }
 
             public override string ToString()
-                => $"Column : {Column}, Row : {Row}";
+                => $"Region : {Region}, IsRendering : {IsRendering}";
 
         }
 
