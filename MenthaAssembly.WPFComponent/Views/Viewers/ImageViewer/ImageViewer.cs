@@ -109,6 +109,20 @@ namespace MenthaAssembly.Views
         public Size<int> ViewBox
             => (Size<int>)GetValue(ViewBoxPropertyKey.DependencyProperty);
 
+        public static readonly DependencyProperty FitMarginProperty =
+            DependencyProperty.Register(nameof(FitMargin), typeof(Thickness), typeof(ImageViewer),
+                new PropertyMetadata(new Thickness(10),
+                    (d, e) =>
+                    {
+                        if (d is ImageViewer This)
+                            This.OnFitMarginChanged(e.ToChangedEventArgs<Thickness>());
+                    }));
+        public Thickness FitMargin
+        {
+            get => (Thickness)GetValue(FitMarginProperty);
+            set => SetValue(FitMarginProperty, value);
+        }
+
         public static readonly DependencyProperty ViewportProperty =
             DependencyProperty.Register("Viewport", typeof(Rect), typeof(ImageViewer),
                 new PropertyMetadata(Rect.Empty,
@@ -134,7 +148,7 @@ namespace MenthaAssembly.Views
         public double Scale
         {
             get => (double)GetValue(ScaleProperty);
-            set => SetValue(ScaleProperty, double.IsNaN(value) ? value : value.Clamp(MinScale, MaxScale));
+            set => SetValue(ScaleProperty, double.IsNaN(value) ? value : value.Clamp(FitScale, MaxScale));
         }
 
         public static readonly DependencyProperty MaxScaleProperty =
@@ -176,7 +190,7 @@ namespace MenthaAssembly.Views
             TemplatePresenter = new ImageViewerPresenter(this);
             Layers = new ImageViewerLayerCollection(this, TemplatePresenter.Children);
 
-            TemplateBorder = new Border 
+            TemplateBorder = new Border
             {
                 ClipToBounds = true,
                 Child = TemplatePresenter
@@ -194,6 +208,9 @@ namespace MenthaAssembly.Views
             Layers.SetItemsSource(e.NewValue);
             RaiseEvent(e);
         }
+
+        protected virtual void OnFitMarginChanged(ChangedEventArgs<Thickness> e)
+            => Manager.Add(ImageViewerAction.ComputeViewBox);
 
         protected virtual void OnViewBoxChanged(ChangedEventArgs<Size<int>> e)
             => Manager.Add(ImageViewerAction.ContextLocation);
@@ -253,26 +270,21 @@ namespace MenthaAssembly.Views
             }
         }
 
-        protected internal double MinScale = double.NaN;
+        protected internal double FitScale = double.NaN;
         protected internal virtual Size<int> ComputeViewBox(out double FitScale)
         {
             FitScale = double.NaN;
             if (ContextWidth == 0 || ContextHeight == 0)
                 return Size<int>.Empty;
 
-            double W = TemplatePresenter.ActualWidth,
-                   H = TemplatePresenter.ActualHeight;
-            if (W == 0 || H == 0)
+            double Lw = TemplatePresenter.ActualWidth,
+                   Lh = TemplatePresenter.ActualHeight;
+            if (Lw == 0 || Lh == 0)
                 return Size<int>.Empty;
 
-            double Ratio = 1,
-                   Scale = Math.Max(ContextWidth / W, ContextHeight / H);
-
-            while (Ratio < Scale)
-                Ratio *= ScaleRatio;
-
-            FitScale = 1d / Ratio;
-            return new Size<int>((int)(W * Ratio), (int)(H * Ratio));
+            Thickness FitMargin = this.FitMargin;
+            FitScale = Math.Min((Lw - FitMargin.Left - FitMargin.Right) / ContextWidth, (Lh - FitMargin.Top - FitMargin.Bottom) / ContextHeight);
+            return new Size<int>((int)(Lw / FitScale), (int)(Lh / FitScale));
         }
 
         protected internal virtual double ComputeScale()
@@ -281,8 +293,8 @@ namespace MenthaAssembly.Views
                 return double.NaN;
 
             double Scale = this.Scale;
-            return double.IsNaN(Scale) || Scale == MinScale ? MinScale :
-                                                              Scale.Clamp(MinScale, MaxScale);
+            return double.IsNaN(Scale) || Scale == FitScale ? FitScale :
+                                                              Scale.Clamp(FitScale, MaxScale);
         }
 
         internal double ViewportCx = double.NaN,
@@ -325,7 +337,7 @@ namespace MenthaAssembly.Views
                 return new Rect(0d, 0d, ViewBoxW, ViewBoxH);
             }
 
-            double Factor = MinScale / Scale,
+            double Factor = FitScale / Scale,
                    W = ViewBoxW * Factor,
                    H = ViewBoxH * Factor,
                    X = ViewportCx - W / 2d,
@@ -414,7 +426,7 @@ namespace MenthaAssembly.Views
                     return;
 
                 double Scale = this.Scale;
-                if (double.IsNaN(Scale) || Scale == MinScale)
+                if (double.IsNaN(Scale) || Scale == FitScale)
                     return;
 
                 ViewportCx -= Dx / Scale;
@@ -450,6 +462,12 @@ namespace MenthaAssembly.Views
             => RaiseEvent(new RoutedEventArgs(RightClickEvent, this));
 
         /// <summary>
+        /// Scale to fit scale.
+        /// </summary>
+        public void Fit()
+            => Scale = FitScale;
+
+        /// <summary>
         /// Zooms the viewport around the reference point in viewer.
         /// </summary>
         /// <param name="ZoomIn">Indicates whether zoom in.</param>
@@ -469,7 +487,7 @@ namespace MenthaAssembly.Views
             if (double.IsNaN(LastScale))
                 return;
 
-            double Scale = MathHelper.Clamp(ZoomIn ? LastScale * ScaleRatio : LastScale / ScaleRatio, MinScale, MaxScale);
+            double Scale = MathHelper.Clamp(ZoomIn ? LastScale * ScaleRatio : LastScale / ScaleRatio, FitScale, MaxScale);
             if (this.Scale != Scale)
             {
                 Rect Viewport = this.Viewport;

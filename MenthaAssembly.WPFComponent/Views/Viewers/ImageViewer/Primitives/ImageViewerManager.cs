@@ -50,7 +50,7 @@ namespace MenthaAssembly.Views.Primitives
                         {
                             Size<int> ViewBox = Viewer.ComputeViewBox(out double FitScale);
                             Viewer.SetValue(ImageViewer.ViewBoxPropertyKey, ViewBox);
-                            Viewer.MinScale = FitScale;
+                            Viewer.FitScale = FitScale;
 
                             Viewer._Attachments.ForEach(i => i.InvalidateViewBox());
                             Queue.Enqueue(ImageViewerAction.ContextLocation);

@@ -255,7 +255,7 @@ namespace MenthaAssembly.Views.Primitives
 
             if (e.LeftButton == MouseButtonState.Pressed &&
                 LogicalParent.Viewer is ImageViewer Viewer &&
-                Viewer.Scale != Viewer.MinScale)
+                Viewer.Scale != Viewer.FitScale)
             {
                 CaptureMouse();
                 IsLeftMouseDown = true;
@@ -270,7 +270,7 @@ namespace MenthaAssembly.Views.Primitives
         {
             if (IsLeftMouseDown &&
                 LogicalParent.Viewer is ImageViewer Viewer &&
-                Viewer.Scale != Viewer.MinScale)
+                Viewer.Scale != Viewer.FitScale)
             {
                 Point Position = e.GetPosition(this);
                 Viewer.MoveTo(Position.X / Scale - Viewer.ContextX, Position.Y / Scale - Viewer.ContextY);

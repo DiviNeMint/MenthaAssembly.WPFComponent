@@ -427,7 +427,7 @@ namespace MenthaAssembly.Views.Primitives
             }
 
             // Refresh Thumbnail
-            double MinScale = Viewer.MinScale;
+            double MinScale = Viewer.FitScale;
             if (NewImage || ThumbnailScale < MinScale)
                 RefreshThumbnail(Image, MinScale);
 
