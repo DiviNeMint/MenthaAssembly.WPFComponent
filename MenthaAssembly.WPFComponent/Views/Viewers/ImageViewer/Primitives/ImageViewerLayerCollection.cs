@@ -334,7 +334,6 @@ namespace MenthaAssembly.Views.Primitives
             => Context is ImageViewerLayer Layer ? Layer : new ImageViewerLayer(true);
         private void PrepareImageViewerLayer(ImageViewerLayer Layer)
         {
-            Layer.StatusChanged += OnLayerStatusChanged;
             //Layer.ChannelChanged += OnLayerChannelChanged;
         }
         private void PrepareImageViewerLayerContext(ImageViewerLayer Layer, object Context)
@@ -353,7 +352,6 @@ namespace MenthaAssembly.Views.Primitives
         }
         private void ResetImageViewerLayer(ImageViewerLayer Layer)
         {
-            Layer.StatusChanged -= OnLayerStatusChanged;
             //Layer.ChannelChanged -= OnLayerChannelChanged;
 
             if (Layer.IsGeneratedFromCollection)
@@ -366,15 +364,6 @@ namespace MenthaAssembly.Views.Primitives
                 Layer.Marks.Clear();
             }
         }
-
-        protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
-        {
-            base.OnCollectionChanged(e);
-            Viewer._Attachments.ForEach(i => i.OnLayerCollectionChanged(e));
-        }
-
-        private void OnLayerStatusChanged(object sender, ImageViewerLayer e)
-            => Viewer._Attachments.ForEach(i => i.InvalidateCanvas());
 
         private void OnPropertyChanged([CallerMemberName] string PropertyName = null)
             => OnPropertyChanged(new PropertyChangedEventArgs(PropertyName));

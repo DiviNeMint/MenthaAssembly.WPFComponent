@@ -15,6 +15,9 @@ namespace MenthaAssembly.Views.Primitives
 {
     internal class ImageViewerLayerRenderer
     {
+        public event EventHandler MarksChanged;
+        public event EventHandler ThumbnailChanged;
+
         private const int RenderBlockSize = 200;
         private const int LessRenderBlockSize = RenderBlockSize - 1;
 
@@ -64,6 +67,7 @@ namespace MenthaAssembly.Views.Primitives
             {
                 IsMarksValid = false;
                 Invalidate();
+                MarksChanged?.Invoke(Layer, EventArgs.Empty);
             }
         }
 
@@ -697,6 +701,7 @@ namespace MenthaAssembly.Views.Primitives
             {
                 Thumbnail.AddDirtyRect(new Int32Rect(0, 0, Iw, Ih));
                 Thumbnail.Unlock();
+                ThumbnailChanged?.Invoke(Layer, EventArgs.Empty);
             }
         }
 

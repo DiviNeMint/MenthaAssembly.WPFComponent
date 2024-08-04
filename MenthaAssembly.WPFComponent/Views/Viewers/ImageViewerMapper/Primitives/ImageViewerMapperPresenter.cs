@@ -1,10 +1,8 @@
 ﻿using MenthaAssembly.Media.Imaging;
-using MenthaAssembly.Media.Imaging.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -15,19 +13,137 @@ using System.Windows.Threading;
 
 namespace MenthaAssembly.Views.Primitives
 {
-    internal sealed class ImageViewerMapperPresenter : Panel<ImageViewerMapper>, IImageViewerAttachment
+    internal sealed class ImageViewerMapperPresenter : Panel<ImageViewerMapper>
     {
-        private readonly Rectangle ViewportRect;
+        private readonly Rectangle ViewportElement;
         public ImageViewerMapperPresenter(ImageViewerMapper LogicalParent) : base(LogicalParent)
         {
             _ = SetBinding(BackgroundProperty, new Binding("Viewer.Background") { Source = LogicalParent });
 
-            ViewportRect = new Rectangle();
-            SetZIndex(ViewportRect, int.MaxValue);
-            _ = ViewportRect.SetBinding(Shape.StrokeProperty, new Binding(nameof(LogicalParent.ViewportStroke)) { Source = LogicalParent });
-            _ = ViewportRect.SetBinding(Shape.FillProperty, new Binding(nameof(LogicalParent.ViewportFill)) { Source = LogicalParent });
-            _ = Children.Add(ViewportRect);
+            ViewportElement = new Rectangle();
+            SetZIndex(ViewportElement, int.MaxValue);
+            _ = ViewportElement.SetBinding(UseLayoutRoundingProperty, new Binding(nameof(UseLayoutRounding)) { Source = LogicalParent });
+            _ = ViewportElement.SetBinding(SnapsToDevicePixelsProperty, new Binding(nameof(SnapsToDevicePixels)) { Source = LogicalParent });
+            _ = ViewportElement.SetBinding(Shape.FillProperty, new Binding(nameof(LogicalParent.Fill)) { Source = LogicalParent });
+            _ = ViewportElement.SetBinding(Shape.StrokeProperty, new Binding(nameof(LogicalParent.Stroke)) { Source = LogicalParent });
+            _ = ViewportElement.SetBinding(Shape.StrokeThicknessProperty, new Binding(nameof(LogicalParent.StrokeThickness)) { Source = LogicalParent });
+            _ = Children.Add(ViewportElement);
         }
+
+        public void Attach(ImageViewer Viewer)
+        {
+            Viewer.ViewportChanged += OnViewportChanged;
+            Viewer.ViewBoxChanged += OnViewBoxChanged;
+
+            // Layers
+            Viewer.Layers.CollectionChanged += OnLayerCollectionChanged;
+            foreach (ImageViewerLayer Layer in Viewer.Layers)
+            {
+                Attach(Layer);
+                MiniLayers.Add(Layer, new MiniLayer());
+            }
+        }
+        private void Attach(ImageViewerLayer Layer)
+        {
+            Layer.IsVisibleChanged += OnLayerIsVisibleChanged;
+            Layer.AlignmentChanged += OnLayerAlignmentChanged;
+            Layer.Renderer.MarksChanged += OnLayerMarksChanged;
+            Layer.Renderer.ThumbnailChanged += OnLayerThumbnailChanged;
+        }
+
+        public void Detach(ImageViewer Viewer)
+        {
+            Viewer.ViewportChanged -= OnViewportChanged;
+            Viewer.ViewBoxChanged -= OnViewBoxChanged;
+
+            // Layers
+            Viewer.Layers.CollectionChanged -= OnLayerCollectionChanged;
+            foreach (ImageViewerLayer Layer in Viewer.Layers)
+                Detach(Layer);
+
+            MiniLayers.Clear();
+        }
+        private void Detach(ImageViewerLayer Layer)
+        {
+            Layer.IsVisibleChanged -= OnLayerIsVisibleChanged;
+            Layer.AlignmentChanged -= OnLayerAlignmentChanged;
+            Layer.Renderer.MarksChanged -= OnLayerMarksChanged;
+            Layer.Renderer.ThumbnailChanged -= OnLayerThumbnailChanged;
+        }
+
+        private void OnViewBoxChanged(object sender, ChangedEventArgs<Size<int>> e)
+            => InvalidateViewBox();
+        private void OnViewportChanged(object sender, RoutedPropertyChangedEventArgs<Rect> e)
+            => InvalidateViewport();
+
+        private readonly Dictionary<ImageViewerLayer, MiniLayer> MiniLayers = [];
+        private void OnLayerCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    {
+                        foreach (ImageViewerLayer Layer in e.NewItems.OfType<ImageViewerLayer>())
+                        {
+                            Attach(Layer);
+                            MiniLayers.Add(Layer, new MiniLayer());
+                        }
+
+                        InvalidateCanvas();
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Remove:
+                    {
+                        foreach (ImageViewerLayer Layer in e.OldItems.OfType<ImageViewerLayer>())
+                        {
+                            Detach(Layer);
+                            MiniLayers.Remove(Layer);
+                        }
+
+                        InvalidateVisual();
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Replace:
+                    {
+                        foreach (ImageViewerLayer Layer in e.OldItems.OfType<ImageViewerLayer>())
+                        {
+                            Detach(Layer);
+                            MiniLayers.Remove(Layer);
+                        }
+
+                        foreach (ImageViewerLayer Layer in e.NewItems.OfType<ImageViewerLayer>())
+                        {
+                            Attach(Layer);
+                            MiniLayers.Add(Layer, new MiniLayer());
+                        }
+
+                        InvalidateCanvas();
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Reset:
+                    {
+                        foreach (ImageViewerLayer Layer in MiniLayers.Keys)
+                            Detach(Layer);
+
+                        MiniLayers.Clear();
+                        InvalidateVisual();
+                        break;
+                    }
+                case NotifyCollectionChangedAction.Move:
+                default:
+                    InvalidateVisual();
+                    break;
+            }
+        }
+
+        private void OnLayerIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+            => InvalidateCanvas();
+        private void OnLayerAlignmentChanged(object sender, EventArgs e)
+            => InvalidateCanvas();
+        private void OnLayerMarksChanged(object sender, EventArgs e)
+            => InvalidateMarks();
+        private void OnLayerThumbnailChanged(object sender, EventArgs e)
+            => InvalidateCanvas();
 
         private double Scale = double.NaN;
         protected override Size MeasureOverride(Size AvailableSize)
@@ -64,7 +180,7 @@ namespace MenthaAssembly.Views.Primitives
 
             AvailableSize = new Size(Lw, Lh);
 
-            // Skips ViewportRect by start index 0.
+            // Skips ViewportElement by start index 0.
             int Count = Children.Count;
             for (int i = 1; i < Count; i++)
                 Children[i].Measure(AvailableSize);
@@ -78,61 +194,20 @@ namespace MenthaAssembly.Views.Primitives
                 LogicalParent.Viewer is ImageViewer Viewer)
             {
                 Rect Viewport = Viewer.Viewport;
-                ViewportRect.Arrange(Viewport.IsEmpty ? new Rect() : new Rect(Viewport.X * Scale, Viewport.Y * Scale, Viewport.Width * Scale, Viewport.Height * Scale));
+                ViewportElement.Arrange(Viewport.IsEmpty ? new Rect() : new Rect(Viewport.X * Scale, Viewport.Y * Scale, Viewport.Width * Scale, Viewport.Height * Scale));
 
-                // Skips ViewportRect by start index 0.
+                // Skips ViewportElement by start index 0.
                 Rect Rect = new(FinalSize);
                 int Count = Children.Count;
                 for (int i = 1; i < Count; i++)
                     Children[i].Arrange(Rect);
             }
+            else
+            {
+                ViewportElement.Arrange(new Rect());
+            }
 
             return DesiredSize;
-        }
-
-        private readonly Dictionary<ImageViewerLayer, MiniLayer> MiniLayers = new();
-        public void OnLayerCollectionChanged(NotifyCollectionChangedEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    {
-                        foreach (ImageViewerLayer Layer in e.NewItems.OfType<ImageViewerLayer>())
-                            MiniLayers.Add(Layer, new MiniLayer());
-
-                        InvalidateCanvas();
-                        break;
-                    }
-                case NotifyCollectionChangedAction.Remove:
-                    {
-                        foreach (ImageViewerLayer Layer in e.OldItems.OfType<ImageViewerLayer>())
-                            MiniLayers.Remove(Layer);
-
-                        InvalidateVisual();
-                        break;
-                    }
-                case NotifyCollectionChangedAction.Replace:
-                    {
-                        foreach (ImageViewerLayer Layer in e.OldItems.OfType<ImageViewerLayer>())
-                            MiniLayers.Remove(Layer);
-
-                        foreach (ImageViewerLayer Layer in e.NewItems.OfType<ImageViewerLayer>())
-                            MiniLayers.Add(Layer, new MiniLayer());
-
-                        InvalidateCanvas();
-                        break;
-                    }
-                case NotifyCollectionChangedAction.Reset:
-                    {
-                        MiniLayers.Clear();
-                        InvalidateVisual();
-                        break;
-                    }
-                case NotifyCollectionChangedAction.Move:
-                default:
-                    InvalidateVisual();
-                    break;
-            }
         }
 
         public void InvalidateViewBox()
@@ -159,14 +234,14 @@ namespace MenthaAssembly.Views.Primitives
         {
             if (!double.IsNaN(Scale) && IsCanvasValid)
 #if NET462
-                Dispatcher.BeginInvoke(new Action(UpdateCanvas), DispatcherPriority.Render);
+                Dispatcher.BeginInvoke(new Action(Refresh), DispatcherPriority.Render);
 #else
-                Dispatcher.BeginInvoke(UpdateCanvas, DispatcherPriority.Render);
+                Dispatcher.BeginInvoke(Refresh, DispatcherPriority.Render);
 #endif
         }
 
         private int ViewerHashCode = 0;
-        private void UpdateCanvas()
+        private void Refresh()
         {
             IsCanvasValid = false;
 
@@ -180,7 +255,6 @@ namespace MenthaAssembly.Views.Primitives
                     {
                         NewViewer = true;
                         this.ViewerHashCode = ViewerHashCode;
-                        MiniLayers.Clear();
                     }
 
                     bool IsRefresh = false;
@@ -203,7 +277,6 @@ namespace MenthaAssembly.Views.Primitives
                 else if (ViewerHashCode != 0)
                 {
                     ViewerHashCode = 0;
-                    MiniLayers.Clear();
                     InvalidateVisual();
                 }
             }
@@ -312,6 +385,8 @@ namespace MenthaAssembly.Views.Primitives
 
             public IEnumerable<ImageViewerLayerMark> Marks;
 
+            private int ImageHashCode = 0;
+            public double Ix, Iy, Scale;
             public MiniLayer()
             {
                 Ix = Iy = Scale = double.NaN;
@@ -363,9 +438,6 @@ namespace MenthaAssembly.Views.Primitives
                     IsPreparing = false;
                 }
             }
-
-            private int ImageHashCode = 0;
-            public double Ix, Iy, Scale;
             private bool PrepareImageSource(ImageViewer Viewer, ImageViewerLayer Layer, ImageSource Image, double Scale)
             {
                 bool NewImage = false;
@@ -404,13 +476,15 @@ namespace MenthaAssembly.Views.Primitives
 
                 return NewImage || NewScale || NewLocation;
             }
-            private unsafe bool PrepareImageContext(ImageViewer Viewer, ImageViewerLayer Layer, IImageContext Image, double Scale)
+            private bool PrepareImageContext(ImageViewer Viewer, ImageViewerLayer Layer, IImageContext Image, double Scale)
             {
+                WriteableBitmap Thumbnail = Layer.Renderer.Thumbnail;
                 bool NewImage = false;
-                int ImageHashCode = Image.GetHashCode();
+                int ImageHashCode = Thumbnail?.GetHashCode() ?? 0;
                 if (this.ImageHashCode != ImageHashCode)
                 {
                     NewImage = true;
+                    this.Image = Thumbnail;
                     this.ImageHashCode = ImageHashCode;
                 }
 
@@ -421,13 +495,15 @@ namespace MenthaAssembly.Views.Primitives
                 {
                     NewScale = true;
                     this.Scale = Scale;
+                    Region.Width = Iw * Scale;
+                    Region.Height = Ih * Scale;
                 }
 
                 bool NewLocation = false;
                 double Ix = Viewer.ContextX,
                        Iy = Viewer.ContextY;
                 ImageViewerLayerRenderer.AlignContextLocation(Viewer, Layer, Iw, Ih, ref Ix, ref Iy);
-                if (NewScale || this.Ix != Ix || this.Iy != Iy)
+                if (this.Ix != Ix || this.Iy != Iy)
                 {
                     NewLocation = true;
                     this.Ix = Ix;
@@ -437,82 +513,7 @@ namespace MenthaAssembly.Views.Primitives
                     Region.Y = Iy * Scale;
                 }
 
-                bool NewSize = false;
-                Iw = Math.Round(Iw * Scale);
-                Ih = Math.Round(Ih * Scale);
-                if (Iw != Region.Width || Ih != Region.Height)
-                {
-                    NewSize = true;
-                    Region.Width = Iw;
-                    Region.Height = Ih;
-                }
-
-                if (this.Image is null || NewImage || NewSize)
-                {
-                    int IntIw = (int)Iw,
-                        IntIh = (int)Ih;
-                    if (GetCanvas(IntIw, IntIh) is WriteableBitmap Canvas &&
-                        TryLockCanvas(Canvas))
-                    {
-                        try
-                        {
-                            NearestResizePixelAdapter<BGRA> Adapter0 = new(Image, IntIw, IntIh);
-                            byte* pDest0 = (byte*)Canvas.BackBuffer;
-                            long Stride = Canvas.BackBufferStride;
-
-                            _ = Parallel.For(0, IntIh, j =>
-                            {
-                                PixelAdapter<BGRA> Adapter = Adapter0.Clone();
-                                Adapter.DangerousMove(0, j);
-
-                                BGRA* pDest = (BGRA*)(pDest0 + j * Stride);
-                                for (int i = 0; i < IntIw; i++, Adapter.DangerousMoveNextX())
-                                    Adapter.OverlayTo(pDest++);
-                            });
-                        }
-                        finally
-                        {
-                            Canvas.AddDirtyRect(new Int32Rect(0, 0, IntIw, IntIh));
-                            Canvas.Unlock();
-                        }
-
-                        this.Image = Canvas;
-                        return true;
-                    }
-                }
-
-                return NewLocation;
-            }
-
-            private WriteableBitmap LastCanvas;
-            private WriteableBitmap GetCanvas(int Iw, int Ih)
-            {
-                if (Iw == 0 || Ih == 0)
-                    return null;
-
-                if (LastCanvas is WriteableBitmap Canvas &&
-                    Canvas.PixelWidth == Iw &&
-                    Canvas.PixelHeight == Ih)
-                    return Canvas;
-
-                LastCanvas = new WriteableBitmap(Iw, Ih, 96d, 96d, PixelFormats.Bgra32, null);
-                return LastCanvas;
-            }
-            private bool TryLockCanvas(WriteableBitmap Canvas)
-            {
-                for (int t = 0; t < 3; t++)
-                {
-                    try
-                    {
-                        Canvas.Lock();
-                        return true;
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                return false;
+                return NewImage || NewScale || NewLocation;
             }
 
         }

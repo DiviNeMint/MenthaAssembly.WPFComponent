@@ -2,7 +2,6 @@
 using MenthaAssembly.Views.Primitives;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -15,8 +14,10 @@ namespace MenthaAssembly.Views
     [ContentProperty(nameof(Layers))]
     public class ImageViewer : FrameworkElement
     {
+        internal event EventHandler<ChangedEventArgs<Size<int>>> ViewBoxChanged;
+
         public static readonly RoutedEvent ClickEvent =
-            EventManager.RegisterRoutedEvent("Click", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ImageViewer));
+            EventManager.RegisterRoutedEvent(nameof(Click), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ImageViewer));
         public event RoutedEventHandler Click
         {
             add => AddHandler(ClickEvent, value);
@@ -24,7 +25,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly RoutedEvent RightClickEvent =
-            EventManager.RegisterRoutedEvent("RightClick", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ImageViewer));
+            EventManager.RegisterRoutedEvent(nameof(RightClick), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ImageViewer));
         public event RoutedEventHandler RightClick
         {
             add => AddHandler(RightClickEvent, value);
@@ -32,7 +33,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly RoutedEvent ItemsSourceChangedEvent =
-            EventManager.RegisterRoutedEvent("ItemsSourceChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<IEnumerable>), typeof(ImageViewer));
+            EventManager.RegisterRoutedEvent(nameof(ItemsSourceChanged), RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<IEnumerable>), typeof(ImageViewer));
         public event RoutedPropertyChangedEventHandler<IEnumerable> ItemsSourceChanged
         {
             add => AddHandler(ItemsSourceChangedEvent, value);
@@ -40,7 +41,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly RoutedEvent ScaleChangedEvent =
-            EventManager.RegisterRoutedEvent("ScaleChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<double>), typeof(ImageViewer));
+            EventManager.RegisterRoutedEvent(nameof(ScaleChanged), RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<double>), typeof(ImageViewer));
         public event RoutedPropertyChangedEventHandler<double> ScaleChanged
         {
             add => AddHandler(ScaleChangedEvent, value);
@@ -48,7 +49,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly RoutedEvent ViewportChangedEvent =
-            EventManager.RegisterRoutedEvent("ViewportChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<Rect>), typeof(ImageViewer));
+            EventManager.RegisterRoutedEvent(nameof(ViewportChanged), RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<Rect>), typeof(ImageViewer));
         public event RoutedPropertyChangedEventHandler<Rect> ViewportChanged
         {
             add => AddHandler(ViewportChangedEvent, value);
@@ -56,8 +57,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty BackgroundProperty =
-            Border.BackgroundProperty.AddOwner(typeof(ImageViewer),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E))));
+            Border.BackgroundProperty.AddOwner(typeof(ImageViewer), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E))));
         public Brush Background
         {
             get => (Brush)GetValue(BackgroundProperty);
@@ -65,8 +65,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty BorderBrushProperty =
-            Border.BorderBrushProperty.AddOwner(typeof(ImageViewer),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0x3F, 0x3F, 0x46))));
+            Border.BorderBrushProperty.AddOwner(typeof(ImageViewer), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0x3F, 0x3F, 0x46))));
         public Brush BorderBrush
         {
             get => (Brush)GetValue(BorderBrushProperty);
@@ -74,8 +73,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty BorderThicknessProperty =
-            Border.BorderThicknessProperty.AddOwner(typeof(ImageViewer),
-                new PropertyMetadata(new Thickness(1)));
+            Border.BorderThicknessProperty.AddOwner(typeof(ImageViewer), new PropertyMetadata(new Thickness(1)));
         public Thickness BorderThickness
         {
             get => (Thickness)GetValue(BorderThicknessProperty);
@@ -83,8 +81,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty ItemsSourceProperty =
-            ItemsControl.ItemsSourceProperty.AddOwner(typeof(ImageViewer),
-                new FrameworkPropertyMetadata(null,
+            ItemsControl.ItemsSourceProperty.AddOwner(typeof(ImageViewer), new FrameworkPropertyMetadata(null,
                 (d, e) =>
                 {
                     if (d is ImageViewer This)
@@ -99,8 +96,7 @@ namespace MenthaAssembly.Views
         public ImageViewerLayerCollection Layers { get; }
 
         internal static readonly DependencyPropertyKey ViewBoxPropertyKey =
-            DependencyProperty.RegisterReadOnly("ViewBox", typeof(Size<int>), typeof(ImageViewer),
-                new PropertyMetadata(Size<int>.Empty,
+            DependencyProperty.RegisterReadOnly(nameof(ViewBox), typeof(Size<int>), typeof(ImageViewer), new PropertyMetadata(Size<int>.Empty,
                 (d, e) =>
                 {
                     if (d is ImageViewer This)
@@ -110,8 +106,7 @@ namespace MenthaAssembly.Views
             => (Size<int>)GetValue(ViewBoxPropertyKey.DependencyProperty);
 
         public static readonly DependencyProperty FitMarginProperty =
-            DependencyProperty.Register(nameof(FitMargin), typeof(Thickness), typeof(ImageViewer),
-                new PropertyMetadata(new Thickness(10),
+            DependencyProperty.Register(nameof(FitMargin), typeof(Thickness), typeof(ImageViewer), new PropertyMetadata(new Thickness(10),
                     (d, e) =>
                     {
                         if (d is ImageViewer This)
@@ -124,8 +119,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty ViewportProperty =
-            DependencyProperty.Register("Viewport", typeof(Rect), typeof(ImageViewer),
-                new PropertyMetadata(Rect.Empty,
+            DependencyProperty.Register(nameof(Viewport), typeof(Rect), typeof(ImageViewer), new PropertyMetadata(Rect.Empty,
                 (d, e) =>
                 {
                     if (d is ImageViewer This)
@@ -138,8 +132,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty ScaleProperty =
-            DependencyProperty.Register("Scale", typeof(double), typeof(ImageViewer),
-                new PropertyMetadata(double.NaN,
+            DependencyProperty.Register(nameof(Scale), typeof(double), typeof(ImageViewer), new PropertyMetadata(double.NaN,
                 (d, e) =>
                 {
                     if (d is ImageViewer This)
@@ -152,8 +145,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty MaxScaleProperty =
-            DependencyProperty.Register("MaxScale", typeof(double), typeof(ImageViewer),
-                new PropertyMetadata(1d,
+            DependencyProperty.Register(nameof(MaxScale), typeof(double), typeof(ImageViewer), new PropertyMetadata(1d,
                 (d, e) =>
                 {
                     if (d is ImageViewer This &&
@@ -168,17 +160,12 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty ScaleRatioProperty =
-            DependencyProperty.Register("ScaleRatio", typeof(double), typeof(ImageViewer),
-                new PropertyMetadata(2d));
+            DependencyProperty.Register(nameof(ScaleRatio), typeof(double), typeof(ImageViewer), new PropertyMetadata(2d));
         public double ScaleRatio
         {
             get => (double)GetValue(ScaleRatioProperty);
             set => SetValue(ScaleRatioProperty, value);
         }
-
-        internal readonly ConcurrentCollection<IImageViewerAttachment> _Attachments = new ConcurrentCollection<IImageViewerAttachment>();
-        public IReadOnlyList<IImageViewerAttachment> Attachments
-            => _Attachments;
 
         internal readonly ImageViewerManager Manager;
         private readonly Border TemplateBorder;
@@ -213,7 +200,10 @@ namespace MenthaAssembly.Views
             => Manager.Add(ImageViewerAction.ComputeViewBox);
 
         protected virtual void OnViewBoxChanged(ChangedEventArgs<Size<int>> e)
-            => Manager.Add(ImageViewerAction.ContextLocation);
+        {
+            Manager.Add(ImageViewerAction.ContextLocation);
+            ViewBoxChanged?.Invoke(this, e);
+        }
 
         protected virtual void OnViewportChanged(RoutedPropertyChangedEventArgs<Rect> e)
         {
@@ -531,21 +521,6 @@ namespace MenthaAssembly.Views
         /// </summary>
         public virtual void InvalidateCanvas()
             => Manager.Add(ImageViewerAction.RenderCanvas);
-
-        /// <summary>
-        /// Attaches the specified object to this image viewer for synchronizing action.
-        /// </summary>
-        /// <param name="Attachment">The specified object to attach.</param>
-        public void Attach(IImageViewerAttachment Attachment)
-        {
-            if (!_Attachments.Contains(Attachment))
-                _Attachments.Add(Attachment);
-        }
-        /// <summary>
-        /// Detaches the synchronizing object from this image viewer.
-        /// </summary>
-        public void Detach(IImageViewerAttachment Attachment)
-            => _Attachments.Remove(Attachment);
 
     }
 }

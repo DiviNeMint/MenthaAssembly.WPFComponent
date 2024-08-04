@@ -52,8 +52,7 @@ namespace MenthaAssembly.Views.Primitives
                             Viewer.SetValue(ImageViewer.ViewBoxPropertyKey, ViewBox);
                             Viewer.FitScale = FitScale;
 
-                            Viewer._Attachments.ForEach(i => i.InvalidateViewBox());
-                            Queue.Enqueue(ImageViewerAction.ContextLocation);
+                            // When the ViewBox changes, the ImageViewer will queue ImageViewerAction.ContextLocation.
                             break;
                         }
                     case ImageViewerAction.ContextLocation:
@@ -72,16 +71,13 @@ namespace MenthaAssembly.Views.Primitives
                         {
                             Viewer.Viewport = Viewer.ComputeViewport();
 
-                            Viewer._Attachments.ForEach(i => i.InvalidateViewport());
-                            Queue.Enqueue(ImageViewerAction.RenderCanvas);
+                            // When the ViewBox changes, the ImageViewer will queue ImageViewerAction.RenderCanvas.
                             break;
                         }
                     case ImageViewerAction.RenderCanvas:
                         {
                             foreach (ImageViewerLayer Layer in Viewer.Layers)
                                 Layer.InvalidateCanvas();
-
-                            Viewer._Attachments.ForEach(i => i.InvalidateCanvas());
                             break;
                         }
                     case ImageViewerAction.None:

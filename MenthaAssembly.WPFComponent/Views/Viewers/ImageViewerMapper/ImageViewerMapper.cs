@@ -1,8 +1,10 @@
 ﻿using MenthaAssembly.Views.Primitives;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace MenthaAssembly.Views
 {
@@ -36,7 +38,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty ViewerProperty =
-                DependencyProperty.Register("Viewer", typeof(ImageViewer), typeof(ImageViewerMapper),
+                DependencyProperty.Register(nameof(Viewer), typeof(ImageViewer), typeof(ImageViewerMapper),
                     new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange,
                         (d, e) =>
                         {
@@ -49,22 +51,28 @@ namespace MenthaAssembly.Views
             set => SetValue(ViewerProperty, value);
         }
 
-        public static readonly DependencyProperty ViewportStrokeProperty =
-            DependencyProperty.Register("ViewportStroke", typeof(SolidColorBrush), typeof(ImageViewerMapper),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0x08, 0x7E, 0xCE))));
-        public SolidColorBrush ViewportStroke
+        public static readonly DependencyProperty StrokeProperty =
+            Shape.StrokeProperty.AddOwner(typeof(ImageViewerMapper), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0x08, 0x7E, 0xCE))));
+        public Brush Stroke
         {
-            get => (SolidColorBrush)GetValue(ViewportStrokeProperty);
-            set => SetValue(ViewportStrokeProperty, value);
+            get => (SolidColorBrush)GetValue(StrokeProperty);
+            set => SetValue(StrokeProperty, value);
         }
 
-        public static readonly DependencyProperty ViewportFillProperty =
-            DependencyProperty.Register("ViewportFill", typeof(SolidColorBrush), typeof(ImageViewerMapper),
-                new PropertyMetadata(new SolidColorBrush(Color.FromArgb(0x4C, 0x08, 0x7E, 0xCE))));
-        public SolidColorBrush ViewportFill
+        public static readonly DependencyProperty StrokeThicknessProperty =
+            Shape.StrokeThicknessProperty.AddOwner(typeof(ImageViewerMapper), new PropertyMetadata(1d));
+        public double StrokeThickness
         {
-            get => (SolidColorBrush)GetValue(ViewportFillProperty);
-            set => SetValue(ViewportFillProperty, value);
+            get => (double)GetValue(StrokeThicknessProperty);
+            set => SetValue(StrokeThicknessProperty, value);
+        }
+
+        public static readonly DependencyProperty FillProperty =
+            Shape.FillProperty.AddOwner(typeof(ImageViewerMapper), new PropertyMetadata(new SolidColorBrush(Color.FromArgb(0x4C, 0x08, 0x7E, 0xCE))));
+        public Brush Fill
+        {
+            get => (SolidColorBrush)GetValue(FillProperty);
+            set => SetValue(FillProperty, value);
         }
 
         private readonly Border TemplateBorder;
@@ -95,6 +103,9 @@ namespace MenthaAssembly.Views
 
         protected override Size ArrangeOverride(Size FinalSize)
         {
+            if (!IsLoaded && Viewer is null)
+                Viewer = this.FindVisuaBrothers<ImageViewer>().FirstOrDefault();
+
             Rect Rect = new(FinalSize);
             TemplateBorder.Arrange(Rect);
             return base.ArrangeOverride(FinalSize);
@@ -102,8 +113,11 @@ namespace MenthaAssembly.Views
 
         private void OnViewerChanged(ChangedEventArgs<ImageViewer> e)
         {
-            e.OldValue?.Detach(TemplatePresenter);
-            e.NewValue?.Attach(TemplatePresenter);
+            if (e.OldValue is ImageViewer Old)
+                TemplatePresenter.Detach(Old);
+
+            if (e.NewValue is ImageViewer New)
+                TemplatePresenter.Attach(New);
 
             TemplatePresenter.InvalidateViewBox();
             TemplatePresenter.InvalidateCanvas();
