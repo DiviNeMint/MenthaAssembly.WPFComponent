@@ -28,7 +28,8 @@ namespace System.Windows
             if (This is null)
                 yield break;
 
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(This); i++)
+            int Count = VisualTreeHelper.GetChildrenCount(This);
+            for (int i = 0; i < Count; i++)
             {
                 DependencyObject Child = VisualTreeHelper.GetChild(This, i);
                 if (Child is T TChild)
@@ -60,9 +61,12 @@ namespace System.Windows
                 yield break;
 
             if (VisualTreeHelper.GetParent(This) is DependencyObject Parent)
-                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(Parent); i++)
+            {
+                int Count = VisualTreeHelper.GetChildrenCount(Parent);
+                for (int i = 0; i < Count; i++)
                     if (VisualTreeHelper.GetChild(Parent, i) is T Brother)
                         yield return Brother;
+            }
         }
 
         public static IEnumerable<T> FindLogicalParents<T>(this DependencyObject This)
