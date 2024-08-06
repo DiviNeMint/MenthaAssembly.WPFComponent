@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,8 +11,8 @@ namespace MenthaAssembly.MarkupExtensions
     public static class TextBoxEx
     {
         #region ValueType
-        private static readonly ConcurrentDictionary<Type, dynamic> MaxValues = new ConcurrentDictionary<Type, dynamic>(),
-                                                                    MinValues = new ConcurrentDictionary<Type, dynamic>();
+        private static readonly ConcurrentDictionary<Type, dynamic> MaxValues = new(),
+                                                                    MinValues = new();
 
         public static readonly DependencyProperty ValueTypeProperty =
             DependencyProperty.RegisterAttached("ValueType", typeof(Type), typeof(TextBoxEx), new PropertyMetadata(null,
@@ -311,14 +312,16 @@ namespace MenthaAssembly.MarkupExtensions
 
                 // .
                 if ((Mode & KeyboardInputMode.Dot) > 0 &&
-                    (e.Key is Key.Decimal || e.Key is Key.OemPeriod) &&
-                    !This.Text.Contains("."))
-                    return;
+                    (e.Key is Key.Decimal || e.Key is Key.OemPeriod))
+                {
+                    if (!(GetValueType(This)?.IsDecimalType() ?? false) || !This.Text.Contains('.'))
+                        return;
+                }
 
                 // -
                 if ((Mode & KeyboardInputMode.Negative) > 0 &&
                     (e.Key is Key.Subtract || e.Key is Key.OemMinus) &&
-                    !This.Text.Contains("-"))
+                    !This.Text.Contains('-'))
                     return;
 
                 e.Handled = true;
