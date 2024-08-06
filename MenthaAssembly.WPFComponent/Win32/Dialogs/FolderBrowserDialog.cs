@@ -8,6 +8,9 @@ using static MenthaAssembly.Win32.System;
 
 namespace Microsoft.Win32
 {
+#if NET8_0_OR_GREATER
+    [Obsolete("Microsoft has released OpenFolderDialog.")]
+#endif
     public sealed class FolderBrowserDialog : BaseDialog
     {
         public string Title { get; set; } = string.Empty;
