@@ -15,6 +15,14 @@ namespace MenthaAssembly.Views
     [TemplatePart(Name = nameof(PART_ThumbTranslateTransform), Type = typeof(TranslateTransform))]
     public class SwitchView : Control
     {
+        public static readonly RoutedEvent ClickEvent =
+            EventManager.RegisterRoutedEvent("Click", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(SwitchView));
+        public event RoutedEventHandler Click
+        {
+            add { AddHandler(ClickEvent, value); }
+            remove { RemoveHandler(ClickEvent, value); }
+        }
+
         public static readonly RoutedEvent ToggleChangedEvent =
             EventManager.RegisterRoutedEvent("ToggleChanged", RoutingStrategy.Bubble, typeof(RoutedPropertyChangedEventHandler<bool?>), typeof(SwitchView));
         public event RoutedPropertyChangedEventHandler<bool?> ToggleChanged
@@ -204,6 +212,12 @@ namespace MenthaAssembly.Views
 
                 if (MouseMoveDelta <= 25)
                 {
+                    RoutedEventArgs ClickArg = new(ClickEvent);
+                    RaiseEvent(ClickArg);
+
+                    if (ClickArg.Handled)
+                        return;
+
                     bool? Value = IsToggled;
                     IsToggled = Value.HasValue ? !IsToggled : false;
                 }
