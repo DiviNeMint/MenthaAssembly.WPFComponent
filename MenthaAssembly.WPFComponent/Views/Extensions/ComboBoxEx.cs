@@ -29,7 +29,5 @@ namespace MenthaAssembly.MarkupExtensions
                 ThisBox.Focus();
         }
 
-
-
     }
 }
