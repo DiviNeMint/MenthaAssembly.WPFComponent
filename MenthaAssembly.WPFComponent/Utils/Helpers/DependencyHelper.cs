@@ -4,7 +4,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -12,9 +11,6 @@ namespace System.Windows
 {
     public static class DependencyHelper
     {
-        public static T CreateXamlObject<T>(string Xaml)
-            => XamlReader.Parse(Xaml) is T Item ? Item : default;
-
         public static DependencyProperty GetDependencyProperty(this DependencyObject This, string PropertyName)
         {
             if (This.GetType() is Type ThisType)
