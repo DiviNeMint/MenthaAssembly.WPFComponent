@@ -1,7 +1,9 @@
-﻿using MenthaAssembly.Win32;
+﻿#if !NET5_0_OR_GREATER
+using System.Security.Permissions;
+#endif
+using MenthaAssembly.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Security.Permissions;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -13,7 +15,9 @@ namespace MenthaAssembly.Devices
     public static class CursorHelper
     {
         #region Windows API
+#if !NET5_0_OR_GREATER
         [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
+#endif
         private class SafeIconHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             public SafeIconHandle() : base(true) { }
