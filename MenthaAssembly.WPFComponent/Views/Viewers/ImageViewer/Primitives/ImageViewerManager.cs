@@ -52,7 +52,9 @@ namespace MenthaAssembly.Views.Primitives
                             Viewer.SetValue(ImageViewer.ViewBoxPropertyKey, ViewBox);
                             Viewer.FitScale = FitScale;
 
-                            // When the ViewBox changes, the ImageViewer will queue ImageViewerAction.ContextLocation.
+                            // Although the ImageViewer will queue ImageViewerAction.ContextLocation when the ViewBox changes,
+                            // but the change event will not be triggered when the ViewBox values ​​are the same.
+                            Queue.Enqueue(ImageViewerAction.ContextLocation);
                             break;
                         }
                     case ImageViewerAction.ContextLocation:
@@ -71,7 +73,9 @@ namespace MenthaAssembly.Views.Primitives
                         {
                             Viewer.Viewport = Viewer.ComputeViewport();
 
-                            // When the ViewBox changes, the ImageViewer will queue ImageViewerAction.RenderCanvas.
+                            // Although the ImageViewer will queue ImageViewerAction.RenderCanvas when the Viewport changes,
+                            // but the change event will not be triggered when the Viewport values ​​are the same.
+                            Queue.Enqueue(ImageViewerAction.RenderCanvas);
                             break;
                         }
                     case ImageViewerAction.RenderCanvas:
