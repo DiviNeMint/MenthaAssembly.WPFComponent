@@ -1,6 +1,8 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿#if !NET
 using System.Linq;
+#endif
+using System;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,59 +13,18 @@ namespace MenthaAssembly.MarkupExtensions
     public static class TextBoxEx
     {
         #region ValueType
-        private static readonly ConcurrentDictionary<Type, dynamic> MaxValues = new(),
-                                                                    MinValues = new();
+        private delegate object TypeConvertFunc(string Value, out bool IsOverflow);
+
+        private static readonly ConcurrentDictionary<Type, TypeConvertFunc> ValueConverters = new();
+        private static readonly ConcurrentDictionary<Type, object> MaxValues = new(),
+                                                                   MinValues = new();
 
         public static readonly DependencyProperty ValueTypeProperty =
             DependencyProperty.RegisterAttached("ValueType", typeof(Type), typeof(TextBoxEx), new PropertyMetadata(null,
                 (d, e) =>
                 {
-                    if (d is TextBox This &&
-                        e.NewValue is Type ValueType)
-                    {
-                        bool EnableAttach = false;
-                        KeyboardInputMode InputMode = KeyboardInputMode.All;
-
-                        if (ValueType.IsSignedIntegerType())
-                        {
-                            InputMode = KeyboardInputMode.NegativeNumber;
-                            EnableAttach = true;
-                        }
-
-                        else if (ValueType.IsUnsignedIntegerType())
-                        {
-                            InputMode = KeyboardInputMode.Number;
-                            EnableAttach = true;
-                        }
-
-                        else if (ValueType.IsDecimalType())
-                        {
-                            InputMode = KeyboardInputMode.NegativeNumberAndDot;
-                            EnableAttach = true;
-                        }
-
-                        if (EnableAttach)
-                        {
-                            if (!MaxValues.ContainsKey(ValueType) &&
-                                ValueType.TryGetConstant("MaxValue", out object Max))
-                                MaxValues.AddOrUpdate(ValueType, Max, (k, v) => Max);
-
-                            if (!MinValues.ContainsKey(ValueType) &&
-                                ValueType.TryGetConstant("MinValue", out object Min))
-                                MinValues.AddOrUpdate(ValueType, Min, (k, v) => Min);
-
-                            SetDefaultInputMode(This, InputMode);
-                            This.PreviewMouseWheel += OnPreviewMouseWheel;
-                            This.PreviewKeyDown += OnPreviewKeyDown;
-                        }
-
-                        else
-                        {
-                            SetInputMode(This, InputMode);
-                            This.PreviewMouseWheel -= OnPreviewMouseWheel;
-                            This.PreviewKeyDown -= OnPreviewKeyDown;
-                        }
-                    }
+                    if (d is TextBox This)
+                        OnValueTypeChanged(This, e.OldValue as Type, e.NewValue as Type);
                 }));
         public static Type GetValueType(TextBox obj)
             => (Type)obj.GetValue(ValueTypeProperty);
@@ -98,33 +59,190 @@ namespace MenthaAssembly.MarkupExtensions
         public static void SetCombineDelta(TextBox obj, object value)
             => obj.SetValue(CombineDeltaProperty, value);
 
+        private static void OnValueTypeChanged(TextBox This, Type OldType, Type NewType)
+        {
+            if (OldType != null)
+            {
+                SetInputMode(This, KeyboardInputMode.All);
+                This.PreviewMouseWheel -= OnPreviewMouseWheel;
+                This.PreviewKeyDown -= OnPreviewKeyDown;
+            }
+
+            if (NewType != null)
+            {
+                bool EnableAttach = false;
+                KeyboardInputMode InputMode = KeyboardInputMode.All;
+
+                if (NewType.IsSignedIntegerType())
+                {
+                    InputMode = KeyboardInputMode.NegativeNumber;
+                    EnableAttach = true;
+                }
+
+                else if (NewType.IsUnsignedIntegerType())
+                {
+                    InputMode = KeyboardInputMode.Number;
+                    EnableAttach = true;
+                }
+
+                else if (NewType.IsDecimalType())
+                {
+                    InputMode = KeyboardInputMode.NegativeNumberAndDot;
+                    EnableAttach = true;
+                }
+
+                if (EnableAttach)
+                {
+                    // Max
+                    if (!MaxValues.TryGetValue(NewType, out object Max) &&
+                        NewType.TryGetConstant("MaxValue", out Max))
+                        MaxValues.AddOrUpdate(NewType, Max, (k, v) => Max);
+
+                    // Min
+                    if (!MinValues.TryGetValue(NewType, out object Min) &&
+                        NewType.TryGetConstant("MinValue", out Min))
+                        MinValues.AddOrUpdate(NewType, Min, (k, v) => Min);
+
+                    // Converter
+                    if (!ValueConverters.TryGetValue(NewType, out TypeConvertFunc Converter))
+                    {
+                        Converter = CreateTypeConverter(NewType, Max, Min, InputMode);
+                        ValueConverters.AddOrUpdate(NewType, Converter, (k, v) => Converter);
+                    }
+
+                    // Attach Events
+                    SetDefaultInputMode(This, InputMode);
+                    This.PreviewMouseWheel += OnPreviewMouseWheel;
+                    This.PreviewKeyDown += OnPreviewKeyDown;
+
+                    // Check current value
+                    object Value = Converter(This.Text, out bool IsOverflow);
+                    bool IsChanged = IsOverflow;
+                    if (!Value.Equals(Min) && OperatorHelper.LessThan(Value, Min))
+                    {
+                        IsChanged = true;
+                        Value = Min;
+                    }
+                    else if (!Value.Equals(Max) && OperatorHelper.LessThan(Max, Value))
+                    {
+                        IsChanged = true;
+                        Value = Max;
+                    }
+
+                    if (IsChanged)
+                        This.Text = Value.ToString();
+                }
+            }
+        }
+        private static TypeConvertFunc CreateTypeConverter(Type ValueType, object Max, object Min, KeyboardInputMode InputMode)
+        {
+            bool IsSigned = (InputMode | KeyboardInputMode.Negative) > 0;
+            string[] MaxStrings = Max.ToString().Split('.'),
+                     MinStrings = Min.ToString().Split('.');
+
+            string MaxInteger = MaxStrings[0],
+                   MinInteger = MinStrings[0];
+            int MaxIntegerLength = MaxInteger.Length,
+                MinIntegerLength = MinInteger.Length;
+
+            object ParseInteger(string Content, bool IsSigned, object Limit, string LimitString, int LimitStringLength, out bool IsOverflow, out bool CheckDecimal)
+            {
+                int Length = Content.Length;
+                if (LimitStringLength < Length)
+                {
+                    IsOverflow = true;
+                    CheckDecimal = false;
+                    return Limit;
+                }
+                else if (LimitStringLength == Length)
+                {
+                    int Index = IsSigned ? 1 : 0;
+                    for (; Index < LimitStringLength; Index++)
+                    {
+                        char Char = LimitString[Index],
+                             ContentChar = Content[Index];
+                        if (ContentChar < Char)
+                            break;
+
+                        if (Char < ContentChar)
+                        {
+                            IsOverflow = true;
+                            CheckDecimal = false;
+                            return Limit;
+                        }
+                    }
+
+                    if (LimitStringLength <= Index)
+                    {
+                        IsOverflow = true;
+                        CheckDecimal = true;
+                        return Limit;
+                    }
+                }
+
+                IsOverflow = false;
+                CheckDecimal = false;
+                return Convert.ChangeType(Content, ValueType);
+            }
+
+            return (string Content, out bool IsOverflow) =>
+            {
+                if (string.IsNullOrEmpty(Content))
+                {
+                    IsOverflow = true;
+                    return Activator.CreateInstance(ValueType);
+                }
+
+                string[] ContentDatas = Content.Split('.');
+                if (Content[0] == '-')
+                {
+                    if (!IsSigned)
+                    {
+                        IsOverflow = true;
+                        return Min;
+                    }
+
+                    return ParseInteger(Content, true, Min, MinInteger, MinIntegerLength, out IsOverflow, out _);
+                }
+
+                return ParseInteger(Content, false, Max, MaxInteger, MaxIntegerLength, out IsOverflow, out _);
+            };
+        }
+
         private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (sender is TextBox This &&
                 This.IsKeyboardFocusWithin)
             {
                 Type ValueType = GetValueType(This);
-                dynamic Value = This.Text.ToValueType(ValueType),
-                        Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
-                                                                                                                           GetDelta(This), ValueType);
+                TypeConvertFunc Converter = GetConverter(ValueType);
+                object Value = Converter(This.Text, out bool IsOverflow),
+                       Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
+                                                                                                                          GetDelta(This), ValueType);
 
-                dynamic Temp;
+                bool IsChanged = IsOverflow;
                 if (e.Delta > 0)
                 {
-                    dynamic Max = GetMaxValue(This, ValueType);
-                    Temp = Value + Delta;
-                    if (Max < Temp)
-                        Temp = Max;
+                    object Max = GetMaxValue(This, ValueType);
+                    if (!Value.Equals(Max))
+                    {
+                        IsChanged = true;
+                        Value = OperatorHelper.LessThan(OperatorHelper.Subtract(Max, Delta), Value) ? Max : OperatorHelper.Add(Value, Delta);
+                    }
                 }
                 else
                 {
-                    dynamic Min = GetMinValue(This, ValueType);
-                    Temp = Value - Delta;
-                    if (Temp < Min)
-                        Temp = Min;
+                    object Min = GetMinValue(This, ValueType);
+                    if (!Value.Equals(Min))
+                    {
+                        IsChanged = true;
+                        Value = OperatorHelper.LessThan(Value, OperatorHelper.Add(Min, Delta)) ? Min : OperatorHelper.Subtract(Value, Delta);
+                    }
                 }
 
-                This.Text = Temp.ToString();
+                if (IsChanged)
+                    This.Text = Value.ToString();
+
                 e.Handled = true;
             }
         }
@@ -138,81 +256,116 @@ namespace MenthaAssembly.MarkupExtensions
                 if (e.Key is Key.Enter)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Min = GetMinValue(This, ValueType),
-                            Max = GetMaxValue(This, ValueType),
-                            Value = This.Text.ToValueType(ValueType);
+                    TypeConvertFunc Converter = GetConverter(ValueType);
+                    object Min = GetMinValue(This, ValueType),
+                           Max = GetMaxValue(This, ValueType),
+                           Value = Converter(This.Text, out bool IsOverflow);
 
-                    if (Value < Min)
-                        This.Text = Min.ToString();
-                    else if (Max < Value)
-                        This.Text = Max.ToString();
+                    bool IsChanged = IsOverflow;
+                    if (!Value.Equals(Min) && OperatorHelper.LessThan(Value, Min))
+                    {
+                        IsChanged = true;
+                        Value = Min;
+                    }
+                    else if (!Value.Equals(Max) && OperatorHelper.LessThan(Max, Value))
+                    {
+                        IsChanged = true;
+                        Value = Max;
+                    }
+
+                    if (IsChanged)
+                        This.Text = Value.ToString();
                 }
 
                 else if (e.Key is Key.Up)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Max = GetMaxValue(This, ValueType),
-                            Value = This.Text.ToValueType(ValueType),
-                            Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
-                                                                                                                               GetDelta(This), ValueType);
+                    TypeConvertFunc Converter = GetConverter(ValueType);
+                    object Max = GetMaxValue(This, ValueType),
+                           Value = Converter(This.Text, out bool IsOverflow),
+                           Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
+                                                                                                                              GetDelta(This), ValueType);
 
-                    dynamic Temp = Value + Delta;
-                    if (Max < Temp)
-                        Temp = Max;
+                    bool IsChanged = IsOverflow;
+                    if (!Value.Equals(Max))
+                    {
+                        IsChanged = true;
+                        Value = OperatorHelper.LessThan(OperatorHelper.Subtract(Max, Delta), Value) ? Max : OperatorHelper.Add(Value, Delta);
+                    }
 
-                    This.Text = Temp.ToString();
+                    if (IsChanged)
+                        This.Text = Value.ToString();
+
                     e.Handled = true;
                 }
 
                 else if (e.Key is Key.Down)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Min = GetMinValue(This, ValueType),
-                            Value = This.Text.ToValueType(ValueType),
-                            Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
-                                                                                                                               GetDelta(This), ValueType);
+                    TypeConvertFunc Converter = GetConverter(ValueType);
+                    object Min = GetMinValue(This, ValueType),
+                           Value = Converter(This.Text, out bool IsOverflow),
+                           Delta = Convert.ChangeType(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) ? GetCombineDelta(This) :
+                                                                                                                              GetDelta(This), ValueType);
 
-                    dynamic Temp = Value - Delta;
-                    if (Temp < Min)
-                        Temp = Min;
+                    bool IsChanged = IsOverflow;
+                    if (!Value.Equals(Min))
+                    {
+                        IsChanged = true;
+                        Value = OperatorHelper.LessThan(Value, OperatorHelper.Add(Min, Delta)) ? Min : OperatorHelper.Subtract(Value, Delta);
+                    }
 
-                    This.Text = Temp.ToString();
+                    if (IsChanged)
+                        This.Text = Value.ToString();
+
                     e.Handled = true;
                 }
 
                 else if (e.Key is Key.PageUp)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Max = GetMaxValue(This, ValueType),
-                            Value = This.Text.ToValueType(ValueType),
-                            Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
+                    TypeConvertFunc Converter = GetConverter(ValueType);
+                    object Max = GetMaxValue(This, ValueType),
+                           Value = Converter(This.Text, out bool IsOverflow),
+                           Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
 
-                    dynamic Temp = Value + Delta;
-                    if (Max < Temp)
-                        Temp = Max;
+                    bool IsChanged = IsOverflow;
+                    if (!Value.Equals(Max))
+                    {
+                        IsChanged = true;
+                        Value = OperatorHelper.LessThan(OperatorHelper.Subtract(Max, Delta), Value) ? Max : OperatorHelper.Add(Value, Delta);
+                    }
 
-                    This.Text = Temp.ToString();
+                    if (IsChanged)
+                        This.Text = Value.ToString();
+
                     e.Handled = true;
                 }
 
                 else if (e.Key is Key.PageDown)
                 {
                     Type ValueType = GetValueType(This);
-                    dynamic Min = GetMinValue(This, ValueType),
-                            Value = This.Text.ToValueType(ValueType),
-                            Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
+                    TypeConvertFunc Converter = GetConverter(ValueType);
+                    object Min = GetMinValue(This, ValueType),
+                           Value = Converter(This.Text, out bool IsOverflow),
+                           Delta = Convert.ChangeType(GetCombineDelta(This), ValueType);
 
-                    dynamic Temp = Value - Delta;
-                    if (Temp < Min)
-                        Temp = Min;
+                    bool IsChanged = IsOverflow;
+                    if (!Value.Equals(Min))
+                    {
+                        IsChanged = true;
+                        Value = OperatorHelper.LessThan(Value, OperatorHelper.Add(Min, Delta)) ? Min : OperatorHelper.Subtract(Value, Delta);
+                    }
 
-                    This.Text = Temp.ToString();
+                    if (IsChanged)
+                        This.Text = Value.ToString();
+
                     e.Handled = true;
                 }
             }
         }
 
-        private static dynamic GetMaxValue(TextBox obj, Type ValueType)
+        private static object GetMaxValue(TextBox obj, Type ValueType)
         {
             object Max = GetMaximum(obj);
             if (Max != null)
@@ -223,7 +376,7 @@ namespace MenthaAssembly.MarkupExtensions
 
             throw new NotSupportedException();
         }
-        private static dynamic GetMinValue(TextBox obj, Type ValueType)
+        private static object GetMinValue(TextBox obj, Type ValueType)
         {
             object Min = GetMinimum(obj);
             if (Min != null)
@@ -234,19 +387,8 @@ namespace MenthaAssembly.MarkupExtensions
 
             throw new NotSupportedException();
         }
-        private static object ToValueType(this string This, Type ValueType)
-        {
-            try
-            {
-                if (!string.IsNullOrEmpty(This))
-                    return Convert.ChangeType(This, ValueType);
-            }
-            catch
-            {
-
-            }
-            return Activator.CreateInstance(ValueType);
-        }
+        private static TypeConvertFunc GetConverter(Type ValueType)
+            => ValueConverters.TryGetValue(ValueType, out TypeConvertFunc Converter) ? Converter : throw new NotSupportedException();
 
         #endregion
 
@@ -293,7 +435,7 @@ namespace MenthaAssembly.MarkupExtensions
         }
         private static void OnInputMode_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key is Key.Tab)
+            if (e.Key is Key.Tab || e.Key is Key.Enter)
                 return;
 
             if (sender is TextBox This)

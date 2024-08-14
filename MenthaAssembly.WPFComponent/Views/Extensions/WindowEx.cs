@@ -21,7 +21,7 @@ namespace MenthaAssembly.MarkupExtensions
                 {
                     if (d is Window This)
                     {
-                        WindowInteropHelper InteropHelper = new WindowInteropHelper(This);
+                        WindowInteropHelper InteropHelper = new(This);
                         if (InteropHelper.Handle == IntPtr.Zero)
                             InteropHelper.EnsureHandle();
 
@@ -191,16 +191,15 @@ namespace MenthaAssembly.MarkupExtensions
                 {
                     if (d is Window This)
                     {
-                        WindowInteropHelper InteropHelper = new WindowInteropHelper(This);
+                        WindowInteropHelper InteropHelper = new(This);
                         if (InteropHelper.Handle == IntPtr.Zero)
                             InteropHelper.EnsureHandle();
 
-                        AccentPolicy Accent = new AccentPolicy();
+                        AccentPolicy Accent = new();
                         if (e.NewValue is true)
                         {
-                            int BuildNumber = 0;
-                            if (TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseID", out dynamic StrBuildNumber) &&
-                                int.TryParse(StrBuildNumber, out BuildNumber) &&
+                            if (TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseID", out object StrBuildNumber) &&
+                                int.TryParse(StrBuildNumber?.ToString(), out int BuildNumber) &&
                                 BuildNumber >= 1803)
                             {
                                 Accent.AccentState = AccentState.Enable_AcrylicBlurBehind;
@@ -228,7 +227,7 @@ namespace MenthaAssembly.MarkupExtensions
 
                         unsafe
                         {
-                            WindowCompositionAttributeData Data = new WindowCompositionAttributeData
+                            WindowCompositionAttributeData Data = new()
                             {
                                 Attribute = WindowCompositionAttribute.Accent_Policy,
                                 SizeOfData = sizeof(WindowCompositionAttributeData),
@@ -252,7 +251,7 @@ namespace MenthaAssembly.MarkupExtensions
                 {
                     if (d is Window This)
                     {
-                        WindowInteropHelper InteropHelper = new WindowInteropHelper(This);
+                        WindowInteropHelper InteropHelper = new(This);
                         if (InteropHelper.Handle == IntPtr.Zero)
                             InteropHelper.EnsureHandle();
 
@@ -302,7 +301,7 @@ namespace MenthaAssembly.MarkupExtensions
 
         #endregion
 
-        private static bool TryGetRegistryKey(string Path, string Key, out dynamic Value)
+        private static bool TryGetRegistryKey(string Path, string Key, out object Value)
         {
             Value = null;
             try
