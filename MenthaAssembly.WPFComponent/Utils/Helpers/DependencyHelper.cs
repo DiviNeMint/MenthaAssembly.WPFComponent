@@ -1,9 +1,11 @@
 ﻿using MenthaAssembly;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -11,6 +13,65 @@ namespace System.Windows
 {
     public static class DependencyHelper
     {
+        /// <summary>
+        ///     Returns true if the binding (or any part of it) is OneWay.
+        /// </summary>
+        public static bool IsOneWay(BindingBase BindingBase)
+        {
+            if (BindingBase is null)
+                return false;
+
+            // If it is a standard Binding, then check if it's Mode is OneWay
+            if (BindingBase is Binding binding)
+                return binding.Mode == BindingMode.OneWay;
+
+            // A multi-binding can be OneWay as well
+            if (BindingBase is MultiBinding multiBinding)
+                return multiBinding.Mode == BindingMode.OneWay;
+
+            // A priority binding is a list of bindings, if any are OneWay, we'll call it OneWay
+            if (BindingBase is PriorityBinding priBinding)
+            {
+                Collection<BindingBase> SubBindings = priBinding.Bindings;
+                int count = SubBindings.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    if (IsOneWay(SubBindings[i]))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static string GetPathFromBinding(Binding Binding)
+        {
+            if (Binding != null)
+            {
+                if (!string.IsNullOrEmpty(Binding.XPath))
+                    return Binding.XPath;
+
+                if (Binding.Path != null)
+                    return Binding.Path.Path;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Assigns the Binding to the desired property
+        /// </summary>
+        public static void ApplyBinding(this DependencyObject This, BindingBase Binding, DependencyProperty Property)
+        {
+            if (Binding != null)
+                BindingOperations.SetBinding(This, Property, Binding);
+            else
+                BindingOperations.ClearBinding(This, Property);
+        }
+
+        public static bool IsDefaultValue(this DependencyObject This, DependencyProperty dp)
+            => DependencyPropertyHelper.GetValueSource(This, dp).BaseValueSource == BaseValueSource.Default;
+
         public static DependencyProperty GetDependencyProperty(this DependencyObject This, string PropertyName)
         {
             if (This.GetType() is Type ThisType)
@@ -96,7 +157,7 @@ namespace System.Windows
                 ReflectionHelper.TryGetInternalMethod<PropertyPath>("SetContext", out PropertyPath_SetContext);
 
             if (PropertyPath_Length?.GetValue(PropertyPath) is int PropertyPathLength &&
-                PropertyPath_SetContext?.Invoke(PropertyPath, new[] { This }) is IDisposable Worker)
+                PropertyPath_SetContext?.Invoke(PropertyPath, [This]) is IDisposable Worker)
             {
 
                 if (PropertyPath_GetAccessor is null)
@@ -107,7 +168,7 @@ namespace System.Windows
 
                 try
                 {
-                    object[] Args = { PropertyPathLength - 1 };
+                    object[] Args = [PropertyPathLength - 1];
                     PropertyInfo = PropertyPath_GetAccessor?.Invoke(PropertyPath, Args) as TInfo;
                     ParentObject = (TValue)PropertyPath_GetItem?.Invoke(PropertyPath, Args);
 
@@ -135,7 +196,7 @@ namespace System.Windows
             if (PropertyPath_SetContext is null)
                 ReflectionHelper.TryGetInternalMethod<PropertyPath>("SetContext", out PropertyPath_SetContext);
 
-            if (PropertyPath_SetContext?.Invoke(PropertyPath, new[] { This }) is IDisposable Worker)
+            if (PropertyPath_SetContext?.Invoke(PropertyPath, [This]) is IDisposable Worker)
             {
 
                 if (PropertyPath_GetValue is null)
@@ -157,15 +218,15 @@ namespace System.Windows
         }
 
         public static ChangedEventArgs<T> ToChangedEventArgs<T>(this DependencyPropertyChangedEventArgs e)
-            => new ChangedEventArgs<T>(e.OldValue is T New ? New : default,
-                                       e.NewValue is T Old ? Old : default);
+            => new(e.OldValue is T New ? New : default,
+                   e.NewValue is T Old ? Old : default);
 
         public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this DependencyPropertyChangedEventArgs e, RoutedEvent Event)
-            => new RoutedPropertyChangedEventArgs<T>(e.OldValue is T New ? New : default,
-                                                     e.NewValue is T Old ? Old : default,
-                                                     Event);
+            => new(e.OldValue is T New ? New : default,
+                   e.NewValue is T Old ? Old : default,
+                   Event);
         public static RoutedPropertyChangedEventArgs<T> ToRoutedPropertyChangedEventArgs<T>(this ChangedEventArgs<T> e, RoutedEvent Event)
-            => new RoutedPropertyChangedEventArgs<T>(e.OldValue, e.NewValue, Event);
+            => new(e.OldValue, e.NewValue, Event);
 
         public static void OnPropertyChanged(this INotifyPropertyChanged This, [CallerMemberName] string PropertyName = null)
         {
@@ -177,7 +238,7 @@ namespace System.Windows
                 Delegate[] Invocations = Handler.GetInvocationList();
                 if (Invocations.Length > 0)
                 {
-                    PropertyChangedEventArgs e = new PropertyChangedEventArgs(PropertyName);
+                    PropertyChangedEventArgs e = new(PropertyName);
                     foreach (Delegate Event in Invocations)
                     {
                         if (Event.Target is DispatcherObject DispObj &&
