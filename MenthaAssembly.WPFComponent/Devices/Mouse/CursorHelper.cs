@@ -36,34 +36,34 @@ namespace MenthaAssembly.Devices
             => CursorResource.Instance;
 
         public static CursorInfo EyedropperCursor
-            => CreateCursor(Resource.Eyedropper, 1, 21, 0);
+            => CreateCursor(Resource.Eyedropper, 22, 22, 1, 21, 0);
 
         public static CursorInfo GrabHandCursor
-            => CreateCursor(Resource.GrabHand, 9, 10, 0);
+            => CreateCursor(Resource.GrabHand, 20, 20, 9, 10, 0);
 
         public static CursorInfo RotateCursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 0);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 0);
 
         public static CursorInfo Rotate45Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 45d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 45d);
 
         public static CursorInfo Rotate90Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 90d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 90d);
 
         public static CursorInfo Rotate135Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 135d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 135d);
 
         public static CursorInfo Rotate180Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 180d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 180d);
 
         public static CursorInfo Rotate225Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 225d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 225d);
 
         public static CursorInfo Rotate270Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 270d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 270d);
 
         public static CursorInfo Rotate315Cursor
-            => CreateCursor(Resource.RotateArrow, 13, 13, 315d);
+            => CreateCursor(Resource.RotateArrow, 26, 26, 13, 13, 315d);
 
         public static CursorInfo CreateCursor(UIElement Element, int xHotSpot, int yHotSpot)
             => CreateCursor(Element, (int)SystemParameters.CursorWidth, (int)SystemParameters.CursorHeight, xHotSpot, yHotSpot, 1d);
@@ -83,8 +83,8 @@ namespace MenthaAssembly.Devices
             => CreateCursor(Image, Width, Height, xHotSpot, yHotSpot, Angle, 1d);
         public static CursorInfo CreateCursor(DrawingImage Image, int Width, int Height, int xHotSpot, int yHotSpot, double Angle, double Opacity)
         {
-            double CursorX = Math.Round(xHotSpot * Math.Min(Image.Width, Width) / Image.Width),
-                   CursorY = Math.Round(yHotSpot * Math.Min(Image.Height, Height) / Image.Height);
+            double CursorX = Math.Round(xHotSpot * Math.Max(Image.Width, Width) / Image.Width),
+                   CursorY = Math.Round(yHotSpot * Math.Max(Image.Height, Height) / Image.Height);
 
             IntPtr HIcon = Image.CreateHIcon(Width, Height, Angle, (int)CursorX, (int)CursorY, Opacity);
             SafeIconHandle HCursor = new(HIcon);
@@ -113,5 +113,4 @@ namespace MenthaAssembly.Devices
             => SetSystemCursor(CreateCursor(Image, xHotSpot, yHotSpot, Angle).Handle, Id);
 
     }
-
 }
