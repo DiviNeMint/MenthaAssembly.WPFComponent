@@ -1,5 +1,4 @@
 ﻿using MenthaAssembly.Views.Primitives.Adorners;
-using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -12,35 +11,38 @@ namespace MenthaAssembly.Views.Primitives
     internal class SaturationBrightnessPicker : Control
     {
         public static readonly DependencyProperty ShowAdornerProperty =
-              DependencyProperty.Register("ShowAdorner", typeof(bool), typeof(SaturationBrightnessPicker), new PropertyMetadata(true,
-                  (d, e) =>
-                  {
-                      if (d is SaturationBrightnessPicker This &&
-                          This.Adorner != null)
-                          This.Adorner.Visibility = e.NewValue is true ? Visibility.Visible : Visibility.Collapsed;
-                  }));
+            DependencyProperty.Register(nameof(ShowAdorner), typeof(bool), typeof(SaturationBrightnessPicker), new PropertyMetadata(true,
+                (d, e) =>
+                {
+                    if (d is SaturationBrightnessPicker This &&
+                        This.Adorner != null)
+                        This.Adorner.Visibility = e.NewValue is true ? Visibility.Visible : Visibility.Collapsed;
+                }));
         public bool ShowAdorner
         {
             get => (bool)GetValue(ShowAdornerProperty);
             set => SetValue(ShowAdornerProperty, value);
         }
 
-        public static readonly DependencyProperty HueColorProperty =
-              HuePicker.HueColorProperty.AddOwner(typeof(SaturationBrightnessPicker), new PropertyMetadata(Colors.Red));
-        public Color HueColor
+        public static readonly DependencyProperty HueProperty =
+              HuePicker.HueProperty.AddOwner(typeof(SaturationBrightnessPicker), new PropertyMetadata(0d, (d, e) => 
+              {
+
+              }));
+        public double Hue
         {
-            get => (Color)GetValue(HueColorProperty);
-            set => SetValue(HueColorProperty, value);
+            get => (double)GetValue(HueProperty);
+            set => SetValue(HueProperty, value);
         }
 
         public static readonly DependencyProperty SaturationProperty =
-              DependencyProperty.Register("Saturation", typeof(double), typeof(SaturationBrightnessPicker), new PropertyMetadata(1d,
-                  (d, e) =>
-                  {
-                      if (d is SaturationBrightnessPicker This)
-                          This.OnSaturationChanged(new ChangedEventArgs<double>(e.OldValue, e.NewValue));
-                  },
-                  CoerceSaturationBrightnessValue));
+            DependencyProperty.Register(nameof(Saturation), typeof(double), typeof(SaturationBrightnessPicker), new PropertyMetadata(1d,
+                (d, e) =>
+                {
+                    if (d is SaturationBrightnessPicker This)
+                        This.OnSaturationChanged(new ChangedEventArgs<double>(e.OldValue, e.NewValue));
+                },
+                  CoerceSaturationBrightness));
         public double Saturation
         {
             get => (double)GetValue(SaturationProperty);
@@ -48,33 +50,21 @@ namespace MenthaAssembly.Views.Primitives
         }
 
         public static readonly DependencyProperty BrightnessProperty =
-              DependencyProperty.Register("Brightness", typeof(double), typeof(SaturationBrightnessPicker), new PropertyMetadata(1d,
-                  (d, e) =>
-                  {
-                      if (d is SaturationBrightnessPicker This)
-                          This.OnBrightnessChanged(new ChangedEventArgs<double>(e.OldValue, e.NewValue));
-                  },
-                  CoerceSaturationBrightnessValue));
+            DependencyProperty.Register(nameof(Brightness), typeof(double), typeof(SaturationBrightnessPicker), new PropertyMetadata(1d,
+                (d, e) =>
+                {
+                    if (d is SaturationBrightnessPicker This)
+                        This.OnBrightnessChanged(new ChangedEventArgs<double>(e.OldValue, e.NewValue));
+                },
+                CoerceSaturationBrightness));
         public double Brightness
         {
             get => (double)GetValue(BrightnessProperty);
             set => SetValue(BrightnessProperty, value);
         }
 
-        internal static object CoerceSaturationBrightnessValue(DependencyObject d, object v)
-        {
-            if (v is double Value)
-            {
-                if (Value < 0)
-                    return 0d;
-
-                if (Value > 1)
-                    return 1d;
-
-                return Value;
-            }
-            return DependencyProperty.UnsetValue;
-        }
+        internal static object CoerceSaturationBrightness(DependencyObject d, object v)
+            => v is double Value ? Value < 0 ? 0d : Value > 1 ? 1d : Value : DependencyProperty.UnsetValue;
 
         static SaturationBrightnessPicker()
         {
@@ -86,10 +76,15 @@ namespace MenthaAssembly.Views.Primitives
         {
             base.OnApplyTemplate();
 
-            if (this.GetTemplateChild("PART_GradientStopHueColor") is GradientStop PART_GradientStopHueColor)
-                BindingOperations.SetBinding(PART_GradientStopHueColor,
-                                             GradientStop.ColorProperty,
-                                             new Binding(nameof(HueColor)) { Source = this, FallbackValue = Colors.Red });
+            if (GetTemplateChild("PART_GradientStopHueColor") is GradientStop PART_GradientStopHueColor)
+            {
+                BindingOperations.SetBinding(PART_GradientStopHueColor, GradientStop.ColorProperty, new Binding(nameof(Hue))
+                {
+                    Source = this,
+                    Converter = ColorConverter.HueToColor,
+                    FallbackValue = Colors.Red
+                });
+            }
 
             CreateAdorner();
         }
@@ -100,8 +95,8 @@ namespace MenthaAssembly.Views.Primitives
 
             // Update
             if (Adorner != null)
-                Adorner.Position = new Point(this.ActualWidth * Saturation,
-                                             this.ActualHeight * (1 - Brightness));
+                Adorner.Position = new Point(ActualWidth * Saturation,
+                                             ActualHeight * (1 - Brightness));
         }
 
         protected virtual PickerAdorner CreateAdorner()
@@ -109,6 +104,9 @@ namespace MenthaAssembly.Views.Primitives
             try
             {
                 Adorner = new SaturationBrightnessPickerAdorner(this);
+                if (!ShowAdorner)
+                    Adorner.Visibility = Visibility.Collapsed;
+
                 AdornerLayer.GetAdornerLayer(this).Add(Adorner);
             }
             catch
@@ -154,7 +152,7 @@ namespace MenthaAssembly.Views.Primitives
             {
                 IsUpdating = true;
                 if (Adorner != null)
-                    Adorner.Position = new Point(this.ActualWidth * e.NewValue, Adorner.Position.Y);
+                    Adorner.Position = new Point(ActualWidth * e.NewValue, Adorner.Position.Y);
             }
             finally
             {
@@ -170,7 +168,7 @@ namespace MenthaAssembly.Views.Primitives
             {
                 IsUpdating = true;
                 if (Adorner != null)
-                    Adorner.Position = new Point(Adorner.Position.X, this.ActualHeight * (1 - e.NewValue));
+                    Adorner.Position = new Point(Adorner.Position.X, ActualHeight * (1 - e.NewValue));
             }
             finally
             {
@@ -184,12 +182,12 @@ namespace MenthaAssembly.Views.Primitives
             try
             {
                 IsUpdating = true;
-                Point FixPoint = new Point(Math.Max(Math.Min(Position.X, ActualWidth), 0d),
-                                           Math.Max(Math.Min(Position.Y, ActualHeight), 0d));
+                Point FixPoint = new(MathHelper.Clamp(Position.X, 0d, ActualWidth),
+                                     MathHelper.Clamp(Position.Y, 0d, ActualHeight));
 
                 Adorner.Position = FixPoint;
                 Saturation = FixPoint.X / ActualWidth;
-                Brightness = 1 - (FixPoint.Y / ActualHeight);
+                Brightness = 1 - FixPoint.Y / ActualHeight;
             }
             finally
             {

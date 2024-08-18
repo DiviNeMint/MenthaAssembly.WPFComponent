@@ -20,7 +20,7 @@ namespace MenthaAssembly.Views.Primitives
         #endregion
 
         public static readonly DependencyProperty IsCapturingProperty =
-              DependencyProperty.Register("IsCapturing", typeof(bool), typeof(ColorEyedropper), new PropertyMetadata(false));
+            DependencyProperty.Register(nameof(IsCapturing), typeof(bool), typeof(ColorEyedropper), new PropertyMetadata(false));
         public bool IsCapturing
         {
             get => (bool)GetValue(IsCapturingProperty);
@@ -28,18 +28,18 @@ namespace MenthaAssembly.Views.Primitives
         }
 
         public static readonly DependencyProperty ColorProperty =
-              DependencyProperty.Register("Color", typeof(Color), typeof(ColorEyedropper), new PropertyMetadata(Colors.Transparent));
-        public Color Color
+            ColorEditor.ColorProperty.AddOwner(typeof(ColorEyedropper), new PropertyMetadata(null));
+        public Color? Color
         {
-            get => (Color)GetValue(ColorProperty);
+            get => (Color?)GetValue(ColorProperty);
             set => SetValue(ColorProperty, value);
         }
 
         public static readonly DependencyProperty OriginalColorProperty =
-              DependencyProperty.Register("OriginalColor", typeof(Color), typeof(ColorEyedropper), new PropertyMetadata(Colors.Transparent));
-        public Color OriginalColor
+            DependencyProperty.Register(nameof(OriginalColor), typeof(Color?), typeof(ColorEyedropper), new PropertyMetadata(null));
+        public Color? OriginalColor
         {
-            get => (Color)GetValue(OriginalColorProperty);
+            get => (Color?)GetValue(OriginalColorProperty);
             set => SetValue(OriginalColorProperty, value);
         }
 
@@ -77,13 +77,9 @@ namespace MenthaAssembly.Views.Primitives
 
                 // Update Color
                 if (Background is SolidColorBrush Brush)
-                {
                     Color = Brush.Color;
-                }
 
-                if (Timer is null)
-                    Timer = new DispatcherTimer(TimeSpan.FromMilliseconds(10d), DispatcherPriority.Normal, OnTimerTick, Dispatcher);
-
+                Timer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(10d), DispatcherPriority.Normal, OnTimerTick, Dispatcher);
                 Timer.Start();
             }
         }
@@ -94,8 +90,7 @@ namespace MenthaAssembly.Views.Primitives
 
             // GetPixel
             int ColorValue = GetPixel(pWindowDC, Position.X, Position.Y);
-
-            Color = Color.FromArgb(255, (byte)ColorValue, (byte)(ColorValue >> 8), (byte)(ColorValue >> 16));
+            Color = System.Windows.Media.Color.FromArgb(255, (byte)ColorValue, (byte)(ColorValue >> 8), (byte)(ColorValue >> 16));
         }
 
         private void OnGlobalMouseDown(GlobalMouseEventArgs e)

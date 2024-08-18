@@ -6,8 +6,6 @@
     <Style TargetType="{x:Type local:ColorEditor}">
         <Setter Property="BorderBrush" Value="#FF707070"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Width" Value="140"/>
-        <Setter Property="Height" Value="140"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ColorEditor}">
@@ -24,13 +22,13 @@
                                 <RowDefinition/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <Primitives:SaturationBrightnessPicker x:Name="PART_SBPicker" 
+                            <Primitives:SaturationBrightnessPicker x:Name="SBPicker" 
                                                                    BorderBrush="{TemplateBinding BorderBrush}"
                                                                    BorderThickness="0,0,1,1"
+                                                                   Hue="{TemplateBinding Hue}"
                                                                    Saturation="{Binding Saturation, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                                                   Brightness="{Binding Brightness, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                                                   HueColor="{Binding HueColor, ElementName=PART_HubPicker}"/>
-                            <Primitives:HuePicker x:Name="PART_HubPicker"
+                                                                   Brightness="{Binding Brightness, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Primitives:HuePicker x:Name="HubPicker"
                                                   BorderBrush="{TemplateBinding BorderBrush}"
                                                   BorderThickness="0,0,0,1"
                                                   Hue="{Binding Hue, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
@@ -68,16 +66,19 @@
                             </Border>
                             <Primitives:ColorEyedropper x:Name="PART_ColorEyedropper"
                                                         IsCapturing="{Binding IsColorCapturing, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                                        Color="{Binding Color, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                                        Color="{Binding Color, Mode=TwoWay, TargetNullValue=Transparent, RelativeSource={RelativeSource TemplatedParent}}" 
                                                         Background="#FF161616"
                                                         Grid.Column="1" Grid.Row="1"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <DataTrigger Binding="{Binding IsCapturing, ElementName=PART_ColorEyedropper}" Value="True">
-                            <Setter TargetName="PART_HubPicker" Property="ShowAdorner" Value="False"/>
-                            <Setter TargetName="PART_SBPicker" Property="ShowAdorner" Value="False"/>
+                            <Setter TargetName="HubPicker" Property="ShowAdorner" Value="False"/>
+                            <Setter TargetName="SBPicker" Property="ShowAdorner" Value="False"/>
                         </DataTrigger>
+                        <Trigger Property="Color" Value="{x:Null}">
+                            <Setter TargetName="SBPicker" Property="ShowAdorner" Value="False"/>
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

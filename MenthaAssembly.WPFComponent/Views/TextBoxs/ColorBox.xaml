@@ -5,19 +5,21 @@
 
     <Style TargetType="{x:Type local:ColorBox}">
         <Setter Property="Background" Value="White"/>
-        <Setter Property="BorderBrush" Value="#FF707070"/>
+        <Setter Property="BorderBrush" Value="{x:Static SystemColors.ActiveBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ColorBox}">
-                    <Grid Background="{TemplateBinding Background}">
-                        <Button x:Name="Root"
-                                Width="{TemplateBinding ActualWidth}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                SnapsToDevicePixels="True">
-                            <Button.Template>
+                    <Grid Background="{TemplateBinding Background}" ClipToBounds="False">
+                        <ToggleButton x:Name="Root"
+                                      IsChecked="{Binding IsOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Width="{TemplateBinding ActualWidth}"
+                                      Background="{Binding Color, Mode=TwoWay, TargetNullValue=Transparent, Converter={x:Static local:ColorConverter.ColorToBrush}, RelativeSource={RelativeSource TemplatedParent}}"
+                                      BorderBrush="{TemplateBinding BorderBrush}"
+                                      BorderThickness="{TemplateBinding BorderThickness}"
+                                      SnapsToDevicePixels="True">
+                            <ToggleButton.Template>
                                 <ControlTemplate TargetType="{x:Type ButtonBase}">
                                     <Border BorderBrush="{TemplateBinding BorderBrush}" 
                                             BorderThickness="{TemplateBinding BorderThickness}" 
@@ -34,20 +36,19 @@
                                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                     </Border>
                                 </ControlTemplate>
-                            </Button.Template>
-                            <Button.Background>
-                                <SolidColorBrush Color="{Binding Color, Mode=TwoWay, TargetNullValue=Transparent, RelativeSource={RelativeSource TemplatedParent}}"/>
-                            </Button.Background>
+                            </ToggleButton.Template>
                             <ContentPresenter/>
-                        </Button>
-                        <Popup x:Name="PART_Popup" 
-                               IsOpen="{TemplateBinding IsOpen}">
-                            <local:ColorEditor x:Name="PART_ColorEditor"
-                                               Background="White"
-                                               MinWidth="120"
-                                               Width="{TemplateBinding ActualWidth}"
-                                               Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" 
-                                               Color="{Binding Color, Mode=TwoWay, TargetNullValue=Red, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </ToggleButton>
+                        <Popup IsOpen="{TemplateBinding IsOpen}"
+                               AllowsTransparency="True"
+                               PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}">
+                            <local:ShadowPresenter MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                                   Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}">
+                                <local:ColorEditor x:Name="PART_ColorEditor"
+                                                   MinWidth="160"
+                                                   Background="White"
+                                                   Color="{Binding Color, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            </local:ShadowPresenter>
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -59,5 +60,5 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
 </ResourceDictionary>

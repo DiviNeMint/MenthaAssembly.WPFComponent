@@ -137,7 +137,7 @@ namespace MenthaAssembly.Views
                             PART_CheckBox.Style = TryFindResource("PART_CheckBoxStyle") as Style;
                             this.Content = PART_CheckBox;
                         }
-                        else if (Data.Converter is ColorConverter || Data.Converter is BrushConverter)
+                        else if (Data.Converter is System.Windows.Media.ColorConverter || Data.Converter is BrushConverter)
                         {
                             ColorBox PART_ColorBox = new ColorBox();
                             BindingDependencyProperty = ColorBox.ColorProperty;
@@ -317,13 +317,13 @@ namespace MenthaAssembly.Views
         {
             public static PropertyValueConverter Instance { get; } = new PropertyValueConverter();
 
-            private static ColorConverter _ColorConverter = null;
-            private static ColorConverter ColorConverter
+            private static System.Windows.Media.ColorConverter _ColorConverter = null;
+            private static System.Windows.Media.ColorConverter ColorConverter
             {
                 get
                 {
                     if (_ColorConverter is null)
-                        _ColorConverter = new ColorConverter();
+                        _ColorConverter = new System.Windows.Media.ColorConverter();
 
                     return _ColorConverter;
                 }
@@ -333,9 +333,9 @@ namespace MenthaAssembly.Views
             {
                 if (parameter is TypeConverter Converter)
                 {
-                    if (parameter is ColorConverter ||
+                    if (parameter is System.Windows.Media.ColorConverter ||
                         parameter is BrushConverter)
-                        return value is null ? null : ColorConverter.ConvertFromString(Converter.ConvertToString(value));
+                        return value is null ? null : System.Windows.Media.ColorConverter.ConvertFromString(Converter.ConvertToString(value));
                 }
 
                 return Binding.DoNothing;
@@ -345,7 +345,7 @@ namespace MenthaAssembly.Views
             {
                 if (parameter is TypeConverter Converter)
                 {
-                    if (parameter is ColorConverter ||
+                    if (parameter is System.Windows.Media.ColorConverter ||
                         parameter is BrushConverter)
                         return value is null ? null : Converter.ConvertFromString(ColorConverter.ConvertToString(value));
                 }

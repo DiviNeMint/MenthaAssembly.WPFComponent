@@ -12,7 +12,7 @@ namespace MenthaAssembly.Views.Primitives
     internal class HuePicker : Control
     {
         public static readonly DependencyProperty ShowAdornerProperty =
-              DependencyProperty.Register("ShowAdorner", typeof(bool), typeof(HuePicker), new PropertyMetadata(true,
+              DependencyProperty.Register(nameof(ShowAdorner), typeof(bool), typeof(HuePicker), new PropertyMetadata(true,
                   (d, e) =>
                   {
                       if (d is HuePicker This &&
@@ -25,43 +25,16 @@ namespace MenthaAssembly.Views.Primitives
             set => SetValue(ShowAdornerProperty, value);
         }
 
-        public static readonly DependencyProperty HueColorProperty =
-              DependencyProperty.Register("HueColor", typeof(Color), typeof(HuePicker), new PropertyMetadata(Colors.Red,
-                  (d, e) =>
-                  {
-                      if (d is HuePicker This &&
-                          !This.IsHueUpdating)
-                          This.OnHueColorChanged(new ChangedEventArgs<Color>(e.OldValue, e.NewValue));
-                  }));
-        public Color HueColor
-        {
-            get => (Color)GetValue(HueColorProperty);
-            set => SetValue(HueColorProperty, value);
-        }
-
         public static readonly DependencyProperty HueProperty =
-              DependencyProperty.Register("Hue", typeof(double), typeof(HuePicker), new PropertyMetadata(0d,
+              DependencyProperty.Register(nameof(Hue), typeof(double), typeof(HuePicker), new PropertyMetadata(0d,
                   (d, e) =>
                   {
-                      if (d is HuePicker This &&
-                          !This.IsHueUpdating)
+                      if (d is HuePicker This)
                           This.OnHueChanged(new ChangedEventArgs<double>(e.OldValue, e.NewValue));
                   },
                   CoerceHueValue));
         internal static object CoerceHueValue(DependencyObject d, object v)
-        {
-            if (v is double Value)
-            {
-                if (Value < 0)
-                    return 0d;
-
-                if (Value > 360)
-                    return 360d;
-
-                return Value;
-            }
-            return DependencyProperty.UnsetValue;
-        }
+            => v is double Value ? Value < 0 ? 0d : Value > 360 ? 360d : Value : DependencyProperty.UnsetValue;
         public double Hue
         {
             get => (double)GetValue(HueProperty);
@@ -79,8 +52,8 @@ namespace MenthaAssembly.Views.Primitives
         {
             base.OnApplyTemplate();
 
-            if (this.GetTemplateChild("PART_HuePalette") is Rectangle HuePalette)
-                this.PART_HuePalette = HuePalette;
+            if (GetTemplateChild("PART_HuePalette") is Rectangle HuePalette)
+                PART_HuePalette = HuePalette;
 
             CreateAdorner();
         }
@@ -131,52 +104,27 @@ namespace MenthaAssembly.Views.Primitives
             }
         }
 
-        protected bool IsHueUpdating = false;
-        protected virtual void OnHueColorChanged(ChangedEventArgs<Color> e)
-        {
-            try
-            {
-                IsHueUpdating = true;
-                Hue = GetHue(e.NewValue);
-                UpdateAdornerPosition();
-            }
-            finally
-            {
-                IsHueUpdating = false;
-            }
-        }
         protected virtual void OnHueChanged(ChangedEventArgs<double> e)
-        {
-            try
-            {
-                IsHueUpdating = true;
-                HueColor = GetColor(e.NewValue);
-                UpdateAdornerPosition();
-            }
-            finally
-            {
-                IsHueUpdating = false;
-            }
-        }
+            => UpdateAdornerPosition();
 
         protected void UpdateAdornerPosition()
         {
             if (Adorner is null)
                 return;
 
-            Adorner.Position = new Point(10, this.ActualHeight * Hue / 360);
+            Adorner.Position = new Point(10d, ActualHeight * Hue / 360d);
         }
 
-        protected Color GetColor(double Hue)
-            => Color.FromRgb(GetRGBByte(Hue, 5), GetRGBByte(Hue, 3), GetRGBByte(Hue, 1));
-        private byte GetRGBByte(double Hue, double n)
+        protected static Color ToColor(double Hue)
+            => Color.FromRgb(ToRGBByte(Hue, 5), ToRGBByte(Hue, 3), ToRGBByte(Hue, 1));
+        private static byte ToRGBByte(double Hue, double n)
         {
             double k = (n + Hue / 60) % 6,
-                   value = 1 - Math.Max(Math.Min(Math.Min(k, 4 - k), 1), 0);
+                   value = 1 - MathHelper.Clamp(Math.Min(k, 4 - k), 0d, 1d);
             return (byte)Math.Round(value * 255);
         }
 
-        protected double GetHue(Color Color)
+        protected static double ToHue(Color Color)
         {
             // R > G >= B
             if (Color.R > Color.G && Color.G >= Color.B)
