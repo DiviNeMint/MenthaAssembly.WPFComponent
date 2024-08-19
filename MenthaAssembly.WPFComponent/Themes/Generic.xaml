@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
     <ResourceDictionary.MergedDictionaries>
+
+        <!--ValidationErrorTemplates-->
+        <ResourceDictionary Source="/Synpower4WPF;component/Themes/ValidationErrorTemplates.xaml"/>
         
         <!--Button-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Buttons/Button.xaml"/>
@@ -88,5 +91,5 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
-    
+
 </ResourceDictionary>
