@@ -435,7 +435,9 @@ namespace MenthaAssembly.MarkupExtensions
         }
         private static void OnInputMode_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key is Key.Tab || e.Key is Key.Enter)
+            if (e.Key is Key.Tab ||
+                e.Key is Key.Enter ||
+                e.Key is Key.Escape)
                 return;
 
             if (sender is TextBox This)
