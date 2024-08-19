@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Windows;
@@ -194,6 +195,7 @@ namespace MenthaAssembly.MarkupExtensions
                     }
                 }
 
+                Debug.WriteLine($"[Language] Not fount {Path}.");
                 return Default ?? Path;
             }
 
