@@ -1,5 +1,6 @@
 ﻿using MenthaAssembly.Globalization;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -136,8 +137,6 @@ namespace MenthaAssembly.MarkupExtensions
         {
             public static LanguageMultiConverter Instance { get; } = new LanguageMultiConverter();
 
-            private static readonly Dictionary<string, Dictionary<string, string>> CacheTranslate = [];
-
             public object Convert(object[] Values, Type TargetType, object Parameter, CultureInfo culture)
             {
                 string Result, Path, Default;
@@ -176,7 +175,7 @@ namespace MenthaAssembly.MarkupExtensions
                     LanguageManager.CanGoogleTranslate &&
                     Values[0] is true)
                 {
-                    if (CacheTranslate.TryGetValue(ToCulture, out Dictionary<string, string> Caches))
+                    if (LanguageManager.CacheTranslate.TryGetValue(ToCulture, out ConcurrentDictionary<string, string> Caches))
                     {
                         if (Caches.TryGetValue(Path, out Result))
                             return Result;
@@ -184,13 +183,13 @@ namespace MenthaAssembly.MarkupExtensions
                     else
                     {
                         Caches = [];
-                        CacheTranslate.Add(ToCulture, Caches);
+                        LanguageManager.CacheTranslate.AddOrUpdate(ToCulture, Caches, (k, v) => Caches);
                     }
 
                     Result = LanguageManager.GoogleTranslate(Path, "en-US", ToCulture);
                     if (!string.IsNullOrEmpty(Result))
                     {
-                        Caches.Add(Path, Result);
+                        Caches.AddOrUpdate(Path, Result, (k, v) => Result);
                         return Result;
                     }
                 }
