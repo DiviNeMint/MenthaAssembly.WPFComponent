@@ -175,10 +175,10 @@ namespace MenthaAssembly.Views
             BitBlock Block = new(Index);
 
             // DataContext
-            Block.SetBinding(DataContextProperty, new Binding(nameof(DataContext)) { Source = this });
+            Block.SetBinding(DataContextProperty, new Binding(nameof(Source)) { Source = this });
 
             // IsSet
-            Block.SetBinding(BitBlock.IsSetProperty, new Binding($"[{Index}]") { TargetNullValue = false });
+            Block.SetBinding(BitBlock.IsSetProperty, new Binding($"[{Index}]"));
 
             // Font
             Block.SetBinding(TextElement.FontFamilyProperty, new Binding(nameof(FontFamily)) { Source = this });

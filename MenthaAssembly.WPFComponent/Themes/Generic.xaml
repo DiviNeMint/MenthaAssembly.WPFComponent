@@ -4,13 +4,16 @@
     <ResourceDictionary.MergedDictionaries>
 
         <!--ValidationErrorTemplates-->
-        <ResourceDictionary Source="/Synpower4WPF;component/Themes/ValidationErrorTemplates.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Themes/ValidationErrorTemplates.xaml"/>
         
         <!--Button-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Buttons/Button.xaml"/>
 
         <!--ToggleButton-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Buttons/ToggleButton.xaml"/>
+
+        <!--BitEditor-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/BitEditor/Primitives/BitBlock.xaml"/>
 
         <!--ColorEditor-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor/ColorEditor.xaml"/>
