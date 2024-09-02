@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace MenthaAssembly.Views.Primitives
+namespace Synpower4Net.Views.Primitives
 {
     public sealed class BitChangedEventArgs(int Index, bool Status, RoutedEvent RoutedEvent, object Source) : RoutedEventArgs(RoutedEvent, Source)
     {

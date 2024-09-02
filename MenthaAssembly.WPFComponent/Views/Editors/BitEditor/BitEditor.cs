@@ -1,7 +1,8 @@
-﻿using MenthaAssembly.Views.Primitives;
+﻿using Synpower4Net.Views.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -9,7 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace MenthaAssembly.Views
+namespace Synpower4Net.Views
 {
     public class BitEditor : FrameworkElement
     {
@@ -115,16 +116,16 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty SourceProperty =
-            DependencyProperty.Register(nameof(Source), typeof(IBitsSource), typeof(BitEditor),
+            DependencyProperty.Register(nameof(Source), typeof(IBitEditorSource), typeof(BitEditor),
                 new FrameworkPropertyMetadata(null, MeasureMetadataOption,
                     (d, e) =>
                     {
                         if (d is BitEditor This)
-                            This.OnSourceChanged(e.ToChangedEventArgs<IBitsSource>());
+                            This.OnSourceChanged(e.ToChangedEventArgs<IBitEditorSource>());
                     }));
-        public IBitsSource Source
+        public IBitEditorSource Source
         {
-            get => (IBitsSource)GetValue(SourceProperty);
+            get => (IBitEditorSource)GetValue(SourceProperty);
             set => SetValue(SourceProperty, value);
         }
 
@@ -139,9 +140,15 @@ namespace MenthaAssembly.Views
                 Children.Add(PrepareBitBlock(i));
         }
 
-        private void OnSourceChanged(ChangedEventArgs<IBitsSource> e)
+        private readonly BitGridRow Owner;
+        internal BitEditor(BitGridRow Owner) : this()
         {
-            if (e.NewValue is IBitsSource New)
+            this.Owner = Owner;
+        }
+
+        private void OnSourceChanged(ChangedEventArgs<IBitEditorSource> e)
+        {
+            if (e.NewValue is IBitEditorSource New)
             {
                 int Count = Children.Count,
                     NewCount = New.Count;
@@ -301,18 +308,62 @@ namespace MenthaAssembly.Views
             Point Start = new(),
                   End = new(Start.X, Rh);
 
-            bool LastBit = Children[0] is BitBlock FirstBlock && FirstBlock.IsSet;
-            for (int i = 1; i < Count; i++)
+            if (GetPrevRowSource() is IBitEditorSource PrevSource && PrevSource.Count > 0)
             {
-                bool Bit = Children[i] is BitBlock Block && Block.IsSet;
-                if (LastBit && Bit)
+                Point RightTop = new();
+
+                bool LastBit = Children[0] is BitBlock FirstBlock && FirstBlock.IsSet;
+                if (LastBit && PrevSource[0])
                 {
-                    Start.X = (Locations[i - 1].Right + Locations[i].Left) / 2d;
-                    End.X = Start.X;
-                    Context.DrawLine(GetSeparatorPen(), Start, End);
+                    RightTop.X = Count < 2 ? Rw : (Locations[0].Right + Locations[1].Left) / 2d;
+                    Context.DrawLine(GetSeparatorPen(), Start, RightTop);
                 }
 
-                LastBit = Bit;
+                for (int i = 1; i < Count; i++)
+                {
+                    bool Bit = Children[i] is BitBlock Block && Block.IsSet;
+                    if (Bit)
+                    {
+                        bool SetStart = false;
+                        if (LastBit)
+                        {
+                            Start.X = (Locations[i - 1].Right + Locations[i].Left) / 2d;
+                            End.X = Start.X;
+                            Context.DrawLine(GetSeparatorPen(), Start, End);
+
+                            SetStart = true;
+                        }
+
+                        if (i < PrevSource.Count && PrevSource[i])
+                        {
+                            // Checks if Start has been updated 
+                            if (!SetStart)
+                                Start.X = (Locations[i - 1].Right + Locations[i].Left) / 2d;
+
+                            int j = i + 1;
+                            RightTop.X = Count <= j ? Rw : (Locations[i].Right + Locations[j].Left) / 2d;
+                            Context.DrawLine(GetSeparatorPen(), Start, RightTop);
+                        }
+                    }
+
+                    LastBit = Bit;
+                }
+            }
+            else
+            {
+                bool LastBit = Children[0] is BitBlock FirstBlock && FirstBlock.IsSet;
+                for (int i = 1; i < Count; i++)
+                {
+                    bool Bit = Children[i] is BitBlock Block && Block.IsSet;
+                    if (LastBit && Bit)
+                    {
+                        Start.X = (Locations[i - 1].Right + Locations[i].Left) / 2d;
+                        End.X = Start.X;
+                        Context.DrawLine(GetSeparatorPen(), Start, End);
+                    }
+
+                    LastBit = Bit;
+                }
             }
         }
 
@@ -378,6 +429,39 @@ namespace MenthaAssembly.Views
             => StrokePen = null;
         private void InvalidateSeparatorPen()
             => SeparatorPen = null;
+
+        private IBitEditorSource GetPrevRowSource()
+        {
+            if (Owner is not BitGridRow Row ||
+                Row.Owner is not BitGridPresenter GridPresenter)
+                return null;
+
+            ItemContainerGenerator RowGenerator = GridPresenter.ItemContainerGenerator;
+            int RowIndex = RowGenerator.IndexFromContainer(Owner);
+            if (RowIndex-- <= 0)
+                return null;
+
+            if (RowGenerator.Items[RowIndex] is not IBitRowSource PrevRowSource)
+                return null;
+
+            int EditorIndex = Row.ItemContainerGenerator.IndexFromContainer(this);
+            return PrevRowSource.Skip(EditorIndex).FirstOrDefault();
+        }
+        internal void InvalidateNextRowVisual()
+        {
+            if (Owner is not BitGridRow Row ||
+                Row.Owner is not BitGridPresenter GridPresenter)
+                return;
+
+            ItemContainerGenerator RowGenerator = GridPresenter.ItemContainerGenerator;
+            int RowIndex = RowGenerator.IndexFromContainer(Owner) + 1;
+            if (RowGenerator.ContainerFromIndex(RowIndex) is BitGridRow NextRow)
+            {
+                int EditorIndex = Row.ItemContainerGenerator.IndexFromContainer(this);
+                if (EditorIndex > -1 && NextRow.ItemContainerGenerator.ContainerFromIndex(EditorIndex) is BitEditor NextRowRditor)
+                    NextRowRditor.InvalidateVisual();
+            }
+        }
 
     }
 }
