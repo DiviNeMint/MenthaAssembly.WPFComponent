@@ -1,4 +1,4 @@
-﻿using MenthaAssembly.Views.Primitives;
+﻿using Synpower4Net.Views.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,7 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace MenthaAssembly.Views
+namespace Synpower4Net.Views
 {
     public class BitEditor : FrameworkElement
     {
