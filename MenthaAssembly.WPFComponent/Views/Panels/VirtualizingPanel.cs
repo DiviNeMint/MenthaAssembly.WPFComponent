@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
-namespace Synpower4Net.Views
+namespace MenthaAssembly.Views
 {
     public abstract class VirtualizingPanel : System.Windows.Controls.VirtualizingPanel
     {

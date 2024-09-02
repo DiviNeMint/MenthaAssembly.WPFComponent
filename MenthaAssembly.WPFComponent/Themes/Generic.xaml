@@ -14,6 +14,8 @@
 
         <!--BitEditor-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/BitEditor/Primitives/BitBlock.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/BitEditor/BitGridPresenter.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/BitEditor/BitGridRow.xaml"/>
 
         <!--ColorEditor-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/Editors/ColorEditor/ColorEditor.xaml"/>

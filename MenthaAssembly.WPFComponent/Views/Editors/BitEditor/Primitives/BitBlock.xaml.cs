@@ -48,16 +48,19 @@ namespace MenthaAssembly.Views.Primitives
         }
 
         public static readonly DependencyProperty IsSetProperty =
-            DependencyProperty.Register(nameof(IsSet), typeof(bool?), typeof(BitBlock),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+            DependencyProperty.Register(nameof(IsSet), typeof(bool), typeof(BitBlock),
+                new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
                     (d, e) =>
                     {
                         if (d is BitBlock This && This.Parent is BitEditor Editor)
+                        {
                             Editor.InvalidateVisual();
+                            Editor.InvalidateNextRowVisual(); // Refresh Next Row Editors
+                        }
                     }));
         public bool IsSet
         {
-            get => GetValue(IsSetProperty) is true;
+            get => (bool)GetValue(IsSetProperty);
             set => SetValue(IsSetProperty, value);
         }
 
