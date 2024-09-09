@@ -154,7 +154,11 @@ namespace MenthaAssembly.MarkupExtensions
                 }
                 else
                 {
-                    Path = Values[2]?.ToString();
+                    object Value = Values[2];
+                    if (Value == DependencyProperty.UnsetValue)
+                        return null;
+
+                    Path = Value?.ToString();
                     Default = ((string[])Parameter)[1];
                     if (string.IsNullOrEmpty(Path))
                         return Default ?? Binding.DoNothing;
