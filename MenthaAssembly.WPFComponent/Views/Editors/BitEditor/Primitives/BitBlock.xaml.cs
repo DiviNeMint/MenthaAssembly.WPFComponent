@@ -6,7 +6,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Synpower4Net.Views.Primitives
+namespace MenthaAssembly.Views.Primitives
 {
     public sealed class BitBlock : FrameworkElement
     {
