@@ -233,18 +233,9 @@ namespace MenthaAssembly.Views
 
             DpiScale Dpi = VisualTreeHelper.GetDpi(this);
             double Thickness = StrokeThickness,
-                   Tx = Thickness;
-
-            // Dpi
-            double Dx = Thickness * (Dpi.DpiScaleX - 1d),
-                   Offset = 1d / Dpi.DpiScaleX,
-                   Total = Dx,
-                   RoundTotal = Math.Round(Total, MidpointRounding.AwayFromZero);
-            if (Total > 0 && RoundTotal > Total)
-            {
-                Tx -= Offset;
-                Total -= RoundTotal;
-            }
+                   Tx = Thickness / Dpi.DpiScaleX,
+                   Ty = Thickness / Dpi.DpiScaleY,
+                   Nx = Tx;
 
             int Count = Children.Count;
             for (int i = 0; i < Count; i++)
@@ -261,23 +252,14 @@ namespace MenthaAssembly.Views
                     }
 
                     // Locations
-                    Locations[i] = new(Tx, Thickness, Bw, Bh);
+                    Locations[i] = new(Nx, Ty, Bw, Bh);
 
                     // Next X
-                    Tx += Bw + Thickness;
-
-                    // Dpi
-                    Total += Dx;
-                    RoundTotal = Math.Round(Total, MidpointRounding.AwayFromZero);
-                    if (Total > 0 && RoundTotal > Total)
-                    {
-                        Tx -= Offset;
-                        Total -= RoundTotal;
-                    }
+                    Nx += Bw + Tx;
                 }
             }
 
-            return new Size(Tx, Bh + Math.Round(Thickness * 2d * Dpi.DpiScaleY) / Dpi.DpiScaleY);
+            return new Size(Nx, Bh + Ty * 2d);
         }
 
         protected override Size ArrangeOverride(Size FinalSize)
@@ -295,7 +277,7 @@ namespace MenthaAssembly.Views
             if (Count <= 0)
                 return;
 
-            Size Size = RenderSize;
+            Size Size = DesiredSize;
             double Thickness = StrokeThickness,
                    HalfThickness = Thickness * 0.5d,
                    Rw = Size.Width,
