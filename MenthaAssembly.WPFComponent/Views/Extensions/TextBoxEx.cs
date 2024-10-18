@@ -64,8 +64,15 @@ namespace MenthaAssembly.MarkupExtensions
             if (OldType != null)
             {
                 SetInputMode(This, KeyboardInputMode.All);
+                This.Loaded -= OnTextBoxLoaded;
                 This.PreviewMouseWheel -= OnPreviewMouseWheel;
                 This.PreviewKeyDown -= OnPreviewKeyDown;
+            }
+
+            if (!This.IsLoaded)
+            {
+                This.Loaded += OnTextBoxLoaded;
+                return;
             }
 
             if (NewType != null)
@@ -207,6 +214,15 @@ namespace MenthaAssembly.MarkupExtensions
 
                 return ParseInteger(Content, false, Max, MaxInteger, MaxIntegerLength, out IsOverflow, out _);
             };
+        }
+
+        private static void OnTextBoxLoaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox This)
+            {
+                This.Loaded -= OnTextBoxLoaded;
+                OnValueTypeChanged(This, null, GetValueType(This));
+            }
         }
 
         private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
