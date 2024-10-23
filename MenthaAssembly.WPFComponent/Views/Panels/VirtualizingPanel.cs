@@ -70,8 +70,15 @@ namespace MenthaAssembly.Views
         {
             if (RealizedContainers.TryGetValue(Index, out FrameworkElement Container))
             {
-                IsNewlyRealized = false;
-                return Container;
+                if (DependencyHelper.IsDisconnectedItem(Container.DataContext))
+                {
+                    RealizedContainers.Remove(Index);
+                }
+                else
+                {
+                    IsNewlyRealized = false;
+                    return Container;
+                }
             }
 
             Container = (FrameworkElement)ItemContainerGenerator.ContainerFromIndex(Index);
