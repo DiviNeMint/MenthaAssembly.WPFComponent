@@ -13,6 +13,20 @@ namespace System.Windows
 {
     public static class DependencyHelper
     {
+        private static FieldInfo DisconnectedItemField;
+        private static object DisconnectedItem;
+        public static bool IsDisconnectedItem(object Obj)
+        {
+            if (Obj is null)
+                return false;
+
+            if (DisconnectedItemField is null &&
+                typeof(BindingExpressionBase).TryGetStaticInternalField(nameof(DisconnectedItem), out DisconnectedItemField))
+                DisconnectedItem = DisconnectedItemField.GetValue(null);
+
+            return Obj == DisconnectedItem;
+        }
+
         /// <summary>
         ///     Returns true if the binding (or any part of it) is OneWay.
         /// </summary>
