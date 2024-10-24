@@ -197,8 +197,9 @@ namespace MenthaAssembly.Views
             // Style
             Block.SetBinding(StyleProperty, new Binding(nameof(BitStyle)) { Source = this });
 
-            // Click event
+            // Event
             Block.Click += OnBitBlockClick;
+            Block.IsMouseDirectlyOverChanged += OnBitBlockIsMouseDirectlyOverChanged;
 
             return Block;
         }
@@ -207,8 +208,9 @@ namespace MenthaAssembly.Views
             // Binding
             BindingOperations.ClearAllBindings(Block);
 
-            // Click event
+            // Event
             Block.Click -= OnBitBlockClick;
+            Block.IsMouseDirectlyOverChanged -= OnBitBlockIsMouseDirectlyOverChanged;
         }
 
         private void OnBitBlockClick(object sender, RoutedEventArgs e)
@@ -223,6 +225,12 @@ namespace MenthaAssembly.Views
                 if (Arg.Handled)
                     e.Handled = true;
             }
+        }
+        private void OnBitBlockIsMouseDirectlyOverChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (Owner?.Owner?.Owner is BitGrid Grid &&
+                sender is BitBlock Block)
+                Grid.SetMouseOverAdorner(Block, e.NewValue is true);
         }
 
         private readonly Dictionary<int, Rect> Locations = [];

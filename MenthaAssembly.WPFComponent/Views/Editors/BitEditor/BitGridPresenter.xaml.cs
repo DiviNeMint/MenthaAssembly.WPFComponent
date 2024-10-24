@@ -6,6 +6,8 @@ namespace MenthaAssembly.Views
 {
     internal class BitGridPresenter(BitGrid Owner) : ItemsControl
     {
+        internal readonly BitGrid Owner = Owner;
+
         static BitGridPresenter()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(BitGridPresenter), new FrameworkPropertyMetadata(typeof(BitGridPresenter)));
