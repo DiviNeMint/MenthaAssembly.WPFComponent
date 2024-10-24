@@ -226,6 +226,7 @@ namespace MenthaAssembly.Views
         }
 
         private readonly Dictionary<int, Rect> Locations = [];
+        private Size RenderBlocksSize;
         protected override Size MeasureOverride(Size AvailableSize)
         {
             double Bw = 0d,
@@ -259,7 +260,8 @@ namespace MenthaAssembly.Views
                 }
             }
 
-            return new Size(Nx, Bh + Ty * 2d);
+            RenderBlocksSize = new Size(Nx, Bh + Ty * 2d);
+            return RenderBlocksSize;
         }
 
         protected override Size ArrangeOverride(Size FinalSize)
@@ -277,7 +279,7 @@ namespace MenthaAssembly.Views
             if (Count <= 0)
                 return;
 
-            Size Size = DesiredSize;
+            Size Size = RenderBlocksSize;
             double Thickness = StrokeThickness,
                    HalfThickness = Thickness * 0.5d,
                    Rw = Size.Width,
