@@ -51,7 +51,7 @@ namespace MenthaAssembly.Views
 
         public bool CanVerticallyScroll { get; set; }
 
-        private readonly Dictionary<int, Rect> Locations = [];
+        protected readonly Dictionary<int, Rect> Locations = [];
         protected override Size MeasureOverride(Size AvailableSize)
         {
             int Count = Items.Count;
@@ -393,6 +393,61 @@ namespace MenthaAssembly.Views
                 Data.Value.Arrange(Rect.Offset(Locations[Data.Key], -OffsetX, -OffsetY));
 
             return FinalSize;
+        }
+
+        protected override void BringIndexIntoView(int index)
+        {
+            if (!IsLoaded)
+                return;
+
+            if (Orientation == Orientation.Horizontal)
+                BringHorizontalIndexIntoView(index);
+            else
+                BringVerticalIndexIntoView(index);
+        }
+        private void BringHorizontalIndexIntoView(int Index)
+        {
+            Size MeasureSize = new(double.PositiveInfinity, ActualHeight);
+            if (!Locations.TryGetValue(Index, out Rect Location))
+            {
+                Measure(MeasureSize);
+                if (!Locations.TryGetValue(Index, out Location))
+                    return;
+            }
+
+            if (GlobalViewer != null)
+            {
+                GlobalViewer.ScrollToHorizontalOffset(Location.X);
+                GlobalOffsetX = Location.X;
+            }
+            else
+            {
+                OffsetX = Location.X;
+            }
+
+            UpdateLayout();
+        }
+        private void BringVerticalIndexIntoView(int Index)
+        {
+            Size MeasureSize = new(ActualWidth, double.PositiveInfinity);
+            if (!Locations.TryGetValue(Index, out Rect Location))
+            {
+                MeasureOverride(MeasureSize);
+                if (!Locations.TryGetValue(Index, out Location))
+                    return;
+            }
+
+            if (GlobalViewer != null)
+            {
+                GlobalViewer.ScrollToVerticalOffset(Location.Y);
+                GlobalOffsetY = Location.Y;
+            }
+            else
+            {
+                OffsetY = Location.Y;
+            }
+
+            UpdateLayout();
         }
 
         #region IScrollInfo
