@@ -156,13 +156,10 @@ namespace MenthaAssembly.Views
                 return;
 
             int RowIndex = -1,
-                IndexCoulmn = -1;
-
-            int Temp = 0;
+                Temp = 0;
             foreach (IBitRowSource RowSource in this.Source.OfType<IBitRowSource>())
             {
-                IndexCoulmn = RowSource.IndexOf(Source);
-                if (IndexCoulmn != -1)
+                if (RowSource.IndexOf(Source) != -1)
                 {
                     RowIndex = Temp;
                     break;
@@ -177,13 +174,28 @@ namespace MenthaAssembly.Views
             if (TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) is not BitGridRow ItemRow)
             {
                 Panel.BringIndexIntoViewPublic(RowIndex);
-                ItemRow = TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) as BitGridRow;
 
+                ItemRow = TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) as BitGridRow;
                 if (ItemRow is null)
                     return;
             }
 
-            if (ItemRow.ItemContainerGenerator.ContainerFromItem(Source) is BitEditor Editor &&
+            SetSelectedAdorner(ItemRow, Source, Index);
+        }
+        private void SetSelectedAdorner(BitGridRow Row, IBitEditorSource Source, int Index)
+        {
+            if (!Row.IsLoaded)
+            {
+                void OnLoaded(object sender, RoutedEventArgs e)
+                {
+                    SetSelectedAdorner(Row, Source, Index);
+                    Row.Loaded -= OnLoaded;
+                }
+                Row.Loaded += OnLoaded;
+                return;
+            }
+
+            if (Row.ItemContainerGenerator.ContainerFromItem(Source) is BitEditor Editor &&
                 Editor.FindVisualChildren<BitBlock>().FirstOrDefault(i => i.Index == Index) is BitBlock Block)
                 SetSelectedAdorner(Block);
         }
