@@ -61,14 +61,17 @@ namespace MenthaAssembly.Views
             // Presenter
             TemplatePresenter = new BitGridPresenter(this);
             TemplatePresenter.SetBinding(ItemsControl.ItemsSourceProperty, new Binding(nameof(Source)) { Source = this });
-
             AddVisualChild(TemplatePresenter);
-            Loaded += OnLoaded;
         }
+
+        protected override int VisualChildrenCount
+            => 1;
+        protected override Visual GetVisualChild(int index)
+            => TemplatePresenter;
 
         private RectangleAdorner SelectedAdorner;
         private RectangleAdorner MouseOverAdorner;
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        public override void OnApplyTemplate()
         {
             // AdornerLayer
             AdornerLayer Layer = AdornerLayer.GetAdornerLayer(this);
@@ -86,6 +89,25 @@ namespace MenthaAssembly.Views
             SelectedAdorner.StrokeThickness = 2;
             SelectedAdorner.Visibility = Visibility.Collapsed;
             Layer.Add(SelectedAdorner);
+        }
+
+        private bool IsCreated = false;
+        protected override Size MeasureOverride(Size AvailableSize)
+        {
+            if (!IsCreated)
+            {
+                OnApplyTemplate();
+                IsCreated = true;
+            }
+
+            TemplatePresenter.Measure(AvailableSize);
+            return TemplatePresenter.DesiredSize;
+        }
+
+        protected override Size ArrangeOverride(Size FinalSize)
+        {
+            TemplatePresenter.Arrange(new(FinalSize));
+            return FinalSize;
         }
 
         internal void SetMouseOverAdorner(BitBlock Target, bool IsMouseOver)
@@ -164,23 +186,6 @@ namespace MenthaAssembly.Views
             if (ItemRow.ItemContainerGenerator.ContainerFromItem(Source) is BitEditor Editor &&
                 Editor.FindVisualChildren<BitBlock>().FirstOrDefault(i => i.Index == Index) is BitBlock Block)
                 SetSelectedAdorner(Block);
-        }
-
-        protected override int VisualChildrenCount
-            => 1;
-        protected override Visual GetVisualChild(int index)
-            => TemplatePresenter;
-
-        protected override Size MeasureOverride(Size AvailableSize)
-        {
-            TemplatePresenter.Measure(AvailableSize);
-            return TemplatePresenter.DesiredSize;
-        }
-
-        protected override Size ArrangeOverride(Size FinalSize)
-        {
-            TemplatePresenter.Arrange(new(FinalSize));
-            return FinalSize;
         }
 
     }
