@@ -1,5 +1,6 @@
 ﻿using MenthaAssembly.Views.Primitives;
 using System.Collections;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -69,6 +70,7 @@ namespace MenthaAssembly.Views
         private RectangleAdorner MouseOverAdorner;
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // AdornerLayer
             AdornerLayer Layer = AdornerLayer.GetAdornerLayer(this);
 
             // MouseOver Adorner
@@ -104,6 +106,18 @@ namespace MenthaAssembly.Views
         {
             if (SelectedBit is not null)
             {
+                if (!SelectedBit.IsLoaded)
+                {
+                    void OnLoaded(object sender, RoutedEventArgs e)
+                    {
+                        SetSelectedAdorner(SelectedBit);
+                        SelectedBit.Loaded -= OnLoaded;
+                    }
+
+                    SelectedBit.Loaded += OnLoaded;
+                    return;
+                }
+
                 SelectedAdorner.Position = SelectedBit.TransformToAncestor(this).Transform(new Point(-1, -1));
                 SelectedAdorner.Width = SelectedBit.ActualWidth + 1;
                 SelectedAdorner.Height = SelectedBit.ActualHeight + 1;
@@ -113,6 +127,43 @@ namespace MenthaAssembly.Views
             {
                 SelectedAdorner.Visibility = Visibility.Collapsed;
             }
+        }
+        public void SetSelectedAdorner(IBitEditorSource Source, int Index)
+        {
+            if (TemplatePresenter.FindVisualChildren<VirtualizingSpacingStackPanel>().FirstOrDefault() is not VirtualizingSpacingStackPanel Panel)
+                return;
+
+            int RowIndex = -1,
+                IndexCoulmn = -1;
+
+            int Temp = 0;
+            foreach (IBitRowSource RowSource in this.Source.OfType<IBitRowSource>())
+            {
+                IndexCoulmn = RowSource.IndexOf(Source);
+                if (IndexCoulmn != -1)
+                {
+                    RowIndex = Temp;
+                    break;
+                }
+
+                Temp++;
+            }
+
+            if (RowIndex == -1)
+                return;
+
+            if (TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) is not BitGridRow ItemRow)
+            {
+                Panel.BringIndexIntoViewPublic(RowIndex);
+                ItemRow = TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) as BitGridRow;
+
+                if (ItemRow is null)
+                    return;
+            }
+
+            if (ItemRow.ItemContainerGenerator.ContainerFromItem(Source) is BitEditor Editor &&
+                Editor.FindVisualChildren<BitBlock>().FirstOrDefault(i => i.Index == Index) is BitBlock Block)
+                SetSelectedAdorner(Block);
         }
 
         protected override int VisualChildrenCount
