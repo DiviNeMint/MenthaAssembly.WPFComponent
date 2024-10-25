@@ -415,16 +415,22 @@ namespace MenthaAssembly.Views
                     return;
             }
 
+            GetValidMeasureBound(MeasureSize, out double Rw, out double Rh);
             if (GlobalViewer != null)
             {
-                GlobalViewer.ScrollToHorizontalOffset(Location.X);
-                GlobalOffsetX = Location.X;
+                double Oy = GlobalViewer.ContentHorizontalOffset + OffsetX;
+                if (Location.Right > Oy + Rw)
+                {
+                    GlobalViewer.ScrollToHorizontalOffset(Location.X);
+                    GlobalOffsetX = Location.X;
+                }
             }
             else
             {
-                OffsetX = Location.X;
+                OffsetY = Location.Right <= Rw ? 0 : Location.X;
             }
 
+            MeasureOverride(MeasureSize);
             UpdateLayout();
         }
         private void BringVerticalIndexIntoView(int Index)
@@ -437,16 +443,22 @@ namespace MenthaAssembly.Views
                     return;
             }
 
+            GetValidMeasureBound(MeasureSize, out double Rw, out double Rh);
             if (GlobalViewer != null)
             {
-                GlobalViewer.ScrollToVerticalOffset(Location.Y);
-                GlobalOffsetY = Location.Y;
+                double Oy = GlobalViewer.ContentVerticalOffset + OffsetY;
+                if (Location.Bottom > Oy + Rh)
+                {
+                    GlobalViewer.ScrollToVerticalOffset(Location.Y);
+                    GlobalOffsetY = Location.Y;
+                }
             }
             else
             {
-                OffsetY = Location.Y;
+                OffsetY = Location.Bottom <= Rh ? 0 : Location.Y;
             }
 
+            MeasureOverride(MeasureSize);
             UpdateLayout();
         }
 
