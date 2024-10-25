@@ -1,4 +1,5 @@
 ﻿using MenthaAssembly.Views.Primitives;
+using System;
 using System.Collections;
 using System.Linq;
 using System.Windows;
@@ -126,6 +127,9 @@ namespace MenthaAssembly.Views
         }
         public void SetSelectedAdorner(BitBlock SelectedBit)
         {
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
+            TempSelectedData = null;
+
             if (SelectedBit is not null)
             {
                 if (!SelectedBit.IsLoaded)
@@ -152,14 +156,15 @@ namespace MenthaAssembly.Views
         }
         public void SetSelectedAdorner(IBitEditorSource Source, int Index)
         {
-            if (TemplatePresenter.FindVisualChildren<VirtualizingSpacingStackPanel>().FirstOrDefault() is not VirtualizingSpacingStackPanel Panel)
-                return;
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
 
             int RowIndex = -1,
+                ColumnIndex = -1,
                 Temp = 0;
             foreach (IBitRowSource RowSource in this.Source.OfType<IBitRowSource>())
             {
-                if (RowSource.IndexOf(Source) != -1)
+                ColumnIndex = RowSource.IndexOf(Source);
+                if (ColumnIndex != -1)
                 {
                     RowIndex = Temp;
                     break;
@@ -171,33 +176,51 @@ namespace MenthaAssembly.Views
             if (RowIndex == -1)
                 return;
 
+            if (!InternalSetSelectedAdorner(RowIndex, ColumnIndex, Index))
+            {
+                TempSelectedData = (RowIndex, ColumnIndex, Index);
+                CompositionTarget.Rendering += OnCompositionTargetRendering;
+            }
+        }
+        private bool InternalSetSelectedAdorner(int RowIndex, int ColumnIndex, int Index)
+        {
             if (TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) is not BitGridRow ItemRow)
             {
+                if (TemplatePresenter.FindVisualChildren<VirtualizingSpacingStackPanel>().FirstOrDefault() is not VirtualizingSpacingStackPanel Panel)
+                    return false;
+
                 Panel.BringIndexIntoViewPublic(RowIndex);
 
                 ItemRow = TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) as BitGridRow;
                 if (ItemRow is null)
-                    return;
+                    return false;
             }
 
-            SetSelectedAdorner(ItemRow, Source, Index);
-        }
-        private void SetSelectedAdorner(BitGridRow Row, IBitEditorSource Source, int Index)
-        {
-            if (!Row.IsLoaded)
-            {
-                void OnLoaded(object sender, RoutedEventArgs e)
-                {
-                    SetSelectedAdorner(Row, Source, Index);
-                    Row.Loaded -= OnLoaded;
-                }
-                Row.Loaded += OnLoaded;
-                return;
-            }
+            if (!ItemRow.IsLoaded)
+                return false;
 
-            if (Row.ItemContainerGenerator.ContainerFromItem(Source) is BitEditor Editor &&
+            if (ItemRow.ItemContainerGenerator.ContainerFromIndex(ColumnIndex) is BitEditor Editor &&
                 Editor.FindVisualChildren<BitBlock>().FirstOrDefault(i => i.Index == Index) is BitBlock Block)
+            {
                 SetSelectedAdorner(Block);
+                return true;
+            }
+
+            return false;
+        }
+
+        private (int RowIndex, int ColumnIndex, int Index)? TempSelectedData = null;
+        private void OnCompositionTargetRendering(object sender, EventArgs e)
+        {
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
+            if (TempSelectedData.HasValue && IsLoaded)
+            {
+                (int RowIndex, int ColumnIndex, int Index) = TempSelectedData.Value;
+                if (!InternalSetSelectedAdorner(RowIndex, ColumnIndex, Index))
+                    CompositionTarget.Rendering += OnCompositionTargetRendering;
+            }
+
+
         }
 
     }
