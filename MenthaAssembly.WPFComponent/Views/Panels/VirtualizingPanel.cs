@@ -102,15 +102,22 @@ namespace MenthaAssembly.Views
                 return;
 
             GeneratorPosition Position = Generator.GeneratorPositionFromIndex(Index);
-            Generator.Remove(Position, 1);
+            if (Position.Offset == 0)
+            {
+                Generator.Remove(Position, 1);
 
 #if !NET
-            if (RealizedContainers.TryGetValue(Index, out FrameworkElement Container) &&
-                RealizedContainers.Remove(Index))
+                if (RealizedContainers.TryGetValue(Index, out FrameworkElement Container) &&
+                    RealizedContainers.Remove(Index))
 #else
-            if (RealizedContainers.Remove(Index, out FrameworkElement Container))
+                if (RealizedContainers.Remove(Index, out FrameworkElement Container))
 #endif
-                RemoveInternalChildRange(InternalChildren.IndexOf(Container), 1);
+                    RemoveInternalChildRange(InternalChildren.IndexOf(Container), 1);
+            }
+            else
+            {
+                RealizedContainers.Remove(Index);
+            }
         }
 
     }
