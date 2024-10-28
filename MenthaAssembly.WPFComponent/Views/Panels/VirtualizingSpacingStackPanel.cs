@@ -82,7 +82,7 @@ namespace MenthaAssembly.Views
             if (CanVerticallyScroll)
                 LayoutSlotSize.Height = double.PositiveInfinity;
 
-            double Spacing = VerticalSpacing,
+            double Spacing = HorizontalSpacing,
                    Ox = OffsetX + GlobalOffsetX,
                    Oy = OffsetY + GlobalOffsetY;
             IRecyclingItemContainerGenerator Generator = ItemContainerGenerator;
