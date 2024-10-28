@@ -154,58 +154,56 @@ namespace MenthaAssembly.Views
                 SelectedAdorner.Visibility = Visibility.Collapsed;
             }
         }
-        public void SetSelectedAdorner(IBitEditorSource Source, int Index)
+        public void SetSelectedAdorner(IBitEditorSource Data, int Index)
         {
             CompositionTarget.Rendering -= OnCompositionTargetRendering;
 
-            int RowIndex = -1,
-                ColumnIndex = -1,
-                Temp = 0;
-            foreach (IBitRowSource RowSource in this.Source.OfType<IBitRowSource>())
+            if (TryGetDataIndex(Data, out int Row, out int Column) &&
+                !InternalSetSelectedAdorner(Row, Column, Index))
             {
-                ColumnIndex = RowSource.IndexOf(Source);
-                if (ColumnIndex != -1)
-                {
-                    RowIndex = Temp;
-                    break;
-                }
-
-                Temp++;
-            }
-
-            if (RowIndex == -1)
-                return;
-
-            if (!InternalSetSelectedAdorner(RowIndex, ColumnIndex, Index))
-            {
-                TempSelectedData = (RowIndex, ColumnIndex, Index);
+                TempSelectedData = (Row, Column, Index);
                 CompositionTarget.Rendering += OnCompositionTargetRendering;
             }
         }
         private bool InternalSetSelectedAdorner(int RowIndex, int ColumnIndex, int Index)
         {
-            if (TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) is not BitGridRow ItemRow)
-            {
-                if (TemplatePresenter.FindVisualChildren<VirtualizingSpacingStackPanel>().FirstOrDefault() is not VirtualizingSpacingStackPanel Panel)
-                    return false;
-
-                Panel.BringIndexIntoViewPublic(RowIndex);
-
-                ItemRow = TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) as BitGridRow;
-                if (ItemRow is null)
-                    return false;
-            }
-
-            if (!ItemRow.IsLoaded)
-                return false;
-
-            if (ItemRow.ItemContainerGenerator.ContainerFromIndex(ColumnIndex) is BitEditor Editor &&
+            if (TemplatePresenter.ItemContainerGenerator.ContainerFromIndex(RowIndex) is BitGridRow ItemRow &&
+                ItemRow.ItemContainerGenerator.ContainerFromIndex(ColumnIndex) is BitEditor Editor &&
                 Editor.FindVisualChildren<BitBlock>().FirstOrDefault(i => i.Index == Index) is BitBlock Block)
             {
                 SetSelectedAdorner(Block);
                 return true;
             }
 
+            return false;
+        }
+
+        public void BringDataToView(IBitEditorSource Data)
+        {
+            if (TemplatePresenter.FindVisualChildren<VirtualizingSpacingStackPanel>().FirstOrDefault() is VirtualizingSpacingStackPanel Panel &&
+                TryGetDataIndex(Data, out int Row, out _))
+                Panel.BringIndexIntoViewPublic(Row);
+        }
+        public void BringIndexIntoView(int Row)
+        {
+            if (TemplatePresenter.FindVisualChildren<VirtualizingSpacingStackPanel>().FirstOrDefault() is VirtualizingSpacingStackPanel Panel)
+                Panel.BringIndexIntoViewPublic(Row);
+        }
+
+        private bool TryGetDataIndex(IBitEditorSource Source, out int Row, out int Column)
+        {
+            Row = 0;
+            Column = -1;
+            foreach (IBitRowSource RowSource in this.Source.OfType<IBitRowSource>())
+            {
+                Column = RowSource.IndexOf(Source);
+                if (Column != -1)
+                    return true;
+
+                Row++;
+            }
+
+            Row = -1;
             return false;
         }
 
@@ -219,8 +217,6 @@ namespace MenthaAssembly.Views
                 if (!InternalSetSelectedAdorner(RowIndex, ColumnIndex, Index))
                     CompositionTarget.Rendering += OnCompositionTargetRendering;
             }
-
-
         }
 
     }
