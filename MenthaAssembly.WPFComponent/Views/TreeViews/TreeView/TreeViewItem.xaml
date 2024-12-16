@@ -46,6 +46,7 @@
     </Style>
 
     <Style TargetType="{x:Type local:TreeViewItem}">
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
@@ -71,6 +72,7 @@
                                               Style="{Binding ExpandButtonStyle, TargetNullValue={x:Static local:TreeViewItem.DefaultExpandButtonStyle}, RelativeSource={RelativeSource TemplatedParent}}"
                                               DockPanel.Dock="Left"/>
                                 <ContentControl x:Name="PART_HeaderContent"
+                                                Focusable="False"
                                                 BorderBrush="{TemplateBinding BorderBrush}"
                                                 BorderThickness="{TemplateBinding BorderThickness}"
                                                 Background="{TemplateBinding Background}"
