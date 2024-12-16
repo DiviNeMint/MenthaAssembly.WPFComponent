@@ -6,8 +6,13 @@ namespace MenthaAssembly.Views
 {
     public class TreeViewItem : System.Windows.Controls.TreeViewItem
     {
+        internal static ComponentResourceKey DefaultExpandButtonStyleKey { get; } = new ComponentResourceKey(typeof(TreeViewItem), nameof(DefaultExpandButtonStyle));
+
+        public static Style DefaultExpandButtonStyle
+            => Application.Current.TryFindResource(DefaultExpandButtonStyleKey) as Style;
+
         internal static readonly DependencyPropertyKey DepthPropertyKey =
-                DependencyProperty.RegisterReadOnly("Depth", typeof(int), typeof(TreeViewItem), new FrameworkPropertyMetadata(-1,
+                DependencyProperty.RegisterReadOnly(nameof(Depth), typeof(int), typeof(TreeViewItem), new FrameworkPropertyMetadata(-1,
                     (d, e) =>
                     {
                         if (d is TreeViewItem This)
@@ -19,7 +24,7 @@ namespace MenthaAssembly.Views
             => (int)GetValue(DepthProperty);
 
         public static readonly DependencyProperty IndentProperty =
-                DependencyProperty.Register("Indent", typeof(double), typeof(TreeViewItem), new FrameworkPropertyMetadata(20d,
+                DependencyProperty.Register(nameof(Indent), typeof(double), typeof(TreeViewItem), new FrameworkPropertyMetadata(20d,
                     (d, e) =>
                     {
                         if (d is TreeViewItem This)
@@ -32,7 +37,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty IndentExpandButtonProperty =
-                DependencyProperty.Register("IndentExpandButton", typeof(bool), typeof(TreeViewItem), new FrameworkPropertyMetadata(true,
+                DependencyProperty.Register(nameof(IndentExpandButton), typeof(bool), typeof(TreeViewItem), new FrameworkPropertyMetadata(true,
                     (d, e) =>
                     {
                         if (d is TreeViewItem This)
@@ -45,7 +50,7 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty ExpandButtonStyleProperty =
-                DependencyProperty.Register("ExpandButtonStyle", typeof(Style), typeof(TreeViewItem), new FrameworkPropertyMetadata(null));
+                DependencyProperty.Register(nameof(ExpandButtonStyle), typeof(Style), typeof(TreeViewItem), new FrameworkPropertyMetadata(null));
         public Style ExpandButtonStyle
         {
             get => (Style)GetValue(ExpandButtonStyleProperty);
@@ -130,7 +135,6 @@ namespace MenthaAssembly.Views
             Item.SetValue(DepthPropertyKey, Depth + 1);
             Item.SetBinding(IndentProperty, new Binding(nameof(Indent)) { Source = this });
             Item.SetBinding(IndentExpandButtonProperty, new Binding(nameof(IndentExpandButton)) { Source = this });
-            Item.SetBinding(ExpandButtonStyleProperty, new Binding(nameof(ExpandButtonStyle)) { Source = this });
         }
 
         protected override void ClearContainerForItemOverride(DependencyObject Element, object Data)
@@ -146,7 +150,6 @@ namespace MenthaAssembly.Views
             Item.ClearValue(DepthPropertyKey);
             Item.ClearValue(IndentProperty);
             Item.ClearValue(IndentExpandButtonProperty);
-            Item.ClearValue(ExpandButtonStyleProperty);
         }
 
     }

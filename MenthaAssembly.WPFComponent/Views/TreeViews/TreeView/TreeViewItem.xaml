@@ -2,52 +2,50 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
-    <Style TargetType="local:TreeViewItem">
-        <Setter Property="ExpandButtonStyle">
+    <Style x:Key="{ComponentResourceKey TypeInTargetAssembly={x:Type local:TreeViewItem}, ResourceId=DefaultExpandButtonStyle}" 
+           TargetType="{x:Type ToggleButton}">
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
             <Setter.Value>
-                <Style TargetType="{x:Type ToggleButton}">
-                    <Setter Property="Width" Value="16"/>
-                    <Setter Property="Height" Value="16"/>
-                    <Setter Property="Focusable" Value="False"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                <Border Background="Transparent" Height="16" Padding="5" Width="16">
-                                    <Path x:Name="ExpandPath" Data="M0,0 L0,6 L6,0 z" Fill="White" Stroke="#FF818181">
-                                        <Path.RenderTransform>
-                                            <RotateTransform Angle="135" CenterY="3" CenterX="3"/>
-                                        </Path.RenderTransform>
-                                    </Path>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsChecked" Value="True">
-                                        <Setter Property="RenderTransform" TargetName="ExpandPath">
-                                            <Setter.Value>
-                                                <RotateTransform Angle="180" CenterY="3" CenterX="3"/>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Setter Property="Fill" TargetName="ExpandPath" Value="#FF595959"/>
-                                        <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF262626"/>
-                                    </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF27C7F7"/>
-                                        <Setter Property="Fill" TargetName="ExpandPath" Value="#FFCCEEFB"/>
-                                    </Trigger>
-                                    <MultiTrigger>
-                                        <MultiTrigger.Conditions>
-                                            <Condition Property="IsMouseOver" Value="True"/>
-                                            <Condition Property="IsChecked" Value="True"/>
-                                        </MultiTrigger.Conditions>
-                                        <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF1CC4F7"/>
-                                        <Setter Property="Fill" TargetName="ExpandPath" Value="#FF82DFFB"/>
-                                    </MultiTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border Background="Transparent" Height="16" Padding="5" Width="16">
+                        <Path x:Name="ExpandPath" Data="M0,0 L0,6 L6,0 z" Fill="White" Stroke="#FF818181">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="135" CenterY="3" CenterX="3"/>
+                            </Path.RenderTransform>
+                        </Path>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="RenderTransform" TargetName="ExpandPath">
+                                <Setter.Value>
+                                    <RotateTransform Angle="180" CenterY="3" CenterX="3"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Fill" TargetName="ExpandPath" Value="#FF595959"/>
+                            <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF262626"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF27C7F7"/>
+                            <Setter Property="Fill" TargetName="ExpandPath" Value="#FFCCEEFB"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsChecked" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF1CC4F7"/>
+                            <Setter Property="Fill" TargetName="ExpandPath" Value="#FF82DFFB"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type local:TreeViewItem}">
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
@@ -70,7 +68,7 @@
                                 <ToggleButton x:Name="Expander"
                                               ClickMode="Press"
                                               IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
-                                              Style="{TemplateBinding ExpandButtonStyle}"
+                                              Style="{Binding ExpandButtonStyle, TargetNullValue={x:Static local:TreeViewItem.DefaultExpandButtonStyle}, RelativeSource={RelativeSource TemplatedParent}}"
                                               DockPanel.Dock="Left"/>
                                 <ContentControl x:Name="PART_HeaderContent"
                                                 BorderBrush="{TemplateBinding BorderBrush}"
@@ -79,6 +77,7 @@
                                                 Padding="{TemplateBinding Padding}"
                                                 Content="{TemplateBinding Header}"
                                                 ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                                ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                                                 ContentStringFormat="{TemplateBinding HeaderStringFormat}"
                                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                 SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
