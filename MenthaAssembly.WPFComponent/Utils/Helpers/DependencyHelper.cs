@@ -77,15 +77,12 @@ namespace System.Windows
         /// </summary>
         public static bool Validate(this BindingGroup Group)
         {
-            if (Group.HasValidationError)
-                return false;
-
             // If you commit to editing a new item without making any modifications,
             // the validation rules will not be triggered and therefore an update will be forced.
             foreach (BindingExpressionBase Binding in Group.BindingExpressions)
             {
                 Binding.UpdateSource();
-                if (Group.HasValidationError)
+                if (Binding.HasError)
                     return false;
             }
 
