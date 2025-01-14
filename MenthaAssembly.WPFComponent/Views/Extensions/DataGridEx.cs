@@ -13,10 +13,9 @@ namespace MenthaAssembly.MarkupExtensions
         /// </summary>
         /// <param name="This">The DataGrid.</param>
         /// <param name="RowIndex">Row number to get.</param>
-        /// <returns></returns>
         public static DataGridRow GetRow(this DataGrid This, int RowIndex)
         {
-            if (RowIndex < 0 || This.Columns.Count <= RowIndex)
+            if (RowIndex < 0 || This.Items.Count <= RowIndex)
                 return null;
 
             if (This.ItemContainerGenerator.ContainerFromIndex(RowIndex) is not DataGridRow Row)
@@ -27,6 +26,41 @@ namespace MenthaAssembly.MarkupExtensions
             }
 
             return Row;
+        }
+
+        /// <summary>
+        /// Gets a specific row from the data grid. If the DataGrid is virtualised the row will be scrolled into view.
+        /// </summary>
+        /// <param name="This">The DataGrid.</param>
+        /// <param name="Item">The Row data.</param>
+        public static DataGridRow GetRow(this DataGrid This, object Item)
+        {
+            if (!This.Items.Contains(Item))
+                return null;
+
+            if (This.ItemContainerGenerator.ContainerFromItem(Item) is not DataGridRow Row)
+            {
+                This.UpdateLayout();
+                This.ScrollIntoView(Item);
+                Row = This.ItemContainerGenerator.ContainerFromItem(Item) as DataGridRow;
+            }
+
+            return Row;
+        }
+
+        /// <summary>
+        /// Gets the row of the specific DataGridCell.
+        /// </summary>
+        /// <param name="This">The specific DataGridCell.</param>
+        public static DataGridRow GetRow(this DataGridCell This)
+        {
+            if (This.TryGetInternalPropertyValue("RowOwner", out DataGridRow Row))
+                return Row;
+
+            if (This.FindLogicalParents<DataGridRow>().FirstOrDefault() is DataGridRow LogicalRow)
+                return LogicalRow;
+
+            return null;
         }
 
         /// <summary>
@@ -71,6 +105,16 @@ namespace MenthaAssembly.MarkupExtensions
         /// <returns>A DataGridCell.</returns>
         public static DataGridCell GetCell(this DataGrid This, int Row, int Column)
             => This.GetCell(This.GetRow(Row), Column);
+
+        /// <summary>
+        /// Gets a specific cell from the DataGrid.
+        /// </summary>
+        /// <param name="This">The DataGrid.</param>
+        /// <param name="Item">The row datacontext.</param>
+        /// <param name="Column">The cell column.</param>
+        /// <returns>A DataGridCell.</returns>
+        public static DataGridCell GetCell(this DataGrid This, object Item, DataGridColumn Column)
+            => This.GetCell(This.GetRow(Item), This.Columns.IndexOf(Column));
 
         /// <summary>
         /// Gets the currently selected (focused) cell.
