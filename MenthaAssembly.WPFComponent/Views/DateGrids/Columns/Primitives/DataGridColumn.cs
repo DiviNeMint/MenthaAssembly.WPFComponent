@@ -159,7 +159,7 @@ namespace MenthaAssembly.Views
             // Raise the event to give a chance for external listeners to modify the cell content
             // before it gets stored into the cell
             DataGridCellClipboardEventArgs e = new(Item, this, CellContent);
-            this.RaiseEvent(nameof(PastingCellClipboardContent), e);
+            ReflectionHelper.RaiseEvent(this, nameof(PastingCellClipboardContent), e);
 
             // Event handlers can cancel Paste of a cell by setting its content to null
             if (e.Content != null &&

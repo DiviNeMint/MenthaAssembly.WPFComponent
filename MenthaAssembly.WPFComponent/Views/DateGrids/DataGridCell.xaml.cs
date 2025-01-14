@@ -70,7 +70,7 @@ namespace MenthaAssembly.Views
         private void InvalidateTemplate()
         {
             if (Content is ContentPresenter Presenter &&
-                !Presenter.TryInvokeInternalMethod("ReevaluateTemplate"))
+                !ReflectionHelper.TryInvokeInternalMethod(Presenter, "ReevaluateTemplate"))
             {
                 object Data = Presenter.Content;
                 Presenter.Content = null;

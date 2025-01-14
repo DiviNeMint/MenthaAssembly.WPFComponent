@@ -54,7 +54,7 @@ namespace MenthaAssembly.MarkupExtensions
         /// <param name="This">The specific DataGridCell.</param>
         public static DataGridRow GetRow(this DataGridCell This)
         {
-            if (This.TryGetInternalPropertyValue("RowOwner", out DataGridRow Row))
+            if (ReflectionHelper.TryGetInternalPropertyValue(This, "RowOwner", out DataGridRow Row))
                 return Row;
 
             if (This.FindLogicalParents<DataGridRow>().FirstOrDefault() is DataGridRow LogicalRow)
@@ -123,7 +123,7 @@ namespace MenthaAssembly.MarkupExtensions
         /// <returns>DataGridCell or null if no cell is currently selected.</returns>
         public static DataGridCell GetSelectedCell(this DataGrid This)
         {
-            if (This.TryGetInternalPropertyValue("CurrentCellContainer", out DataGridCell Cell))
+            if (ReflectionHelper.TryGetInternalPropertyValue(This, "CurrentCellContainer", out DataGridCell Cell))
                 return Cell;
 
             if (This.GetSelectedRow() is DataGridRow Row)
