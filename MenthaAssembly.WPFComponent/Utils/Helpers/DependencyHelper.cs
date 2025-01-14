@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
@@ -72,6 +73,16 @@ namespace System.Windows
             return null;
         }
 
+        private static MethodInfo BindingBase_Clone;
+        public static BindingBase Clone(this BindingBase This, BindingMode Mode)
+        {
+            if (BindingBase_Clone is null &&
+                !typeof(BindingBase).TryGetMethod("Clone", ReflectionHelper.InternalModifier, [typeof(BindingMode)], out BindingBase_Clone))
+                return null;
+
+            return BindingBase_Clone.Invoke(This, [Mode]) as BindingBase;
+        }
+
         /// <summary>
         /// Forces the ValidationRules to be checked for the specified BindingGroup.
         /// </summary>
@@ -79,7 +90,7 @@ namespace System.Windows
         {
             // If you commit to editing a new item without making any modifications,
             // the validation rules will not be triggered and therefore an update will be forced.
-            foreach (BindingExpressionBase Binding in Group.BindingExpressions)
+            foreach (BindingExpressionBase Binding in Group.BindingExpressions.ToArray())
             {
                 Binding.UpdateSource();
                 if (Binding.HasError)
