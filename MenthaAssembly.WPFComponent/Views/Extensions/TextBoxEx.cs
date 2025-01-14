@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.ComponentModel;
 
 namespace MenthaAssembly.MarkupExtensions
 {
@@ -61,6 +62,9 @@ namespace MenthaAssembly.MarkupExtensions
 
         private static void OnValueTypeChanged(TextBox This, Type OldType, Type NewType)
         {
+            if (DesignerProperties.GetIsInDesignMode(This))
+                return;
+
             if (OldType != null)
             {
                 SetInputMode(This, KeyboardInputMode.All);
