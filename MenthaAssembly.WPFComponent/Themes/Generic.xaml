@@ -73,6 +73,12 @@
         <!--DualSlider-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DualSlider.xaml"/>
 
+        <!--DataGrid-->
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/DataGridRow.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/DataGridCell.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/Columns/DataGridTextColumn.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/Columns/DataGridComboBoxColumn.xaml"/>
+
     </ResourceDictionary.MergedDictionaries>
 
     <DrawingImage x:Key="Icon_Explore">
