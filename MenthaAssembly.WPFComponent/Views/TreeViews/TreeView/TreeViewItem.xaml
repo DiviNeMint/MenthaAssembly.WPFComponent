@@ -46,6 +46,7 @@
     </Style>
 
     <Style TargetType="{x:Type local:TreeViewItem}">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="ItemsPanel">
             <Setter.Value>
