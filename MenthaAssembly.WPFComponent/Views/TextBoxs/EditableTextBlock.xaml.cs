@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace MenthaAssembly.Views
@@ -48,6 +49,10 @@ namespace MenthaAssembly.Views
 
         protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
         {
+            if (BindingOperations.GetBindingExpressionBase(this, TextProperty) is BindingExpressionBase Binding &&
+                !Binding.ValidateWithoutUpdate())
+                return;
+
             base.OnLostKeyboardFocus(e);
             SetValue(IsEditingPropertyKey, false);
 
@@ -63,6 +68,10 @@ namespace MenthaAssembly.Views
 
             if (e.Key == Key.Enter)
             {
+                if (BindingOperations.GetBindingExpressionBase(this, TextProperty) is BindingExpressionBase Binding &&
+                    !Binding.ValidateWithoutUpdate())
+                    return;
+
                 SetValue(IsEditingPropertyKey, false);
 
                 if (LastFocusedElement is null)
