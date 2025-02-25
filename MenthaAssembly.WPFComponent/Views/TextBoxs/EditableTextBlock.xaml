@@ -4,6 +4,7 @@
                     xmlns:Ex="clr-namespace:MenthaAssembly.MarkupExtensions">
 
     <Style TargetType="{x:Type local:EditableTextBlock}" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Ex:TextBoxEx.EnableAutoSelectAllText" Value="True"/>
         <Style.Triggers>

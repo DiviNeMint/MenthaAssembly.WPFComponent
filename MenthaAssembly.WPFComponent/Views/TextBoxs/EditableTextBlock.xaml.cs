@@ -53,6 +53,8 @@ namespace MenthaAssembly.Views
 
             if (!DoubleClickToEdit)
                 IsHitTestVisible = false;
+
+            LastFocusedElement = null;
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -62,16 +64,27 @@ namespace MenthaAssembly.Views
             if (e.Key == Key.Enter)
             {
                 SetValue(IsEditingPropertyKey, false);
-                Keyboard.ClearFocus();
+
+                if (LastFocusedElement is null)
+                {
+                    Keyboard.ClearFocus();
+                    return;
+                }
+
+                Keyboard.Focus(LastFocusedElement);
             }
         }
 
+        private IInputElement LastFocusedElement;
         public void StartEditing()
         {
             if (!DoubleClickToEdit)
                 IsHitTestVisible = true;
 
             SetValue(IsEditingPropertyKey, true);
+
+            LastFocusedElement = Keyboard.FocusedElement;
+            Focus();
         }
 
     }
