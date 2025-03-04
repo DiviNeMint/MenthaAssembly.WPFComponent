@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 
 namespace MenthaAssembly.Views
@@ -70,6 +71,34 @@ namespace MenthaAssembly.Views
         /// </summary>
         public static bool IsImeProcessed(KeyEventArgs e)
             => e != null && e.Key == Key.ImeProcessed;
+
+        private static readonly char[] Delimiters = ['\t', '|', ','];
+        public static string[] ParsePastingColumnDatas(string PastingData)
+        {
+            int Length = Delimiters.Length;
+            int[] Counts = new int[Length];
+            foreach (char c in PastingData)
+            {
+                int Index = Delimiters.IndexOf(i => i == c);
+                if (Index != -1)
+                    Counts[Index]++;
+            }
+
+            if (Delimiters[0] > 0)
+                return PastingData.Split(Delimiters[0]);
+
+            if (Delimiters[1] > 0)
+                return PastingData.Split(Delimiters[1]);
+
+            return PastingData.Split(',');
+
+            //int Max = Counts.Max();
+            //for (int i = 0; i < Length; i++)
+            //    if (Counts[i] == Max)
+            //        return PastingData.Split(Delimiters[i]);
+
+            //return PastingData.Split('\t', '|', ',');
+        }
 
     }
 }
