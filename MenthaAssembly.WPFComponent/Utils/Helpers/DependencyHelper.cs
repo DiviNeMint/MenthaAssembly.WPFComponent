@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -180,6 +181,31 @@ namespace System.Windows
                 foreach (T ParentOfParent in FindLogicalParents<T>(Parent))
                     yield return ParentOfParent;
             }
+        }
+
+        public static FrameworkElement ContainerFromItem(this ItemsControl Container, object DataContext)
+        {
+            if (Container.ItemContainerGenerator.ContainerFromItem(DataContext) is FrameworkElement Item)
+                return Item;
+
+            for (int i = 0; i < Container.Items.Count; i++)
+            {
+                Item = Container.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+                if (Item != null)
+                {
+                    if (Item.DataContext == DataContext)
+                        return Item;
+
+                    if (Item is ItemsControl SubItemsControl)
+                    {
+                        Item = ContainerFromItem(SubItemsControl, DataContext);
+                        if (Item != null)
+                            return Item;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static PropertyInfo PropertyPath_Length;
