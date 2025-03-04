@@ -197,7 +197,7 @@ namespace MenthaAssembly.Views
                 {
                     object Item = Items[j];
 
-                    string[] ColumnDatas = PastingDatas[j - StartRow].Split(',', '\t', '|');
+                    string[] ColumnDatas = DataGridHelper.ParsePastingColumnDatas(PastingDatas[j - StartRow]);
                     for (int i = 0; i < ColumnDatas.Length; i++)
                         Columns[StartColumn + i].OnPastingCellClipboardContent(Item, ColumnDatas[i]);
                 }
