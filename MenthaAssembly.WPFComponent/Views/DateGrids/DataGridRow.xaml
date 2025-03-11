@@ -2,6 +2,13 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:MenthaAssembly.Views">
 
+    <Style x:Key="{ComponentResourceKey TypeInTargetAssembly={x:Type local:DataGridRow}, ResourceId=DefaultHighlightingStyle}"
+           TargetType="{x:Type Rectangle}">
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Stroke" Value="Orange"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+    </Style>
+    
     <Style TargetType="{x:Type local:DataGridRow}">
         <Setter Property="Background" Value="White"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
