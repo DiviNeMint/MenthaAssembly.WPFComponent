@@ -227,9 +227,12 @@ namespace MenthaAssembly.Views
             };
             Element.SelectionChanged += (s, e) =>
             {
-                BindingOperations.GetBindingExpression(Element, Selector.SelectedItemProperty)?.UpdateSource();
-                BindingOperations.GetBindingExpression(Element, Selector.SelectedValueProperty)?.UpdateSource();
-                BindingOperations.GetBindingExpression(Element, ComboBox.TextProperty)?.UpdateSource();
+                if (Element.IsLoaded)
+                {
+                    BindingOperations.GetBindingExpression(Element, Selector.SelectedItemProperty)?.UpdateSource();
+                    BindingOperations.GetBindingExpression(Element, Selector.SelectedValueProperty)?.UpdateSource();
+                    BindingOperations.GetBindingExpression(Element, ComboBox.TextProperty)?.UpdateSource();
+                }
             };
 
             GroupStyle.CollectionChanged += (s, e) =>
