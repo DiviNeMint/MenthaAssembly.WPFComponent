@@ -99,7 +99,7 @@ namespace MenthaAssembly.Views
                 else
                 {
                     // Event
-                    CellEditingEventArgs Args = new(Column, Cell);
+                    CellBeforeEditingEventArgs Args = new(Column, Cell);
                     Column.RaiseBeforeEditing(Args);
 
                     if (Args.Handled)

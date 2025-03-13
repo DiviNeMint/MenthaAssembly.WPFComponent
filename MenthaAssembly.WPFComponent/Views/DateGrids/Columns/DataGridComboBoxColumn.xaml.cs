@@ -207,7 +207,7 @@ namespace MenthaAssembly.Views
 
             Element.DropDownOpened += (s, e) =>
             {
-                CellEditingEventArgs Arg = new(this, Cell);
+                CellBeforeEditingEventArgs Arg = new(this, Cell);
                 RaiseBeforeEditing(Arg);
 
                 if (Arg.Handled)

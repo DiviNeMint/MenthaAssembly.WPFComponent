@@ -161,7 +161,7 @@ namespace MenthaAssembly.Views
             base.RefreshCellContent(Element, PropertyName);
         }
 
-        protected internal override void RaiseBeforeEditing(CellEditingEventArgs e)
+        protected internal override void RaiseBeforeEditing(CellBeforeEditingEventArgs e)
         {
             if (CellEditingTemplate is null &&
                 CellEditingTemplateSelector?.SelectTemplate(e.DataContext, e.Cell) is null)

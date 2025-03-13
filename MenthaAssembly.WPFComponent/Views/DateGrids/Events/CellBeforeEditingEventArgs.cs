@@ -2,7 +2,7 @@
 
 namespace MenthaAssembly.Views
 {
-    public class CellEditingEventArgs(DataGridColumn Column, DataGridCell Cell) : HandledEventArgs
+    public class CellBeforeEditingEventArgs(DataGridColumn Column, DataGridCell Cell) : HandledEventArgs
     {
         public DataGridColumn Column { get; } = Column;
 

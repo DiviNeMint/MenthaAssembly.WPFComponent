@@ -17,7 +17,8 @@ namespace MenthaAssembly.Views
     public abstract class DataGridColumn : System.Windows.Controls.DataGridColumn
     {
         public event EventHandler<CellInputEventArgs> Input;
-        public event EventHandler<CellEditingEventArgs> BeforeEditing;
+        public event EventHandler<CellBeforeEditingEventArgs> BeforeEditing;
+        public event EventHandler<CellCancelEditingEventArgs> CancelEditing;
 
         protected internal abstract bool AllowEditingMode { get; }
 
@@ -49,7 +50,7 @@ namespace MenthaAssembly.Views
 
         protected abstract FrameworkElement GenerateEditingElement(DataGridCell cell, object dataItem);
 
-        protected internal virtual void RaiseBeforeEditing(CellEditingEventArgs e)
+        protected internal virtual void RaiseBeforeEditing(CellBeforeEditingEventArgs e)
             => BeforeEditing?.Invoke(this, e);
 
         protected override object PrepareCellForEdit(FrameworkElement Element, RoutedEventArgs e)
@@ -131,8 +132,17 @@ namespace MenthaAssembly.Views
             return Element.Focusable ? Element : null;
         }
 
-        protected override bool CommitCellEdit(FrameworkElement Element)
-            => Element.BindingGroup?.Validate() ?? base.CommitCellEdit(Element);
+        protected override void CancelCellEdit(FrameworkElement EditingElement, object UneditedValue)
+        {
+            CellCancelEditingEventArgs e = new(this, EditingElement, UneditedValue);
+            CancelEditing?.Invoke(this, e);
+         
+            if (!e.Handled)
+                base.CancelCellEdit(EditingElement, UneditedValue);
+        }
+
+        //protected override bool CommitCellEdit(FrameworkElement Element)
+        //    => Element.BindingGroup?.Validate() ?? base.CommitCellEdit(Element);
 
         protected internal void RaiseInput(DataGridCell Cell, InputEventArgs TriggerEventArgs, object DataContext)
         {
