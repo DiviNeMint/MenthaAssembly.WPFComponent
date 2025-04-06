@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.ComponentModel;
+using System.Windows.Data;
 
 namespace MenthaAssembly.MarkupExtensions
 {
@@ -391,10 +392,7 @@ namespace MenthaAssembly.MarkupExtensions
             if (Max != null)
                 return Convert.ChangeType(Max, ValueType);
 
-            if (MaxValues.TryGetValue(ValueType, out Max))
-                return Max;
-
-            throw new NotSupportedException();
+            return MaxValues.TryGetValue(ValueType, out Max) ? Max : throw new NotSupportedException();
         }
         private static object GetMinValue(TextBox obj, Type ValueType)
         {
@@ -402,10 +400,7 @@ namespace MenthaAssembly.MarkupExtensions
             if (Min != null)
                 return Convert.ChangeType(Min, ValueType);
 
-            if (MinValues.TryGetValue(ValueType, out Min))
-                return Min;
-
-            throw new NotSupportedException();
+            return MinValues.TryGetValue(ValueType, out Min) ? Min : throw new NotSupportedException();
         }
         private static TypeConvertFunc GetConverter(Type ValueType)
             => ValueConverters.TryGetValue(ValueType, out TypeConvertFunc Converter) ? Converter : throw new NotSupportedException();
@@ -530,6 +525,64 @@ namespace MenthaAssembly.MarkupExtensions
                 e.Handled = true;
                 This.Focus();
             }
+        }
+
+        #endregion
+
+        #region IgnoreSourceDuringInput
+        public static readonly DependencyProperty IgnoreSourceDuringInputProperty =
+            DependencyProperty.RegisterAttached("IgnoreSourceDuringInput", typeof(bool), typeof(TextBoxEx), new PropertyMetadata(false, (d, e) =>
+            {
+                if (d is TextBox This)
+                {
+                    if (e.NewValue is true)
+                    {
+                        This.PreviewGotKeyboardFocus += OnIgnoreSourceDuringInputPreviewGotKeyboardFocus;
+                        This.PreviewLostKeyboardFocus += OnIgnoreSourceDuringInputPreviewLostKeyboardFocus;
+                    }
+                    else
+                    {
+                        This.PreviewGotKeyboardFocus -= OnIgnoreSourceDuringInputPreviewGotKeyboardFocus;
+                        This.PreviewLostKeyboardFocus -= OnIgnoreSourceDuringInputPreviewLostKeyboardFocus;
+                    }
+                }
+            }));
+        public static bool GetIgnoreSourceDuringInput(TextBox obj)
+            => (bool)obj.GetValue(IgnoreSourceDuringInputProperty);
+        public static void SetIgnoreSourceDuringInput(TextBox obj, bool value)
+            => obj.SetValue(IgnoreSourceDuringInputProperty, value);
+
+        private static void OnIgnoreSourceDuringInputPreviewGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (sender is not TextBox ThisBox)
+                return;
+
+            // Check if Text has Binding
+            if (BindingOperations.GetBindingExpression(ThisBox, TextBox.TextProperty) is not BindingExpression Expression)
+                return;
+
+            // Disable the source update via the IsInUpdate property
+            ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsInUpdate", true);
+
+            // Enable the target update
+            if (Expression.ParentBinding.Mode is not BindingMode.OneTime and not BindingMode.OneWay)
+                ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsReflective", true);
+        }
+        private static void OnIgnoreSourceDuringInputPreviewLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (sender is not TextBox ThisBox)
+                return;
+
+            // Check if Text has Binding
+            if (BindingOperations.GetBindingExpression(ThisBox, TextBox.TextProperty) is not BindingExpression Expression)
+                return;
+
+            // Reset the IsInUpdate property
+            ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsInUpdate", false);
+
+            // Reset the IsReflective property
+            if (Expression.ParentBinding.Mode is BindingMode.OneTime or BindingMode.OneWay)
+                ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsReflective", false);
         }
 
         #endregion
