@@ -358,5 +358,23 @@ namespace System.Windows
             }
         }
 
+        public static void InvokeAfterInitialized<T>(this T This, Action<T> Action)
+            where T : Control
+        {
+            if (This.IsInitialized)
+            {
+                Action(This);
+            }
+            else
+            {
+                This.Initialized += OnInitialized;
+                void OnInitialized(object sender, EventArgs e)
+                {
+                    This.Initialized -= OnInitialized;
+                    Action(This);
+                }
+            }
+        }
+
     }
 }
