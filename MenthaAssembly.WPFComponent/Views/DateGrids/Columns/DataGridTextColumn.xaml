@@ -24,6 +24,7 @@
         <Setter Property="Padding" Value="3,2,3,3"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+        <Setter Property="TextBoxEx.IgnoreSourceDuringInput" Value="True"/>
         <Style.Triggers>
             <Trigger Property="Validation.HasError" Value="True">
                 <Setter Property="Validation.ErrorTemplate" Value="{StaticResource BottomValidationErrorTemplate}"/>
