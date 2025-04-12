@@ -564,9 +564,10 @@ namespace MenthaAssembly.MarkupExtensions
             // Disable the source update via the IsInUpdate property
             ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsInUpdate", true);
 
-            // Enable the target update
-            if (Expression.ParentBinding.Mode is not BindingMode.OneTime and not BindingMode.OneWay)
-                ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsReflective", true);
+            // This property should only ignore source updates, so remove the change to IsReflective
+            //// Enable the target update
+            //if (Expression.ParentBinding.Mode is not BindingMode.OneTime and not BindingMode.OneWay)
+            //    ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsReflective", true);
         }
         private static void OnIgnoreSourceDuringInputPreviewLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
@@ -580,9 +581,10 @@ namespace MenthaAssembly.MarkupExtensions
             // Reset the IsInUpdate property
             ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsInUpdate", false);
 
-            // Reset the IsReflective property
-            if (Expression.ParentBinding.Mode is BindingMode.OneTime or BindingMode.OneWay)
-                ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsReflective", false);
+            // This property should only ignore source updates, so remove the change to IsReflective
+            //// Reset the IsReflective property
+            //if (Expression.ParentBinding.Mode is BindingMode.OneTime or BindingMode.OneWay)
+            //    ReflectionHelper.TrySetInternalPropertyValue(Expression, "IsReflective", false);
         }
 
         #endregion
