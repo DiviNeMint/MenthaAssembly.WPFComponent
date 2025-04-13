@@ -1,4 +1,5 @@
-﻿using System.Windows.Data;
+﻿using System;
+using System.Windows.Data;
 
 namespace MenthaAssembly.MarkupExtensions
 {
@@ -6,14 +7,17 @@ namespace MenthaAssembly.MarkupExtensions
     {
         public string Name { get; set; }
 
+        public Type Type { set; get; }
+
         public BindingBase Value { get; set; }
 
         public MathParameter()
         {
         }
-        public MathParameter(string Name, BindingBase Value)
+        public MathParameter(string Name, Type Type, BindingBase Value)
         {
             this.Name = Name;
+            this.Type = Type;
             this.Value = Value;
         }
 

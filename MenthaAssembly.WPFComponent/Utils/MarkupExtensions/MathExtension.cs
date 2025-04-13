@@ -12,12 +12,12 @@ using Expression = System.Linq.Expressions.Expression;
 
 namespace MenthaAssembly.MarkupExtensions
 {
-    [ContentProperty("Parameters")]
+    [ContentProperty(nameof(Parameters))]
     public class MathExtension : MarkupExtension
     {
         public string Formula { set; get; }
 
-        public List<MathParameter> Parameters { get; } = new List<MathParameter>();
+        public List<MathParameter> Parameters { get; } = [];
 
         public MathExtension()
         {
@@ -30,76 +30,48 @@ namespace MenthaAssembly.MarkupExtensions
 
         public override object ProvideValue(IServiceProvider Provider)
         {
-            if (!MathExpression.TryParse(Formula, out ExpressionBlock Block))
+            if (!ExpressionHelper.TryParse(Formula, out ExpressionBlock Block))
                 return null;
 
-            List<ParameterExpression> ParamExprs = new List<ParameterExpression>();
-            List<BindingBase> ParamBindings = new List<BindingBase>();
+            List<ParameterExpression> ParamExprs = [];
+            List<BindingBase> ParamBindings = [];
             foreach (MathParameter Param in Parameters)
             {
-                ParamExprs.Add(Expression.Parameter(typeof(object), Param.Name));
+                ParamExprs.Add(Expression.Parameter(Param.Type ?? typeof(double), Param.Name));
                 ParamBindings.Add(Param.Value);
             }
 
-            List<string> Properies = new List<string>();
-            foreach (ExpressionRoute Route in EnumRoute(Block).Where(i => !ParamExprs.Any(p => p.Name == i.Contexts[0].Name) &&
-                                                                          !i.TryImplement(null, null, ParamExprs, out _) &&
-                                                                          !i.TryParseType(null, ParamExprs, out _)))
-            {
-                IExpressionRoute Path = Route.Contexts[0];
-                if (Path.Type == ExpressionObjectType.Member)
-                    Properies.Add(Path.Name);
-            }
-
-            if (Properies.Count > 0)
+            string[] Properies = ExpressionHelper.EnumParameterNames(Block)
+                                                 .Distinct()
+                                                 .Where(i => !ParamExprs.Any(p => p.Name == i))
+                                                 .ToArray();
+            if (Properies.Length > 0)
             {
                 if (Provider.GetService(typeof(IProvideValueTarget)) is not IProvideValueTarget ValueTarget ||
                     ValueTarget.TargetObject is not DependencyObject Item)
                     return this;
 
                 Type ItemType = Item.GetType();
-                foreach (PropertyInfo Property in Properies.Select(i => ItemType.GetProperty(i)))
+                foreach (PropertyInfo Property in Properies.Select(ItemType.GetProperty))
                 {
                     ParamExprs.Add(Expression.Parameter(Property.PropertyType, Property.Name));
                     ParamBindings.Add(new Binding(Property.Name) { Source = Item });
                 }
             }
 
-            Expression FormulaExpression = Block.Implement(null, ParamExprs);
+            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, null, ParamExprs);
             Delegate Function = Expression.Lambda(FormulaExpression, ParamExprs)
                                           .Compile();
 
-            MultiBinding Multi = new MultiBinding { Converter = new MathConverter(Function) };
+            MultiBinding Multi = new() { Converter = new MathConverter(Function) };
             foreach (BindingBase Param in ParamBindings)
                 Multi.Bindings.Add(Param);
 
             return Multi.ProvideValue(Provider);
         }
 
-        private IEnumerable<ExpressionRoute> EnumRoute(ExpressionBlock Block)
+        private class MathConverter(Delegate Function) : IMultiValueConverter
         {
-            foreach (IExpressionObject Context in Block.Contexts)
-            {
-                if (Context is ExpressionBlock Children)
-                {
-                    foreach (ExpressionRoute Route in EnumRoute(Children))
-                        yield return Route;
-                }
-
-                else if (Context is ExpressionRoute Route)
-                    yield return Route;
-            }
-        }
-
-        private class MathConverter : IMultiValueConverter
-        {
-            private readonly Delegate Function;
-
-            public MathConverter(Delegate Function)
-            {
-                this.Function = Function;
-            }
-
             public object Convert(object[] Values, Type TargetType, object Parameter, CultureInfo Culture)
                 => Function.DynamicInvoke(Values);
 
