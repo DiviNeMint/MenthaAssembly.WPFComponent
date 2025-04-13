@@ -30,7 +30,7 @@ namespace MenthaAssembly.MarkupExtensions
 
         public override object ProvideValue(IServiceProvider Provider)
         {
-            if (!ExpressionHelper.TryParse(Formula, out ExpressionBlock Block))
+            if (!ExpressionBlock.TryParse(Formula, out ExpressionBlock Block))
                 return null;
 
             List<ParameterExpression> ParamExprs = [];
