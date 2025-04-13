@@ -30,6 +30,10 @@ namespace MenthaAssembly.MarkupExtensions
 
         public override object ProvideValue(IServiceProvider Provider)
         {
+            if (Provider.GetService(typeof(IProvideValueTarget)) is not IProvideValueTarget ValueTarget ||
+                ValueTarget.TargetObject is not DependencyObject Item)
+                return this;
+
             if (!ExpressionBlock.TryParse(Formula, out ExpressionBlock Block))
                 return null;
 
@@ -47,10 +51,6 @@ namespace MenthaAssembly.MarkupExtensions
                                                  .ToArray();
             if (Properies.Length > 0)
             {
-                if (Provider.GetService(typeof(IProvideValueTarget)) is not IProvideValueTarget ValueTarget ||
-                    ValueTarget.TargetObject is not DependencyObject Item)
-                    return this;
-
                 Type ItemType = Item.GetType();
                 foreach (PropertyInfo Property in Properies.Select(ItemType.GetProperty))
                 {
@@ -59,7 +59,7 @@ namespace MenthaAssembly.MarkupExtensions
                 }
             }
 
-            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, null, ParamExprs);
+            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, Expression.Constant(Item), ParamExprs);
             Delegate Function = Expression.Lambda(FormulaExpression, ParamExprs)
                                           .Compile();
 
