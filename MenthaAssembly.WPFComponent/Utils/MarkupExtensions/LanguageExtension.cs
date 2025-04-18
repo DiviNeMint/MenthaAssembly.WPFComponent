@@ -36,11 +36,17 @@ namespace MenthaAssembly.MarkupExtensions
 
         public override object ProvideValue(IServiceProvider Provider)
         {
+            if (Provider?.GetService(typeof(IProvideValueTarget)) is not IProvideValueTarget ValueTarget)
+                return this;
+
             // If TargetObject is a Shared DependencyObject (for example, in a DataTemplate or Style)
-            return Provider?.GetService(typeof(IProvideValueTarget)) is not IProvideValueTarget ValueTarget ||
-                ValueTarget.TargetObject is not DependencyObject
-                ? this
-                : Create(this).ProvideValue(Provider);
+            if (ValueTarget.TargetObject is DependencyObject)
+                return Create(this).ProvideValue(Provider);
+
+            if (ValueTarget.TargetObject is SetterBase && Source is null)
+                return Create(this).ProvideValue(Provider);
+
+            throw new NotSupportedException();
         }
 
         private static readonly Dictionary<string, LanguageAdapter> KeyAdapters = [];
