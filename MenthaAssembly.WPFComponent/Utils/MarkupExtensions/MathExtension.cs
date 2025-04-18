@@ -61,7 +61,7 @@ namespace MenthaAssembly.MarkupExtensions
                 }
             }
 
-            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, null, ParamExprs);
+            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, Expression.Constant(Item), ParamExprs);
             Delegate Function = Expression.Lambda(FormulaExpression, ParamExprs)
                                           .Compile();
 
