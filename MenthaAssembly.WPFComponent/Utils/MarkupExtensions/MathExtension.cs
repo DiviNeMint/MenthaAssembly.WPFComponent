@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
@@ -43,7 +45,23 @@ namespace MenthaAssembly.MarkupExtensions
                 ParamBindings.Add(Param.Value);
             }
 
-            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, Expression.Constant(Item), ParamExprs);
+            if (Item != null)
+            {
+                string[] Properies = ExpressionHelper.EnumParameterNames(Block)
+                                                     .Where(i => !ParamExprs.Any(p => p.Name == i))
+                                                     .ToArray();
+                if (Properies.Length > 0)
+                {
+                    Type ItemType = Item.GetType();
+                    foreach (PropertyInfo Property in Properies.Select(ItemType.GetProperty))
+                    {
+                        ParamExprs.Add(Expression.Parameter(Property.PropertyType, Property.Name));
+                        ParamBindings.Add(new Binding(Property.Name) { Source = Item });
+                    }
+                }
+            }
+
+            Expression FormulaExpression = Block.Implement(ExpressionMode.Math, null, ParamExprs);
             Delegate Function = Expression.Lambda(FormulaExpression, ParamExprs)
                                           .Compile();
 
