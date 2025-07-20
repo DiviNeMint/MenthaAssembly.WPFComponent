@@ -42,7 +42,7 @@ namespace MenthaAssembly.Views.Primitives
         private readonly Dictionary<object, RenderBlock> RenderingBlockTable = [];
         private void OnCompositionTargetRendering(object sender, EventArgs e)
         {
-            foreach (object Key in RenderingBlockTable.Keys.Take(MaxRenderingCount))
+            foreach (object Key in RenderingBlockTable.Keys.Take(MaxRenderingCount).ToArray())
             {
                 RenderBlock Block = RenderingBlockTable[Key];
                 RenderingBlockTable.Remove(Key);
@@ -498,7 +498,7 @@ namespace MenthaAssembly.Views.Primitives
                     }
 
                     // Remove useless blocks.
-                    foreach (object Old in RenderBlocks.Keys.Except(NewBlocks))
+                    foreach (object Old in RenderBlocks.Keys.Except(NewBlocks).ToArray())
                     {
                         RenderBlocks.Remove(Old);
                         RenderingBlockTable.Remove(Old);
@@ -524,7 +524,7 @@ namespace MenthaAssembly.Views.Primitives
                 RenderBlock.Region = Region;
 
                 // Remove useless blocks.
-                foreach (object Key in RenderBlocks.Keys.Where(i => i != Thumbnail))
+                foreach (object Key in RenderBlocks.Keys.Where(i => i != Thumbnail).ToArray())
                     RenderBlocks.Remove(Key);
 
                 Layer.InvalidateVisual();
@@ -575,7 +575,7 @@ namespace MenthaAssembly.Views.Primitives
                     }
 
                     // Remove useless blocks.
-                    foreach (object Old in RenderBlocks.Keys.Except(NewBlocks))
+                    foreach (object Old in RenderBlocks.Keys.Except(NewBlocks).ToArray())
                     {
                         RenderBlocks.Remove(Old);
                         RenderingBlockTable.Remove(Old);
