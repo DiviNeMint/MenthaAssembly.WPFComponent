@@ -1,10 +1,7 @@
 ﻿using MenthaAssembly.Globalization;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,15 +13,11 @@ namespace MenthaAssembly.MarkupExtensions
 {
     public class LanguageExtension : MarkupExtension
     {
-        private const string DefaultLoadingText = "...";
-
         private string Path { get; }
 
         public string Default { set; get; }
 
         public BindingBase Source { set; get; }
-
-        public string LoadingText { get; set; } = DefaultLoadingText;
 
         public LanguageExtension()
         {
@@ -36,201 +29,181 @@ namespace MenthaAssembly.MarkupExtensions
 
         public override object ProvideValue(IServiceProvider Provider)
         {
-            if (Provider?.GetService(typeof(IProvideValueTarget)) is IProvideValueTarget ValueTarget)
-            {
-                if (ValueTarget.TargetObject is DependencyObject)
-                    return Create(this).ProvideValue(Provider);
-
-                if (ValueTarget.TargetObject is SetterBase && Source is null)
-                    return Create(this).ProvideValue(Provider);
-            }
-
-            return this;
-        }
-
-        private static readonly Dictionary<string, LanguageAdapter> KeyAdapters = [];
-        private static readonly List<LanguageAdapter> SourceAdapters = [];
-
-        public static MultiBinding Create(string Path, string Default)
-            => Create(Path, Default, DefaultLoadingText);
-        public static MultiBinding Create(string Path, string Default, string LoadingText)
-            => Create(new LanguageExtension(Path) { Default = Default, LoadingText = LoadingText });
-        public static MultiBinding Create(BindingBase Source)
-            => Create(Source, DefaultLoadingText);
-        public static MultiBinding Create(BindingBase Source, string LoadingText)
-            => Create(new LanguageExtension() { Source = Source, LoadingText = LoadingText });
-        private static MultiBinding Create(LanguageExtension Language)
-        {
-            LanguageAdapter Adapter;
-            if (string.IsNullOrEmpty(Language.Path))
-            {
-                Adapter = new(Language);
-                Adapter.Refresh();
-
-                SourceAdapters.Add(Adapter);
-            }
-            else if (!KeyAdapters.TryGetValue(Language.Path, out Adapter))
-            {
-                Adapter = new(Language);
-                Adapter.Refresh();
-
-                KeyAdapters[Language.Path] = Adapter;
-            }
-
+            string Temp = string.IsNullOrEmpty(Default) ? Path : Default;
+            LanguageMultiConverter Converter = new(Path, Default);
             MultiBinding Multi = new()
             {
                 Mode = BindingMode.OneWay,
-                Converter = LanguageMultiConverter.Instance,
-                ConverterParameter = DesignerProperties.GetIsInDesignMode(Adapter) ? string.IsNullOrEmpty(Language.Default) ? Language.Path : Language.Default : Adapter
+                Converter = Converter,
+                TargetNullValue = Temp,
+                FallbackValue = Temp
             };
-            Multi.Bindings.Add(new Binding(nameof(LanguageAdapter.Value)) { Source = Adapter });
 
-            if (Language.Source != null)
-                Multi.Bindings.Add(Language.Source);
+            Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", EnableGoogleTranslateProperty) });
+            Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", CustomLanguageProperty) });
+
+            if (Source != null)
+                Multi.Bindings.Add(Source);
+
+            if (Multi.ProvideValue(Provider) is not BindingExpressionBase Expression)
+                return this;
+
+            Converter.Expression = Expression;
+            return Expression;
+        }
+
+        private static readonly PropertyInfo CustomLanguageProperty, EnableGoogleTranslateProperty;
+        static LanguageExtension()
+        {
+            Type t = typeof(LanguageManager);
+            CustomLanguageProperty = t.GetProperty(nameof(LanguageManager.Custom));
+            EnableGoogleTranslateProperty = t.GetProperty(nameof(LanguageManager.EnableGoogleTranslate));
+        }
+
+        public static BindingBase Create(string Path, string Default)
+        {
+            string Temp = string.IsNullOrEmpty(Default) ? Path : Default;
+            MultiBinding Multi = new()
+            {
+                Mode = BindingMode.OneWay,
+                Converter = new LanguageMultiConverter(Path, Default),
+                TargetNullValue = Temp,
+                FallbackValue = Temp
+            };
+
+            // EnableGoogleTranslate
+            Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", EnableGoogleTranslateProperty) });
+            Multi.Bindings.Add(new Binding()
+            {
+                Path = new PropertyPath($"(0)[{Path}]", CustomLanguageProperty),
+                TargetNullValue = null,
+                FallbackValue = null
+            });
 
             return Multi;
         }
 
-        public static IReadOnlyDictionary<object, string> GetCurrentLanguageMap()
+        private class LanguageMultiConverter(string Path, string Default) : IMultiValueConverter
         {
-            Dictionary<object, string> Map = KeyAdapters.ToDictionary(i => (object)i.Key, i => i.Value.Value);
-            foreach (LanguageAdapter Adapter in SourceAdapters)
-            {
-                object Key = Adapter.Source;
-                if (!Map.ContainsKey(Key))
-                    Map[Key] = Adapter.Value;
-            }
-
-            return Map;
-        }
-
-        private sealed class LanguageAdapter : DependencyObject
-        {
-            private object _Source;
-            public object Source
-            {
-                get => _Source;
-                set
-                {
-                    if (_Source == value)
-                        return;
-
-                    _Source = value;
-                    Refresh();
-                }
-            }
-
-            public static readonly DependencyProperty ValueProperty =
-                DependencyProperty.Register(nameof(Value), typeof(string), typeof(LanguageAdapter), new PropertyMetadata(null));
-            public string Value
-            {
-                get => (string)GetValue(ValueProperty);
-                set => SetValue(ValueProperty, value);
-            }
-
-            private readonly LanguageExtension Binding;
-            public LanguageAdapter(LanguageExtension Binding)
-            {
-                this.Binding = Binding;
-                LanguageManager.StaticPropertyChanged += OnLanguageManagerPropertyChanged;
-            }
-
-            private LanguagePacket LastPacket;
-            private void OnLanguageManagerPropertyChanged(object sender, PropertyChangedEventArgs e)
-            {
-                switch (e.PropertyName)
-                {
-                    case nameof(LanguageManager.Current):
-                        {
-                            void OnLanguageContextChanged(object sender, string e)
-                            {
-                                string Key = GetLanguageKey();
-                                if (e == Key)
-                                    InternalRefresh((LanguagePacket)sender, Key);
-                            }
-
-                            if (LastPacket != null)
-                                LastPacket.LanguageContextChanged -= OnLanguageContextChanged;
-
-                            if (LanguageManager.Current is LanguagePacket Packet)
-                            {
-                                LastPacket = Packet;
-                                Packet.LanguageContextChanged += OnLanguageContextChanged;
-                            }
-
-                            this.Invoke(Refresh);
-                            break;
-                        }
-                    case nameof(LanguageManager.EnableGoogleTranslate):
-                        {
-                            this.Invoke(Refresh);
-                            break;
-                        }
-                }
-            }
-
-            public void Refresh()
-            {
-                if (LanguageManager.Current is LanguagePacket Packet)
-                {
-                    InternalRefresh(Packet, GetLanguageKey());
-                    return;
-                }
-
-                Value = Binding.Default;
-            }
+            private static readonly ConcurrentQueue<BindingExpressionBase> OSLanguageQueue = [];
+            private static readonly ConcurrentQueue<BindingExpressionBase> GoogleTranslateQueue = [];
+            public BindingExpressionBase Expression;
 
             private bool IsFirst = true;
-            private CancellationTokenSource TokeSource;
-            private void InternalRefresh(LanguagePacket Packet, string Key)
+            private LanguagePacket LastLanguage;
+            private CancellationTokenSource OSLanguageCancellation, GoogleTranslateCancellation;
+            public object Convert(object[] Values, Type TargetType, object Parameter, CultureInfo culture)
             {
-                TokeSource?.Cancel();
-                TokeSource = null;
-
                 try
                 {
-                    if (string.IsNullOrEmpty(Key))
+                    if (Values[1] is not LanguagePacket Language)
+                        return string.IsNullOrEmpty(Path) ? Default ?? Binding.DoNothing : Path;
+
+                    if (LastLanguage != Language)
                     {
-                        Value = Binding.Default;
-                        return;
+                        if (LastLanguage != null)
+                            LastLanguage.LanguageContextChanged -= OnLanguageContextChanged;
+
+                        LastLanguage = Language;
+                        LastLanguage.LanguageContextChanged += OnLanguageContextChanged;
                     }
 
-                    string Result = Packet[Key];
-                    if (!string.IsNullOrEmpty(Result))
+                    string Result;
+                    if (Values.Length == 2)
                     {
-                        Value = Result;
-                        return;
+                        Result = Language[Path];
+                        if (!string.IsNullOrEmpty(Result))
+                            return Result;
+
+                        if (string.IsNullOrEmpty(Path))
+                            return Default ?? Binding.DoNothing;
+                    }
+                    else
+                    {
+                        object Value = Values[2];
+                        if (Value == DependencyProperty.UnsetValue)
+                            return null;
+
+                        Path = Value?.ToString();
+                        if (string.IsNullOrEmpty(Path))
+                            return Default ?? Binding.DoNothing;
+
+                        Result = Language[Path];
+                        if (!string.IsNullOrEmpty(Result))
+                            return Result;
                     }
 
-                    string Default = Binding.Default;
-                    if (string.IsNullOrEmpty(Default))
-                        Default = Key;
-
-                    TokeSource = new CancellationTokenSource();
-                    CancellationToken Token = TokeSource.Token;
-                    Task.Run(() =>
+                    if (LanguageManager.LazySystem?.IsValueCreated is not true)
                     {
-                        // Windows System Build-in String
-                        string Result = LanguageManager.CurrentWindowsSystem[Key];
-
-                        // Checks if the action is canceled
-                        if (Token.IsCancellationRequested)
-                            return;
-
-                        if (string.IsNullOrEmpty(Result))
+                        OSLanguageQueue.Enqueue(Expression);
+                        if (OSLanguageQueue.Count == 1)
                         {
-                            // GoogleTranslate
-                            if (!LanguageManager.EnableGoogleTranslate ||
-                                !LanguageManager.CanGoogleTranslate ||
-                                !GoogleTranslate(Key, out Result))
-                                Result = Default;
+                            OSLanguageCancellation?.Cancel();
+                            OSLanguageCancellation = new CancellationTokenSource();
+                            CancellationToken Token = OSLanguageCancellation.Token;
+                            Task.Run(() =>
+                            {
+                                _ = LanguageManager.System;
+                                if (!Token.IsCancellationRequested)
+                                {
+                                    Application.Current.Invoke(() =>
+                                    {
+                                        while (OSLanguageQueue.TryDequeue(out BindingExpressionBase Binding))
+                                            Binding.UpdateTarget();
+                                    });
+                                }
+                            });
                         }
 
-                        if (!Token.IsCancellationRequested)
-                            this.Invoke(() => Value = Result);
-                    });
+                        return IsFirst && Default != null ? Default : Binding.DoNothing;
+                    }
 
-                    Value = IsFirst ? Default : Binding.LoadingText;
+                    Result = LanguageManager.System[Path];
+                    if (!string.IsNullOrEmpty(Result))
+                        return Result;
+
+                    // GoogleTranslate
+                    if (Values[0] is true)
+                    {
+                        string ToCulture = LanguageManager.Custom?.CultureCode;
+                        if (!string.IsNullOrEmpty(ToCulture) &&
+                            LanguageManager.CanGoogleTranslate)
+                        {
+                            (string, string ToCulture) Key = ("en-US", ToCulture);
+                            if (!LanguageManager.CacheTranslate.TryGetValue(Key, out ConcurrentDictionary<string, Lazy<string>> Caches))
+                                Caches = LanguageManager.CacheTranslate.GetOrAdd(Key, k => []);
+
+                            Lazy<string> LazyResult = Caches.GetOrAdd(Path, k => new Lazy<string>(() => LanguageManager.InternalGoogleTranslate(k, "en-US", ToCulture)));
+                            if (!LazyResult.IsValueCreated)
+                            {
+                                GoogleTranslateQueue.Enqueue(Expression);
+                                if (GoogleTranslateQueue.Count == 1)
+                                {
+                                    GoogleTranslateCancellation?.Cancel();
+                                    GoogleTranslateCancellation = new CancellationTokenSource();
+                                    CancellationToken Token = GoogleTranslateCancellation.Token;
+                                    Task.Run(() =>
+                                    {
+                                        _ = LazyResult.Value;
+                                        if (!Token.IsCancellationRequested)
+                                        {
+                                            Application.Current.Invoke(() =>
+                                            {
+                                                while (GoogleTranslateQueue.TryDequeue(out BindingExpressionBase Binding))
+                                                    Binding.UpdateTarget();
+                                            });
+                                        }
+                                    });
+                                }
+
+                                return IsFirst && Default != null ? Default : Binding.DoNothing;
+                            }
+
+                            Result = LazyResult.Value;
+                        }
+                    }
+
+                    return Result ?? Default;
                 }
                 finally
                 {
@@ -238,77 +211,10 @@ namespace MenthaAssembly.MarkupExtensions
                 }
             }
 
-            private string GetLanguageKey()
+            private void OnLanguageContextChanged(object sender, string e)
             {
-                string Key = Binding.Path;
-                if (string.IsNullOrEmpty(Key))
-                {
-                    object Source = this.Source;
-                    if (Source is Enum)
-                    {
-                        string Path = Source.ToString();
-                        Type Type = Source.GetType();
-
-                        FieldInfo Field = Type.GetField(Path);
-                        return Attribute.GetCustomAttribute(Field, typeof(DescriptionAttribute)) is DescriptionAttribute Description ? Description.Description : Path;
-                    }
-
-                    return Source?.ToString();
-                }
-
-                return Key;
-            }
-            private static bool GoogleTranslate(string Key, out string Result)
-            {
-                string ToCulture = LanguageManager.Current?.CultureCode;
-                if (!string.IsNullOrEmpty(ToCulture))
-                {
-                    if (LanguageManager.CacheTranslate.TryGetValue(ToCulture, out ConcurrentDictionary<string, string> Caches))
-                    {
-                        if (Caches.TryGetValue(Key, out Result))
-                            return true;
-                    }
-                    else
-                    {
-                        Caches = [];
-                        LanguageManager.CacheTranslate.AddOrUpdate(ToCulture, Caches, (k, v) => Caches);
-                    }
-
-                    Result = LanguageManager.GoogleTranslate(Key, "en-US", ToCulture);
-                    if (!string.IsNullOrEmpty(Result))
-                    {
-                        string Value = Result;
-                        Caches.AddOrUpdate(Key, Result, (k, v) => Value);
-                        return true;
-                    }
-                }
-
-                Result = null;
-                return false;
-            }
-
-        }
-
-        private class LanguageMultiConverter : IMultiValueConverter
-        {
-            public static LanguageMultiConverter Instance { get; } = new LanguageMultiConverter();
-
-            public object Convert(object[] Values, Type TargetType, object Parameter, CultureInfo culture)
-            {
-                // DesignMode
-                if (Parameter is string)
-                    return Values.Length > 1 ? Values[1] : Parameter;
-
-                // Runtime & Has binding source 
-                if (Values.Length > 1 &&
-                    Parameter is LanguageAdapter Adapter &&
-                    Values[1]?.ToString() != Adapter.Source?.ToString())
-                {
-                    Adapter.Source = Values[1];
-                    return Binding.DoNothing;
-                }
-
-                return Values[0];
+                if (e == Path)
+                    Application.Current.Invoke(Expression.UpdateTarget);
             }
 
             public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
