@@ -1,8 +1,10 @@
 ﻿using MenthaAssembly.Globalization;
 using System;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -41,15 +43,12 @@ namespace MenthaAssembly.MarkupExtensions
 
             Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", EnableGoogleTranslateProperty) });
             Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", CustomLanguageProperty) });
+            Multi.Bindings.Add(new Binding(nameof(LanguageMultiConverter.ProxyObject)) { Source = Converter });
 
             if (Source != null)
                 Multi.Bindings.Add(Source);
 
-            if (Multi.ProvideValue(Provider) is not BindingExpressionBase Expression)
-                return this;
-
-            Converter.Expression = Expression;
-            return Expression;
+            return Multi.ProvideValue(Provider);
         }
 
         private static readonly PropertyInfo CustomLanguageProperty, EnableGoogleTranslateProperty;
@@ -63,31 +62,30 @@ namespace MenthaAssembly.MarkupExtensions
         public static BindingBase Create(string Path, string Default)
         {
             string Temp = string.IsNullOrEmpty(Default) ? Path : Default;
+            LanguageMultiConverter Converter = new(Path, Default);
             MultiBinding Multi = new()
             {
                 Mode = BindingMode.OneWay,
-                Converter = new LanguageMultiConverter(Path, Default),
+                Converter = Converter,
                 TargetNullValue = Temp,
                 FallbackValue = Temp
             };
 
-            // EnableGoogleTranslate
             Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", EnableGoogleTranslateProperty) });
-            Multi.Bindings.Add(new Binding()
-            {
-                Path = new PropertyPath($"(0)[{Path}]", CustomLanguageProperty),
-                TargetNullValue = null,
-                FallbackValue = null
-            });
+            Multi.Bindings.Add(new Binding() { Path = new PropertyPath($"(0)", CustomLanguageProperty) });
+            Multi.Bindings.Add(new Binding(nameof(LanguageMultiConverter.ProxyObject)) { Source = Converter });
 
             return Multi;
         }
 
-        private class LanguageMultiConverter(string Path, string Default) : IMultiValueConverter
+        private class LanguageMultiConverter(string Path, string Default) : IMultiValueConverter, INotifyPropertyChanged
         {
-            private static readonly ConcurrentQueue<BindingExpressionBase> OSLanguageQueue = [];
-            private static readonly ConcurrentQueue<BindingExpressionBase> GoogleTranslateQueue = [];
-            public BindingExpressionBase Expression;
+            public event PropertyChangedEventHandler PropertyChanged;
+
+            private static readonly ConcurrentQueue<LanguageMultiConverter> OSLanguageQueue = [];
+            private static readonly ConcurrentQueue<LanguageMultiConverter> GoogleTranslateQueue = [];
+
+            public object ProxyObject { get; }
 
             private bool IsFirst = true;
             private LanguagePacket LastLanguage;
@@ -109,7 +107,7 @@ namespace MenthaAssembly.MarkupExtensions
                     }
 
                     string Result;
-                    if (Values.Length == 2)
+                    if (Values.Length == 3)
                     {
                         Result = Language[Path];
                         if (!string.IsNullOrEmpty(Result))
@@ -120,7 +118,7 @@ namespace MenthaAssembly.MarkupExtensions
                     }
                     else
                     {
-                        object Value = Values[2];
+                        object Value = Values[3];
                         if (Value == DependencyProperty.UnsetValue)
                             return null;
 
@@ -135,7 +133,8 @@ namespace MenthaAssembly.MarkupExtensions
 
                     if (LanguageManager.LazySystem?.IsValueCreated is not true)
                     {
-                        OSLanguageQueue.Enqueue(Expression);
+                        OSLanguageQueue.Enqueue(this);
+
                         if (OSLanguageQueue.Count == 1)
                         {
                             OSLanguageCancellation?.Cancel();
@@ -146,11 +145,8 @@ namespace MenthaAssembly.MarkupExtensions
                                 _ = LanguageManager.System;
                                 if (!Token.IsCancellationRequested)
                                 {
-                                    Application.Current.Invoke(() =>
-                                    {
-                                        while (OSLanguageQueue.TryDequeue(out BindingExpressionBase Binding))
-                                            Binding.UpdateTarget();
-                                    });
+                                    while (OSLanguageQueue.TryDequeue(out LanguageMultiConverter Proxy))
+                                        Proxy.OnPropertyChanged(nameof(ProxyObject));
                                 }
                             });
                         }
@@ -176,7 +172,7 @@ namespace MenthaAssembly.MarkupExtensions
                             Lazy<string> LazyResult = Caches.GetOrAdd(Path, k => new Lazy<string>(() => LanguageManager.InternalGoogleTranslate(k, "en-US", ToCulture)));
                             if (!LazyResult.IsValueCreated)
                             {
-                                GoogleTranslateQueue.Enqueue(Expression);
+                                GoogleTranslateQueue.Enqueue(this);
                                 if (GoogleTranslateQueue.Count == 1)
                                 {
                                     GoogleTranslateCancellation?.Cancel();
@@ -187,11 +183,8 @@ namespace MenthaAssembly.MarkupExtensions
                                         _ = LazyResult.Value;
                                         if (!Token.IsCancellationRequested)
                                         {
-                                            Application.Current.Invoke(() =>
-                                            {
-                                                while (GoogleTranslateQueue.TryDequeue(out BindingExpressionBase Binding))
-                                                    Binding.UpdateTarget();
-                                            });
+                                            while (OSLanguageQueue.TryDequeue(out LanguageMultiConverter Proxy))
+                                                Proxy.OnPropertyChanged(nameof(ProxyObject));
                                         }
                                     });
                                 }
@@ -214,11 +207,14 @@ namespace MenthaAssembly.MarkupExtensions
             private void OnLanguageContextChanged(object sender, string e)
             {
                 if (e == Path)
-                    Application.Current.Invoke(Expression.UpdateTarget);
+                    OnPropertyChanged(nameof(ProxyObject));
             }
 
             public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
                 => throw new NotSupportedException();
+
+            protected void OnPropertyChanged([CallerMemberName] string PropertyName = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(PropertyName));
 
         }
 
