@@ -474,6 +474,16 @@ namespace MenthaAssembly
         public ImageContext<T> Filter<T>(ImageFilter Filter, ParallelOptions Options) where T : unmanaged, IPixel
             => Context.Filter<T>(Filter, Options);
 
+        public ImageContext<T> ApplyContrast<T>(double Contrast) where T : unmanaged, IPixel
+            => Context.ApplyContrast<T>(Contrast);
+        public ImageContext<T> ApplyContrast<T>(double Contrast, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.ApplyContrast<T>(Contrast, Options);
+
+        public ImageContext<T> ApplyGamma<T>(double Gamma) where T : unmanaged, IPixel
+            => Context.ApplyGamma<T>(Gamma);
+        public ImageContext<T> ApplyGamma<T>(double Gamma, ParallelOptions Options) where T : unmanaged, IPixel
+            => Context.ApplyGamma<T>(Gamma, Options);
+
         public ImageContext<T> Quantizate<T>(QuantizationTypes Type, int Count) where T : unmanaged, IPixel
             => Context.Quantizate<T>(Type, Count);
         public ImageContext<T> Quantizate<T>(QuantizationTypes Type, int Count, ParallelOptions Options) where T : unmanaged, IPixel
@@ -514,6 +524,15 @@ namespace MenthaAssembly
             => Context.Clear(Color);
         public void Clear<T>(T Color, ParallelOptions Options) where T : unmanaged, IPixel
             => Context.Clear(Color, Options);
+
+        #endregion
+
+        #region Contour Processing
+
+        public IEnumerable<ImageContour> DetectContours(ImagePredicate SeedPredicate, ImagePredicate EdgePredicate)
+            => Context.DetectContours(SeedPredicate, EdgePredicate);
+        public ImageContour DetectContour(int X, int Y, ImagePredicate EdgePredicate)
+            => Context.DetectContour(X, Y, EdgePredicate);
 
         #endregion
 
