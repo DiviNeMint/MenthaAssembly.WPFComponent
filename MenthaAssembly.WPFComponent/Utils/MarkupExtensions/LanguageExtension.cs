@@ -114,7 +114,7 @@ namespace MenthaAssembly.MarkupExtensions
                             return Result;
 
                         if (string.IsNullOrEmpty(Path))
-                            return Default ?? Binding.DoNothing;
+                            return string.IsNullOrEmpty(Default) ? Binding.DoNothing : Default;
                     }
                     else
                     {
@@ -124,7 +124,7 @@ namespace MenthaAssembly.MarkupExtensions
 
                         Path = Value?.ToString();
                         if (string.IsNullOrEmpty(Path))
-                            return Default ?? Binding.DoNothing;
+                            return string.IsNullOrEmpty(Default) ? Binding.DoNothing : Default;
 
                         Result = Language[Path];
                         if (!string.IsNullOrEmpty(Result))
@@ -134,7 +134,6 @@ namespace MenthaAssembly.MarkupExtensions
                     if (LanguageManager.LazySystem?.IsValueCreated is not true)
                     {
                         OSLanguageQueue.Enqueue(this);
-
                         if (OSLanguageQueue.Count == 1)
                         {
                             OSLanguageCancellation?.Cancel();
@@ -151,7 +150,7 @@ namespace MenthaAssembly.MarkupExtensions
                             });
                         }
 
-                        return IsFirst && Default != null ? Default : Binding.DoNothing;
+                        return IsFirst ? string.IsNullOrEmpty(Default) ? Path : Default : Binding.DoNothing;
                     }
 
                     Result = LanguageManager.System[Path];
@@ -189,14 +188,14 @@ namespace MenthaAssembly.MarkupExtensions
                                     });
                                 }
 
-                                return IsFirst && Default != null ? Default : Binding.DoNothing;
+                                return IsFirst ? string.IsNullOrEmpty(Default) ? Path : Default : Binding.DoNothing;
                             }
 
                             Result = LazyResult.Value;
                         }
                     }
 
-                    return Result ?? Default;
+                    return string.IsNullOrEmpty(Result) ? string.IsNullOrEmpty(Default) ? Path : Default : Result;
                 }
                 finally
                 {
