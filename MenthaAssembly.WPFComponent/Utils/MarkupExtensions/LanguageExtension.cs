@@ -95,7 +95,7 @@ namespace MenthaAssembly.MarkupExtensions
                 try
                 {
                     if (Values[1] is not LanguagePacket Language)
-                        return string.IsNullOrEmpty(Path) ? Default ?? Binding.DoNothing : Path;
+                        return string.IsNullOrEmpty(Path) ? Default ?? (Values.Length == 4 ? Values[3].ToString() : Binding.DoNothing) : Path;
 
                     if (LastLanguage != Language)
                     {
