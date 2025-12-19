@@ -148,6 +148,30 @@ namespace MenthaAssembly.MarkupExtensions
         }
         private static TypeConvertFunc CreateTypeConverter(Type ValueType, object Max, object Min, KeyboardInputMode InputMode)
         {
+            if (ValueType.TryGetMethod(nameof(double.Parse), ReflectionHelper.PublicStaticModifier, [typeof(string)], out MethodInfo Method))
+            {
+                return (string Content, out bool IsOverflow) =>
+                {
+                    if (string.IsNullOrEmpty(Content))
+                    {
+                        IsOverflow = true;
+                        return Activator.CreateInstance(ValueType);
+                    }
+
+                    try
+                    {
+                        object Value = Method.Invoke(null, [Content]);
+                        IsOverflow = false;
+                        return Value;
+                    }
+                    catch
+                    {
+                        IsOverflow = true;
+                        return Min;
+                    }
+                };
+            }
+
             bool IsSigned = (InputMode | KeyboardInputMode.Negative) > 0;
             string[] MaxStrings = Max.ToString().Split('.'),
                      MinStrings = Min.ToString().Split('.');
