@@ -94,29 +94,42 @@ namespace MenthaAssembly.MarkupExtensions
             {
                 try
                 {
-                    if (Values[1] is not LanguagePacket Language)
-                        return string.IsNullOrEmpty(Path) ? Default ?? Binding.DoNothing : Path;
-
-                    if (LastLanguage != Language)
-                    {
-                        if (LastLanguage != null)
-                            LastLanguage.LanguageContextChanged -= OnLanguageContextChanged;
-
-                        LastLanguage = Language;
-                        LastLanguage.LanguageContextChanged += OnLanguageContextChanged;
-                    }
-
                     string Result;
-                    if (Values.Length == 3)
+                    if (Values[1] is LanguagePacket Language)
                     {
-                        Result = Language[Path];
-                        if (!string.IsNullOrEmpty(Result))
-                            return Result;
+                        if (LastLanguage != Language)
+                        {
+                            LastLanguage?.LanguageContextChanged -= OnLanguageContextChanged;
 
-                        if (string.IsNullOrEmpty(Path))
-                            return Default ?? Binding.DoNothing;
+                            LastLanguage = Language;
+                            LastLanguage.LanguageContextChanged += OnLanguageContextChanged;
+                        }
+
+                        if (Values.Length == 3)
+                        {
+                            Result = Language[Path];
+                            if (!string.IsNullOrEmpty(Result))
+                                return Result;
+
+                            if (string.IsNullOrEmpty(Path))
+                                return Default ?? Binding.DoNothing;
+                        }
+                        else
+                        {
+                            object Value = Values[3];
+                            if (Value == DependencyProperty.UnsetValue)
+                                return null;
+
+                            Path = Value?.ToString();
+                            if (string.IsNullOrEmpty(Path))
+                                return Default ?? Binding.DoNothing;
+
+                            Result = Language[Path];
+                            if (!string.IsNullOrEmpty(Result))
+                                return Result;
+                        }
                     }
-                    else
+                    else if (Values.Length != 3)
                     {
                         object Value = Values[3];
                         if (Value == DependencyProperty.UnsetValue)
@@ -125,10 +138,6 @@ namespace MenthaAssembly.MarkupExtensions
                         Path = Value?.ToString();
                         if (string.IsNullOrEmpty(Path))
                             return Default ?? Binding.DoNothing;
-
-                        Result = Language[Path];
-                        if (!string.IsNullOrEmpty(Result))
-                            return Result;
                     }
 
                     if (LanguageManager.LazySystem?.IsValueCreated is not true)
