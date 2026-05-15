@@ -205,7 +205,7 @@ namespace MenthaAssembly.MarkupExtensions
                         }
                     }
 
-                    return Result ?? Default;
+                    return Result ?? Default ?? Path;
                 }
                 finally
                 {

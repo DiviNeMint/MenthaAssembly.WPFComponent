@@ -83,6 +83,50 @@ namespace System.Windows
 
             return BindingBase_Clone.Invoke(This, [Mode]) as BindingBase;
         }
+        public static BindingBase CloneBindingWithoutValidation(this BindingBase Binding, BindingMode Mode)
+        {
+            if (Binding is Binding ThisBinding)
+                return ThisBinding.CloneWithoutValidation(Mode);
+
+            return Binding.Clone(Mode);
+        }
+        private static Binding CloneWithoutValidation(this Binding Binding, BindingMode Mode)
+        {
+            Binding Clone = new()
+            {
+                AsyncState = Binding.AsyncState,
+                BindingGroupName = Binding.BindingGroupName,
+                BindsDirectlyToSource = Binding.BindsDirectlyToSource,
+                Converter = Binding.Converter,
+                ConverterCulture = Binding.ConverterCulture,
+                ConverterParameter = Binding.ConverterParameter,
+                Delay = Binding.Delay,
+                FallbackValue = Binding.FallbackValue,
+                IsAsync = Binding.IsAsync,
+                Mode = Mode,
+                NotifyOnSourceUpdated = Binding.NotifyOnSourceUpdated,
+                NotifyOnTargetUpdated = Binding.NotifyOnTargetUpdated,
+                NotifyOnValidationError = Binding.NotifyOnValidationError,
+                Path = Binding.Path,
+                StringFormat = Binding.StringFormat,
+                TargetNullValue = Binding.TargetNullValue,
+                UpdateSourceExceptionFilter = Binding.UpdateSourceExceptionFilter,
+                UpdateSourceTrigger = Binding.UpdateSourceTrigger,
+                ValidatesOnDataErrors = false,
+                ValidatesOnExceptions = false,
+                ValidatesOnNotifyDataErrors = false,
+                XPath = Binding.XPath
+            };
+
+            if (!string.IsNullOrEmpty(Binding.ElementName))
+                Clone.ElementName = Binding.ElementName;
+            else if (Binding.RelativeSource is not null)
+                Clone.RelativeSource = Binding.RelativeSource;
+            else if (Binding.Source is not null)
+                Clone.Source = Binding.Source;
+
+            return Clone;
+        }
 
         /// <summary>
         /// Forces the ValidationRules to be checked for the specified BindingGroup.

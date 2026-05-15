@@ -3,7 +3,6 @@
                     xmlns:Ex="clr-namespace:MenthaAssembly.MarkupExtensions">
 
     <!--https://www.cnblogs.com/dino623/p/Validation_ErrorTemplate.html-->
-
     <ControlTemplate x:Key="BottomValidationErrorTemplate">
         <ControlTemplate.Resources>
             <ControlTemplate x:Key="ValidationToolTipTemplate">
@@ -110,7 +109,6 @@
             </MultiDataTrigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
-
     <ControlTemplate x:Key="RightValidationErrorTemplate">
         <ControlTemplate.Resources>
             <ControlTemplate x:Key="ValidationToolTipTemplate">
@@ -217,5 +215,5 @@
             </MultiDataTrigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
-    
+
 </ResourceDictionary>
