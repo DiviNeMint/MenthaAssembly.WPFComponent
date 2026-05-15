@@ -1,4 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 
 namespace MenthaAssembly.Views
@@ -11,7 +14,7 @@ namespace MenthaAssembly.Views
         protected override DependencyObject GetContainerForItemOverride()
             => new DataGridCell();
 
-        //private readonly Dictionary<DependencyObject, Action> DetachActionTable = [];
+        private readonly Dictionary<DependencyObject, Action> DetachActionTable = [];
         protected override void PrepareContainerForItemOverride(DependencyObject Element, object DataContext)
         {
             base.PrepareContainerForItemOverride(Element, DataContext);
@@ -28,17 +31,24 @@ namespace MenthaAssembly.Views
                 }
 
                 Notifier.PropertyChanged += OnNotifierPropertyChanged;
-                //DetachActionTable.Add(Element, () => Notifier.PropertyChanged -= OnNotifierPropertyChanged);
+                DetachActionTable.Add(Element, () => Notifier.PropertyChanged -= OnNotifierPropertyChanged);
+
+                // When the DataGridCell is being prepared, if there are any pending invalid cells for the corresponding column and item, force a validation error on the cell.
+                if (Column.DataGridOwner?.PendingInvalidCells?.Any(i => i.Column == Column && i.Item == DataContext) is true)
+                    Cell.ForceChildValidationError();
             }
         }
 
-        //// ClearContainerForItemOverride is never triggered because when data is deleted, the entire Row is removed.
-        //protected override void ClearContainerForItemOverride(DependencyObject Element, object item)
-        //{
-        //    base.ClearContainerForItemOverride(Element, item);
-        //    //if (DetachActionTable.Remove(Element, out Action Action))
-        //    //    Action.Invoke();
-        //}
+        protected override void ClearContainerForItemOverride(DependencyObject Element, object item)
+        {
+            base.ClearContainerForItemOverride(Element, item);
+
+            if (DetachActionTable.TryGetValue(Element, out Action Action))
+            {
+                DetachActionTable.Remove(Element);
+                Action.Invoke();
+            }
+        }
 
     }
 }

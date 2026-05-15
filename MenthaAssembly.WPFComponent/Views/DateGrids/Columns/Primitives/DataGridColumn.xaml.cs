@@ -20,6 +20,11 @@ namespace MenthaAssembly.Views
         public event EventHandler<CellBeforeEditingEventArgs> BeforeEditing;
         public event EventHandler<CellCancelEditingEventArgs> CancelEditing;
 
+        internal static ComponentResourceKey DefaultStyleKey { get; } = new ComponentResourceKey(typeof(DataGridColumn), nameof(DefaultStyle));
+
+        public static Style DefaultStyle
+            => Application.Current.TryFindResource(DefaultStyleKey) as Style;
+
         protected internal abstract bool AllowEditingMode { get; }
 
         public bool InputOverrideContent { set; get; }
@@ -32,12 +37,47 @@ namespace MenthaAssembly.Views
             set => SetValue(EditableNewItemPlaceholderProperty, value);
         }
 
+        public static readonly DependencyProperty CanUserFilterProperty =
+              DependencyProperty.Register(nameof(CanUserFilter), typeof(bool), typeof(DataGridColumn), new FrameworkPropertyMetadata(true, NotifyPropertyChangeForRefreshContent, OnCoerceCanUserFilter));
+        public bool CanUserFilter
+        {
+            get => (bool)GetValue(CanUserFilterProperty);
+            set => SetValue(CanUserFilterProperty, value);
+        }
+
+        public static readonly DependencyProperty FilterMemberPathProperty =
+              DependencyProperty.Register(nameof(FilterMemberPath), typeof(string), typeof(DataGridColumn), new FrameworkPropertyMetadata(null));
+        public string FilterMemberPath
+        {
+            get => (string)GetValue(FilterMemberPathProperty);
+            set => SetValue(FilterMemberPathProperty, value);
+        }
+
+        private static readonly DependencyPropertyKey IsFilterActivePropertyKey =
+              DependencyProperty.RegisterReadOnly(nameof(IsFilterActive), typeof(bool), typeof(DataGridColumn), new FrameworkPropertyMetadata(false, NotifyPropertyChangeForRefreshContent));
+        public static readonly DependencyProperty IsFilterActiveProperty = IsFilterActivePropertyKey.DependencyProperty;
+        public bool IsFilterActive
+            => (bool)GetValue(IsFilterActiveProperty);
+
         public StringCollection DependencyMemberPath { get; } = [];
+
+        protected internal new DataGrid DataGridOwner
+            => (DataGrid)base.DataGridOwner;
 
         static DataGridColumn()
         {
             if (ReflectionHelper.TryGetType("DataGridHelper", "System.Windows.Controls", out Type Helper))
                 _ = Helper.TryGetStaticInternalMethod(nameof(RestoreFlowDirection), out RestoreFlowDirectionMethod);
+        }
+
+        protected virtual bool OnCoerceCanUserFilter(bool baseValue)
+        {
+            if (!baseValue)
+                return false;
+
+            return DataGridOwner is DataGrid Grid &&
+                   Grid.CanUserFilterColumns &&
+                   !Grid.IsExternalColumnFilterUsed;
         }
 
         protected sealed override FrameworkElement GenerateElement(System.Windows.Controls.DataGridCell cell, object dataItem)
@@ -52,6 +92,9 @@ namespace MenthaAssembly.Views
 
         protected internal virtual void RaiseBeforeEditing(CellBeforeEditingEventArgs e)
             => BeforeEditing?.Invoke(this, e);
+
+        protected internal void SetIsFilterActive(bool Value)
+            => SetValue(IsFilterActivePropertyKey, Value);
 
         protected override object PrepareCellForEdit(FrameworkElement Element, RoutedEventArgs e)
         {
@@ -136,13 +179,10 @@ namespace MenthaAssembly.Views
         {
             CellCancelEditingEventArgs e = new(this, EditingElement, UneditedValue);
             CancelEditing?.Invoke(this, e);
-         
+
             if (!e.Handled)
                 base.CancelCellEdit(EditingElement, UneditedValue);
         }
-
-        //protected override bool CommitCellEdit(FrameworkElement Element)
-        //    => Element.BindingGroup?.Validate() ?? base.CommitCellEdit(Element);
 
         protected internal void RaiseInput(DataGridCell Cell, InputEventArgs TriggerEventArgs, object DataContext)
         {
@@ -162,32 +202,69 @@ namespace MenthaAssembly.Views
         }
 
         public override void OnPastingCellClipboardContent(object Item, object CellContent)
-        {
-            if (ClipboardContentBinding is not BindingBase Binding)
-                return;
+            => PasteCellClipboardContent(Item, CellContent, out _);
 
+        internal bool PasteCellClipboardContent(object Item, object CellContent, out object Content)
+        {
+            Content = null;
+
+            if (ClipboardContentBinding is not BindingBase Binding)
+                return false;
+
+            if (RaisePastingCellClipboardContent(Item, CellContent) is not object PastingContent ||
+                DataGridOwner.GetCell(Item, this) is not DataGridCell Cell)
+                return false;
+
+            Content = PastingContent;
+            PasteCellClipboardContent(Cell, Binding, Content);
+            return true;
+        }
+        internal bool PasteDetachedCellClipboardContent(object Item, object CellContent, out object Content)
+        {
+            Content = null;
+
+            if (ClipboardContentBinding is not BindingBase Binding)
+                return false;
+
+            if (RaisePastingCellClipboardContent(Item, CellContent) is not object PastingContent)
+                return false;
+
+            Content = PastingContent;
+
+            ClipboardBindingTarget Target = new()
+            {
+                DataContext = Item,
+            };
+
+            DependencyProperty dp = ClipboardBindingTarget.CellClipboardProperty;
+            BindingOperations.SetBinding(Target, dp, Binding.CloneBindingWithoutValidation(BindingMode.TwoWay));
+            Target.SetValue(dp, Content);
+            BindingOperations.GetBindingExpression(Target, dp).UpdateSource();
+            BindingOperations.ClearBinding(Target, dp);
+            return true;
+        }
+
+        internal void PasteDetachedCellClipboardContent(object Item, object CellContent)
+            => PasteDetachedCellClipboardContent(Item, CellContent, out _);
+
+        private static void PasteCellClipboardContent(DependencyObject Target, BindingBase Binding, object Content)
+        {
+            DependencyProperty dp = DataGridCell.CellClipboardProperty;
+            BindingOperations.SetBinding(Target, dp, Binding.CloneBindingWithoutValidation(BindingMode.TwoWay));
+            Target.SetValue(dp, Content);
+
+            BindingExpressionBase Expression = BindingOperations.GetBindingExpressionBase(Target, dp);
+            Expression.UpdateSource();
+            BindingOperations.ClearBinding(Target, dp);
+        }
+
+        private object RaisePastingCellClipboardContent(object Item, object CellContent)
+        {
             // Raise the event to give a chance for external listeners to modify the cell content
-            // before it gets stored into the cell
+            // before it gets stored into the cell.
             DataGridCellClipboardEventArgs e = new(Item, this, CellContent);
             ReflectionHelper.RaiseEvent(this, nameof(PastingCellClipboardContent), e);
-
-            // Event handlers can cancel Paste of a cell by setting its content to null
-            if (e.Content != null &&
-                DataGridOwner.GetCell(Item, this) is DataGridCell Cell)
-            {
-                DependencyProperty dp = DataGridCell.CellClipboardProperty;
-                BindingOperations.SetBinding(Cell, dp, Binding.Clone(BindingMode.TwoWay));
-
-                // Set the new value
-                Cell.SetValue(dp, e.Content);
-
-                // Update the source
-                BindingOperations.GetBindingExpression(Cell, dp).UpdateSource();
-
-                // Whether valid or not, remove the binding.  The binding group will
-                // remember the proposed value
-                BindingOperations.ClearBinding(Cell, dp);
-            }
+            return e.Content;
         }
 
         /// <summary>
@@ -199,9 +276,25 @@ namespace MenthaAssembly.Views
             ((DataGridColumn)d).NotifyPropertyChanged(e.Property.Name);
         }
 
+        private static object OnCoerceCanUserFilter(DependencyObject d, object baseValue)
+            => ((DataGridColumn)d).OnCoerceCanUserFilter((bool)baseValue);
+
         private static readonly MethodInfo RestoreFlowDirectionMethod;
         protected static void RestoreFlowDirection(FrameworkElement Element, DataGridCell Cell)
             => RestoreFlowDirectionMethod?.Invoke(null, [Element, Cell]);
+
+        private sealed class ClipboardBindingTarget : FrameworkElement
+        {
+            public static readonly DependencyProperty CellClipboardProperty =
+                DependencyProperty.Register(nameof(CellClipboard), typeof(object), typeof(ClipboardBindingTarget));
+
+            public object CellClipboard
+            {
+                get => GetValue(CellClipboardProperty);
+                set => SetValue(CellClipboardProperty, value);
+            }
+
+        }
 
     }
 }

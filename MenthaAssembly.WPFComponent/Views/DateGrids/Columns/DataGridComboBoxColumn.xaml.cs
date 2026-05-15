@@ -14,8 +14,10 @@ namespace MenthaAssembly.Views
     {
         private event EventHandler GroupStyleSelectorChanged;
 
-        public static Style DefaultStyle
-            => (Application.Current.TryFindResource(typeof(DataGridComboBoxColumn)) as Style) ?? System.Windows.Controls.DataGridComboBoxColumn.DefaultElementStyle;
+        internal new static ComponentResourceKey DefaultStyleKey { get; } = new ComponentResourceKey(typeof(DataGridComboBoxColumn), nameof(DefaultStyle));
+
+        public new static Style DefaultStyle
+            => (Application.Current.TryFindResource(DefaultStyleKey) as Style) ?? System.Windows.Controls.DataGridComboBoxColumn.DefaultElementStyle;
 
         protected internal override bool AllowEditingMode
             => false;

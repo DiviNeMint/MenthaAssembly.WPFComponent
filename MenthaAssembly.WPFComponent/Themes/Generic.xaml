@@ -76,6 +76,8 @@
         <!--DataGrid-->
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/DataGridRow.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/DataGridCell.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/Columns/Primitives/DataGridColumnFilterView.xaml"/>
+        <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/Columns/Primitives/DataGridColumn.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/Columns/DataGridTextColumn.xaml"/>
         <ResourceDictionary Source="/MenthaAssembly.WPFComponent;component/Views/DateGrids/Columns/DataGridComboBoxColumn.xaml"/>
 

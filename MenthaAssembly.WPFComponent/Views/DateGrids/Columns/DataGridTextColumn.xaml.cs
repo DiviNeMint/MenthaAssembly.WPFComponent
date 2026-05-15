@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace MenthaAssembly.Views
@@ -120,7 +120,7 @@ namespace MenthaAssembly.Views
         private void ApplyColumnProperties(bool IsEditing, DataGridCell Cell, FrameworkElement Element)
         {
             // Text
-            Element.ApplyBinding(Binding, IsEditing ? TextBox.TextProperty : TextBlock.TextProperty);
+            Element.ApplyBinding(IsEditing ? Binding : Binding?.Clone(BindingMode.TwoWay), IsEditing ? TextBox.TextProperty : TextBlock.TextProperty);
 
             // Style
             Element.Style = IsEditing ? EditingElementStyle ?? DefaultEditingElementStyle :
