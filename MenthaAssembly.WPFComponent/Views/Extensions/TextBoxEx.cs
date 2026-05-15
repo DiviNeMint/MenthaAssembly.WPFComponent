@@ -589,12 +589,66 @@ namespace MenthaAssembly.MarkupExtensions
 
         #endregion
 
+        #region TextBindingEdit
+        public static readonly DependencyProperty EnableUpdateTextBindingWhenEnterKeyDownProperty =
+            DependencyProperty.RegisterAttached("EnableUpdateTextBindingWhenEnterKeyDown", typeof(bool), typeof(TextBoxEx), new PropertyMetadata(false, OnTextBindingEditPropertyChanged));
+        public static bool GetEnableUpdateTextBindingWhenEnterKeyDown(TextBox obj)
+            => (bool)obj.GetValue(EnableUpdateTextBindingWhenEnterKeyDownProperty);
+        public static void SetEnableUpdateTextBindingWhenEnterKeyDown(TextBox obj, bool value)
+            => obj.SetValue(EnableUpdateTextBindingWhenEnterKeyDownProperty, value);
+
+        public static readonly DependencyProperty EnableCancelTextBindingWhenEscapeKeyDownProperty =
+            DependencyProperty.RegisterAttached("EnableCancelTextBindingWhenEscapeKeyDown", typeof(bool), typeof(TextBoxEx), new PropertyMetadata(false, OnTextBindingEditPropertyChanged));
+        public static bool GetEnableCancelTextBindingWhenEscapeKeyDown(TextBox obj)
+            => (bool)obj.GetValue(EnableCancelTextBindingWhenEscapeKeyDownProperty);
+        public static void SetEnableCancelTextBindingWhenEscapeKeyDown(TextBox obj, bool value)
+            => obj.SetValue(EnableCancelTextBindingWhenEscapeKeyDownProperty, value);
+
+        private static void OnTextBindingEditPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not TextBox This)
+                return;
+
+            This.KeyDown -= OnTextBindingEditKeyDown;
+            if (GetEnableUpdateTextBindingWhenEnterKeyDown(This) ||
+                GetEnableCancelTextBindingWhenEscapeKeyDown(This))
+                This.KeyDown += OnTextBindingEditKeyDown;
+        }
+
+        private static void OnTextBindingEditKeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender is not TextBox This)
+                return;
+
+            if (GetEnableUpdateTextBindingWhenEnterKeyDown(This))
+                UpdateTextBindingWhenEnterKeyDown(sender, e);
+
+            if (GetEnableCancelTextBindingWhenEscapeKeyDown(This))
+                CancelTextBindingWhenEscapeKeyDown(sender, e);
+        }
+
         public static void UpdateTextBindingWhenEnterKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter &&
                 sender is TextBox This)
                 This.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
         }
+
+        public static void CancelTextBindingWhenEscapeKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Escape ||
+                sender is not TextBox This)
+                return;
+
+            BindingExpression Expression = This.GetBindingExpression(TextBox.TextProperty);
+            if (Expression is null)
+                return;
+
+            Validation.ClearInvalid(Expression);
+            Expression.UpdateTarget();
+        }
+
+        #endregion
 
     }
 }
