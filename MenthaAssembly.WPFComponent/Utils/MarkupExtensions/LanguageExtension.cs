@@ -143,7 +143,6 @@ namespace MenthaAssembly.MarkupExtensions
                     if (LanguageManager.LazySystem?.IsValueCreated is not true)
                     {
                         OSLanguageQueue.Enqueue(this);
-
                         if (OSLanguageQueue.Count == 1)
                         {
                             OSLanguageCancellation?.Cancel();
@@ -160,7 +159,7 @@ namespace MenthaAssembly.MarkupExtensions
                             });
                         }
 
-                        return IsFirst && Default != null ? Default : Binding.DoNothing;
+                        return IsFirst ? string.IsNullOrEmpty(Default) ? Path : Default : Binding.DoNothing;
                     }
 
                     Result = LanguageManager.System[Path];
@@ -198,14 +197,14 @@ namespace MenthaAssembly.MarkupExtensions
                                     });
                                 }
 
-                                return IsFirst && Default != null ? Default : Binding.DoNothing;
+                                return IsFirst ? string.IsNullOrEmpty(Default) ? Path : Default : Binding.DoNothing;
                             }
 
                             Result = LazyResult.Value;
                         }
                     }
 
-                    return Result ?? Default ?? Path;
+                    return string.IsNullOrEmpty(Result) ? string.IsNullOrEmpty(Default) ? Path : Default : Result;
                 }
                 finally
                 {
