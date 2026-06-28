@@ -75,10 +75,20 @@ namespace MenthaAssembly.MarkupExtensions
         private class MathConverter(Delegate Function) : IMultiValueConverter
         {
             public object Convert(object[] Values, Type TargetType, object Parameter, CultureInfo Culture)
-                => Function.DynamicInvoke(Values);
+            {
+                if (Values.Any(IsDesignerPlaceholder))
+                    return DependencyProperty.UnsetValue;
+
+                return Function.DynamicInvoke(Values);
+            }
 
             public object[] ConvertBack(object Value, Type[] TargetTypes, object Parameter, CultureInfo Culture)
                 => throw new NotSupportedException();
+
+            private static bool IsDesignerPlaceholder(object Value)
+                => Value == DependencyProperty.UnsetValue ||
+                   ReferenceEquals(Value, Binding.DoNothing) ||
+                   Value?.GetType().FullName == "MS.Internal.NamedObject";
 
         }
 

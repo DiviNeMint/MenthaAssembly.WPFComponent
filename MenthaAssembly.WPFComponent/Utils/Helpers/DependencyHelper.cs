@@ -198,6 +198,18 @@ namespace System.Windows
                 yield return ParentOfParent;
         }
 
+        public static T FindParent<T>(this DependencyObject This)
+            where T : DependencyObject
+        {
+            for (DependencyObject Parent = This is null ? null : VisualTreeHelper.GetParent(This) ?? LogicalTreeHelper.GetParent(This);
+                 Parent is not null;
+                 Parent = VisualTreeHelper.GetParent(Parent) ?? LogicalTreeHelper.GetParent(Parent))
+                if (Parent is T Result)
+                    return Result;
+
+            return null;
+        }
+
         public static IEnumerable<T> FindVisuaBrothers<T>(this DependencyObject This)
             where T : DependencyObject
         {
