@@ -19,5 +19,33 @@ namespace MenthaAssembly.Views
 
         public string Message { get; set; }
 
+        public bool VerifyEmpty()
+            => VerifyEmpty("Cannot be empty.");
+        public bool VerifyEmpty(string EmptyMessage)
+        {
+            if (string.IsNullOrEmpty(Value?.ToString()))
+            {
+                Message = EmptyMessage;
+                IsValid = false;
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool VerifyDuplicates(Predicate<RuleVerifyEventArgs> Predicate)
+            => VerifyDuplicates(Predicate, "Already exists.");
+        public bool VerifyDuplicates(Predicate<RuleVerifyEventArgs> Predicate, string DuplicateMessage)
+        {
+            if (Predicate.Invoke(this))
+            {
+                Message = DuplicateMessage;
+                IsValid = false;
+                return false;
+            }
+
+            return true;
+        }
+
     }
 }

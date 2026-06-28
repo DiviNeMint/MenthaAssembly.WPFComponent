@@ -10,6 +10,7 @@
     </Style>
     
     <Style TargetType="{x:Type local:DataGridRow}">
+        <Setter Property="Header" Value="{Binding}"/>
         <Setter Property="Background" Value="White"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
@@ -37,6 +38,10 @@
                                                       Visibility="{TemplateBinding DetailsVisibility}"
                                                       Grid.Column="1" Grid.Row="1"/>
                             <DataGridRowHeader SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical"
+                                               Content="{TemplateBinding Header}"
+                                               ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                               ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
+                                               Style="{TemplateBinding HeaderStyle}"
                                                Visibility="{Binding HeadersVisibility, ConverterParameter={x:Static DataGridHeadersVisibility.Row}, Converter={x:Static DataGrid.HeadersVisibilityConverter}, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                                Grid.RowSpan="2"/>
                         </SelectiveScrollingGrid>

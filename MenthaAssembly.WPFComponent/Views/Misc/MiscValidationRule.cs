@@ -1,11 +1,10 @@
-﻿using MenthaAssembly.Views;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace MenthaAssembly.MarkupExtensions
+namespace MenthaAssembly.Views
 {
     public sealed class MiscValidationRule : ValidationRule
     {

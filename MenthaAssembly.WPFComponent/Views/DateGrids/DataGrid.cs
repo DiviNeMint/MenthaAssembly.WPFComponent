@@ -344,24 +344,109 @@ namespace MenthaAssembly.Views
             MoveCurrentCellAfterDelete(AnchorIndex, Column);
             e.Handled = true;
         }
+
+        private void SelectCell(DataGridCellInfo Cell)
+        {
+            if (SelectionUnit == DataGridSelectionUnit.FullRow)
+            {
+                // Single selection must use SelectedItem instead of mutating SelectedItems.
+                if (SelectionMode == DataGridSelectionMode.Single)
+                {
+                    SelectedItem = Cell.Item;
+                }
+                else
+                {
+                    SelectedItems.Clear();
+                    if (Cell.Item is not null)
+                    {
+                        SelectedItems.Add(Cell.Item);
+                    }
+                }
+            }
+            else
+            {
+                SelectedCells.Clear();
+                SelectedCells.Add(Cell);
+            }
+        }
+        private void SelectPastedCells(List<PastingRow> Rows, int StartColumn)
+        {
+            if (Rows.Count == 0)
+                return;
+
+            if (Rows.LastOrDefault(i => 0 < i.PastedColumnCount) is PastingRow LastRow &&
+                Columns[StartColumn + LastRow.PastedColumnCount - 1] is System.Windows.Controls.DataGridColumn LastColumn)
+            {
+                CurrentCell = new DataGridCellInfo(LastRow.Item, LastColumn);
+                ScrollIntoView(LastRow.Item, LastColumn);
+            }
+
+            if (SelectionUnit == DataGridSelectionUnit.FullRow)
+            {
+                // Single selection keeps only the last pasted row selected.
+                if (SelectionMode == DataGridSelectionMode.Single)
+                {
+                    SelectedItem = Rows.LastOrDefault()?.Item;
+                }
+                else
+                {
+                    SelectedItems.Clear();
+                    foreach (PastingRow Row in Rows)
+                    {
+                        SelectedItems.Add(Row.Item);
+                    }
+                }
+
+                return;
+            }
+
+            SelectedCells.Clear();
+            foreach (PastingRow Row in Rows)
+            {
+                for (int i = 0; i < Row.PastedColumnCount; i++)
+                    SelectedCells.Add(new DataGridCellInfo(Row.Item, Columns[StartColumn + i]));
+            }
+        }
+
         private IEnumerable<object> GetSelectedCellItems()
         {
             HashSet<object> Items = [];
             foreach (DataGridCellInfo Cell in SelectedCells)
+            {
                 if (Cell.Item is object Item &&
                     !IsNewItemPlaceholder(Item) &&
                     Items.Add(Item))
+                {
                     yield return Item;
+                }
+            }
 
             if (Items.Count == 0 &&
                 CurrentItem is object Current &&
                 !IsNewItemPlaceholder(Current))
+            {
                 yield return Current;
+            }
         }
+
         private void MoveCurrentCellAfterDelete(int AnchorIndex, System.Windows.Controls.DataGridColumn Column)
         {
-            SelectedItems.Clear();
-            SelectedCells.Clear();
+            if (SelectionUnit == DataGridSelectionUnit.FullRow)
+            {
+                // Full row selection cannot mutate SelectedCells.
+                if (SelectionMode == DataGridSelectionMode.Single)
+                {
+                    SelectedItem = null;
+                }
+                else
+                {
+                    SelectedItems.Clear();
+                }
+            }
+            else
+            {
+                SelectedCells.Clear();
+            }
 
             if (Column is null ||
                 Items.Count == 0)
@@ -384,7 +469,7 @@ namespace MenthaAssembly.Views
             object TargetItem = Items[TargetIndex];
             DataGridCellInfo Cell = new(TargetItem, Column);
             CurrentCell = Cell;
-            SelectedCells.Add(Cell);
+            SelectCell(Cell);
             ScrollIntoView(TargetItem, Column);
         }
 
@@ -422,10 +507,7 @@ namespace MenthaAssembly.Views
                     EditableView?.CanAddNewItem != true)
                     break;
 
-                AddingNewItemEventArgs Args = new();
-                OnAddingNewItem(Args);
-
-                if (Args.NewItem is not object NewItem)
+                if (CreateDetachedNewItemForPaste() is not object NewItem)
                     break;
 
                 Rows.Add(new PastingRow(NewItem, true));
@@ -483,6 +565,70 @@ namespace MenthaAssembly.Views
 
             if (GetNextPendingInvalidCell(default) is DataGridCell InvalidCell)
                 BeginEditInvalidCell(InvalidCell);
+            else
+                SelectPastedCells(Rows, StartColumn);
+        }
+        private object CreateDetachedNewItemForPaste()
+        {
+            AddingNewItemEventArgs Args = new();
+            OnAddingNewItem(Args);
+
+            if (Args.NewItem is object NewItem)
+                return NewItem;
+
+            // Prefer the source collection type before inspecting realized items.
+            Type ItemType = null;
+            IEnumerable<object> Sources = [ItemsSource, Items.SourceCollection];
+            foreach (object Source in Sources)
+            {
+                if (Source is null)
+                    continue;
+
+                Type SourceType = Source.GetType();
+                if (SourceType.IsArray)
+                {
+                    ItemType = SourceType.GetElementType();
+                    break;
+                }
+
+                if (SourceType.IsGenericType &&
+                    SourceType.GetGenericArguments().Length == 1)
+                {
+                    ItemType = SourceType.GetGenericArguments()[0];
+                    break;
+                }
+
+                Type Interface = SourceType.GetInterfaces()
+                                           .FirstOrDefault(i => i.IsGenericType &&
+                                                                i.GetGenericArguments().Length == 1 &&
+                                                                i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+                if (Interface is not null)
+                {
+                    ItemType = Interface.GetGenericArguments()[0];
+                    break;
+                }
+            }
+
+            // Use existing rows only when the source collection does not expose an item type.
+            if (ItemType is null)
+            {
+                foreach (object Item in Items)
+                {
+                    if (IsNewItemPlaceholder(Item))
+                        continue;
+
+                    ItemType = Item.GetType();
+                    break;
+                }
+            }
+
+            if (ItemType is null ||
+                ItemType.IsInterface ||
+                ItemType.IsAbstract ||
+                (!ItemType.IsValueType && ItemType.GetConstructor(Type.EmptyTypes) is null))
+                return null;
+
+            return Activator.CreateInstance(ItemType);
         }
 
         protected override void OnInitialized(EventArgs e)
@@ -675,9 +821,9 @@ namespace MenthaAssembly.Views
         private void BeginEditInvalidCell(DataGridCell Cell)
         {
             DataGridCellInfo CellInfo = new(Cell.DataContext, Cell.Column);
-            SelectedCells.Clear();
             CurrentCell = CellInfo;
-            SelectedCells.Add(CellInfo);
+            SelectCell(CellInfo);
+
             ScrollIntoView(Cell.DataContext, Cell.Column);
             Cell.Focus();
             BeginEdit(new RoutedEventArgs(ProgrammaticBeginEditEvent, this));

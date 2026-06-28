@@ -46,7 +46,8 @@ namespace MenthaAssembly.Views
         }
 
         public static readonly DependencyProperty FilterMemberPathProperty =
-              DependencyProperty.Register(nameof(FilterMemberPath), typeof(string), typeof(DataGridColumn), new FrameworkPropertyMetadata(null));
+              DependencyProperty.Register(nameof(FilterMemberPath), typeof(string), typeof(DataGridColumn),
+                  new FrameworkPropertyMetadata(null, (d, e) => ((DataGridColumn)d).CoerceValue(CanUserFilterProperty)));
         public string FilterMemberPath
         {
             get => (string)GetValue(FilterMemberPathProperty);
@@ -73,6 +74,9 @@ namespace MenthaAssembly.Views
         protected virtual bool OnCoerceCanUserFilter(bool baseValue)
         {
             if (!baseValue)
+                return false;
+
+            if (string.IsNullOrEmpty(FilterMemberPath))
                 return false;
 
             return DataGridOwner is DataGrid Grid &&
@@ -211,11 +215,13 @@ namespace MenthaAssembly.Views
             if (ClipboardContentBinding is not BindingBase Binding)
                 return false;
 
-            if (RaisePastingCellClipboardContent(Item, CellContent) is not object PastingContent ||
-                DataGridOwner.GetCell(Item, this) is not DataGridCell Cell)
+            if (!TryRaisePastingCellClipboardContent(Item, CellContent, out object PastingContent))
                 return false;
 
             Content = PastingContent;
+            if (DataGridOwner.GetCell(Item, this) is not DataGridCell Cell)
+                return false;
+
             PasteCellClipboardContent(Cell, Binding, Content);
             return true;
         }
@@ -226,7 +232,7 @@ namespace MenthaAssembly.Views
             if (ClipboardContentBinding is not BindingBase Binding)
                 return false;
 
-            if (RaisePastingCellClipboardContent(Item, CellContent) is not object PastingContent)
+            if (!TryRaisePastingCellClipboardContent(Item, CellContent, out object PastingContent))
                 return false;
 
             Content = PastingContent;
@@ -258,13 +264,14 @@ namespace MenthaAssembly.Views
             BindingOperations.ClearBinding(Target, dp);
         }
 
-        private object RaisePastingCellClipboardContent(object Item, object CellContent)
+        private bool TryRaisePastingCellClipboardContent(object Item, object CellContent, out object Content)
         {
             // Raise the event to give a chance for external listeners to modify the cell content
             // before it gets stored into the cell.
             DataGridCellClipboardEventArgs e = new(Item, this, CellContent);
             ReflectionHelper.RaiseEvent(this, nameof(PastingCellClipboardContent), e);
-            return e.Content;
+            Content = e.Content;
+            return true;
         }
 
         /// <summary>

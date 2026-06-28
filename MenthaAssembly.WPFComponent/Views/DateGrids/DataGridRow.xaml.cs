@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Data;
@@ -48,16 +52,34 @@ namespace MenthaAssembly.Views
             DataGridRowAdorner.HighlightingCountProperty.AddOwner(typeof(DataGridRow));
         public int HighlightingCount
         {
-            get => (int)GetValue(HighlightingIndexProperty);
-            set => SetValue(HighlightingIndexProperty, value);
+            get => (int)GetValue(HighlightingCountProperty);
+            set => SetValue(HighlightingCountProperty, value);
         }
 
         public static readonly DependencyProperty HighlightingStyleProperty =
-            DependencyProperty.Register(nameof(HighlightingStyle), typeof(Style), typeof(DataGridRow), new PropertyMetadata(null));
+            DependencyProperty.Register(nameof(HighlightingStyle), typeof(Style), typeof(DataGridRow), new PropertyMetadata(null,
+                (d, e) =>
+                {
+                    if (d is DataGridRow This)
+                        This.InvalidateHighlighting();
+                }));
         public Style HighlightingStyle
         {
             get => (Style)GetValue(HighlightingStyleProperty);
             set => SetValue(HighlightingStyleProperty, value);
+        }
+
+        public static readonly DependencyProperty HighlightingRangesProperty =
+            DependencyProperty.Register(nameof(HighlightingRanges), typeof(ObservableCollection<DataGridRowHighlightingRange>), typeof(DataGridRow), new PropertyMetadata(null,
+                (d, e) =>
+                {
+                    if (d is DataGridRow This)
+                        This.OnHighlightingRangesChanged(e.ToChangedEventArgs<ObservableCollection<DataGridRowHighlightingRange>>());
+                }));
+        public ObservableCollection<DataGridRowHighlightingRange> HighlightingRanges
+        {
+            get => (ObservableCollection<DataGridRowHighlightingRange>)GetValue(HighlightingRangesProperty);
+            set => SetValue(HighlightingRangesProperty, value);
         }
 
         private static readonly PropertyInfo GetCellsPresenter;
@@ -93,21 +115,111 @@ namespace MenthaAssembly.Views
             void OnLoaded(object sender, RoutedEventArgs e)
             {
                 Layer ??= AdornerLayer.GetAdornerLayer(this);
-                if (Layer != null)
-                {
-                    Adorner[] Adorners = Layer.GetAdorners(this);
-                    if (Adorners is null ||
-                        Adorners.Length == 0)
-                        Layer.Add(new DataGridRowAdorner(this));
-                }
+                if (Layer is null)
+                    return;
+
+                Adorner[] Adorners = Layer.GetAdorners(this);
+                if (Adorners != null)
+                    foreach (Adorner Adorner in Adorners)
+                        if (Adorner is DataGridRowAdorner)
+                            return;
+
+                Layer.Add(new DataGridRowAdorner(this));
             }
 
             void OnUnloaded(object sender, RoutedEventArgs e)
             {
                 if (Layer?.GetAdorners(this) is Adorner[] Adorners)
                     foreach (Adorner Adorner in Adorners)
-                        Layer.Remove(Adorner);
+                        if (Adorner is DataGridRowAdorner)
+                            Layer.Remove(Adorner);
             }
+        }
+
+        private static readonly DependencyPropertyDescriptor HighlightingRangeIndexDescriptor =
+            DependencyPropertyDescriptor.FromProperty(DataGridRowHighlightingRange.IndexProperty, typeof(DataGridRowHighlightingRange));
+        private static readonly DependencyPropertyDescriptor HighlightingRangeCountDescriptor =
+            DependencyPropertyDescriptor.FromProperty(DataGridRowHighlightingRange.CountProperty, typeof(DataGridRowHighlightingRange));
+        private static readonly DependencyPropertyDescriptor HighlightingRangeStyleDescriptor =
+            DependencyPropertyDescriptor.FromProperty(DataGridRowHighlightingRange.StyleProperty, typeof(DataGridRowHighlightingRange));
+        private readonly List<DataGridRowHighlightingRange> HookedHighlightingRanges = [];
+        private void OnHighlightingRangesChanged(ChangedEventArgs<ObservableCollection<DataGridRowHighlightingRange>> e)
+        {
+            if (e.OldValue != null)
+            {
+                e.OldValue.CollectionChanged -= OnHighlightingRangesCollectionChanged;
+                UnhookAllHighlightingRanges();
+            }
+
+            if (e.NewValue != null)
+            {
+                e.NewValue.CollectionChanged += OnHighlightingRangesCollectionChanged;
+                foreach (DataGridRowHighlightingRange Range in e.NewValue)
+                    HookHighlightingRange(Range);
+            }
+
+            InvalidateHighlighting();
+        }
+
+        private void OnHighlightingRangesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                UnhookAllHighlightingRanges();
+                if (HighlightingRanges != null)
+                    foreach (DataGridRowHighlightingRange Range in HighlightingRanges)
+                        HookHighlightingRange(Range);
+            }
+            else if (e.OldItems != null)
+            {
+                foreach (DataGridRowHighlightingRange Range in e.OldItems)
+                    UnhookHighlightingRange(Range);
+            }
+
+            if (e.NewItems != null)
+                foreach (DataGridRowHighlightingRange Range in e.NewItems)
+                    HookHighlightingRange(Range);
+
+            InvalidateHighlighting();
+        }
+
+        private void HookHighlightingRange(DataGridRowHighlightingRange Range)
+        {
+            if (Range is null ||
+                HookedHighlightingRanges.Contains(Range))
+                return;
+
+            HookedHighlightingRanges.Add(Range);
+            HighlightingRangeIndexDescriptor.AddValueChanged(Range, OnHighlightingRangeChanged);
+            HighlightingRangeCountDescriptor.AddValueChanged(Range, OnHighlightingRangeChanged);
+            HighlightingRangeStyleDescriptor.AddValueChanged(Range, OnHighlightingRangeChanged);
+        }
+
+        private void UnhookHighlightingRange(DataGridRowHighlightingRange Range)
+        {
+            if (Range is null ||
+                !HookedHighlightingRanges.Remove(Range))
+                return;
+
+            HighlightingRangeIndexDescriptor.RemoveValueChanged(Range, OnHighlightingRangeChanged);
+            HighlightingRangeCountDescriptor.RemoveValueChanged(Range, OnHighlightingRangeChanged);
+            HighlightingRangeStyleDescriptor.RemoveValueChanged(Range, OnHighlightingRangeChanged);
+        }
+
+        private void UnhookAllHighlightingRanges()
+        {
+            foreach (DataGridRowHighlightingRange Range in HookedHighlightingRanges.ToArray())
+                UnhookHighlightingRange(Range);
+        }
+
+        private void OnHighlightingRangeChanged(object sender, EventArgs e)
+            => InvalidateHighlighting();
+
+        internal void InvalidateHighlighting()
+        {
+            if (Layer?.GetAdorners(this) is Adorner[] Adorners)
+                foreach (Adorner Adorner in Adorners)
+                    Adorner.InvalidateArrange();
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -134,7 +246,7 @@ namespace MenthaAssembly.Views
             }
 
             private readonly DataGridRow Row;
-            private readonly Rectangle Rect;
+            private readonly List<Rectangle> Rects = [];
             public DataGridRowAdorner(DataGridRow Row) : base(Row)
             {
                 this.Row = Row;
@@ -142,42 +254,87 @@ namespace MenthaAssembly.Views
                 SetBinding(HighlightingIndexProperty, new Binding(nameof(HighlightingIndex)) { Source = Row });
                 SetBinding(HighlightingCountProperty, new Binding(nameof(HighlightingCount)) { Source = Row });
 
-                Rect = new Rectangle();
-                Rect.SetBinding(StyleProperty, new Binding(nameof(HighlightingStyle))
-                {
-                    Source = Row,
-                    TargetNullValue = DefaultHighlightingStyle
-                });
-
-                AddVisualChild(Rect);
+                EnsureRectCount(1);
             }
 
             protected override int VisualChildrenCount
-                => 1;
+                => Rects.Count;
 
             protected override Visual GetVisualChild(int index)
-                => Rect;
+                => Rects[index];
 
             protected override Size ArrangeOverride(Size FinalSize)
             {
-                int Count = HighlightingCount;
+                ObservableCollection<DataGridRowHighlightingRange> Ranges = Row.HighlightingRanges;
+                if (Ranges?.Count > 0)
+                {
+                    EnsureRectCount(Ranges.Count);
+                    for (int i = 0; i < Ranges.Count; i++)
+                    {
+                        DataGridRowHighlightingRange Range = Ranges[i];
+                        if (Range is null)
+                            ArrangeRect(Rects[i], -1, 0, null, FinalSize);
+                        else
+                            ArrangeRect(Rects[i], Range.Index, Range.Count, Range.Style, FinalSize);
+                    }
+
+                    return FinalSize;
+                }
+
+                EnsureRectCount(1);
+                ArrangeRect(Rects[0], HighlightingIndex, HighlightingCount, null, FinalSize);
+                return FinalSize;
+            }
+
+            private void EnsureRectCount(int Count)
+            {
+                while (Rects.Count < Count)
+                {
+                    Rectangle Rect = new();
+                    Rects.Add(Rect);
+                    AddVisualChild(Rect);
+                }
+
+                while (Count < Rects.Count)
+                {
+                    Rectangle Rect = Rects[Rects.Count - 1];
+                    Rects.RemoveAt(Rects.Count - 1);
+                    RemoveVisualChild(Rect);
+                }
+            }
+
+            private void ArrangeRect(Rectangle Rect, int StartIndex, int Count, Style Style, Size FinalSize)
+            {
+                Rect.Style = Style ?? Row.HighlightingStyle ?? DefaultHighlightingStyle;
                 if (Count is 0 or < (-1))
                 {
                     Rect.Visibility = Visibility.Collapsed;
-                    return FinalSize;
+                    return;
                 }
 
                 DataGridCellsPresenter CellsPresenter = Row.CellsPresenter;
-                int StartIndex = HighlightingIndex,
-                    MaxIndex = CellsPresenter.Items.Count - 1;
-                if (MaxIndex < StartIndex)
+                if (CellsPresenter is null)
                 {
                     Rect.Visibility = Visibility.Collapsed;
-                    return FinalSize;
+                    return;
+                }
+
+                int MaxIndex = CellsPresenter.Items.Count - 1;
+                if (StartIndex < 0 ||
+                    MaxIndex < StartIndex)
+                {
+                    Rect.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                FrameworkElement StartCell = CellsPresenter.ItemContainerGenerator.ContainerFromIndex(StartIndex) as FrameworkElement;
+                if (StartCell is null)
+                {
+                    Rect.Visibility = Visibility.Collapsed;
+                    return;
                 }
 
                 Rect HighlightingRect;
-                FrameworkElement StartCell = CellsPresenter.ItemContainerGenerator.ContainerFromIndex(StartIndex) as FrameworkElement;
                 int EndIndex = Count == -1 ? MaxIndex : MathHelper.Clamp(StartIndex + Count - 1, 0, MaxIndex);
                 if (StartIndex == EndIndex)
                 {
@@ -186,6 +343,12 @@ namespace MenthaAssembly.Views
                 else
                 {
                     FrameworkElement EndCell = CellsPresenter.ItemContainerGenerator.ContainerFromIndex(EndIndex) as FrameworkElement;
+                    if (EndCell is null)
+                    {
+                        Rect.Visibility = Visibility.Collapsed;
+                        return;
+                    }
+
                     Point Start = StartCell.TransformToAncestor(Row).Transform(new Point(0, 0)),
                           End = EndCell.TransformToAncestor(Row).Transform(new Point(EndCell.ActualWidth, 0));
 
@@ -196,9 +359,37 @@ namespace MenthaAssembly.Views
                 Rect.Height = HighlightingRect.Height;
                 Rect.Visibility = Visibility.Visible;
                 Rect.Arrange(HighlightingRect);
-                return FinalSize;
             }
         }
 
     }
+
+    public class DataGridRowHighlightingRange : DependencyObject
+    {
+        public static readonly DependencyProperty IndexProperty =
+            DependencyProperty.Register(nameof(Index), typeof(int), typeof(DataGridRowHighlightingRange), new PropertyMetadata(0));
+        public int Index
+        {
+            get => (int)GetValue(IndexProperty);
+            set => SetValue(IndexProperty, value);
+        }
+
+        public static readonly DependencyProperty CountProperty =
+            DependencyProperty.Register(nameof(Count), typeof(int), typeof(DataGridRowHighlightingRange), new PropertyMetadata(1));
+        public int Count
+        {
+            get => (int)GetValue(CountProperty);
+            set => SetValue(CountProperty, value);
+        }
+
+        public static readonly DependencyProperty StyleProperty =
+            DependencyProperty.Register(nameof(Style), typeof(Style), typeof(DataGridRowHighlightingRange), new PropertyMetadata(null));
+        public Style Style
+        {
+            get => (Style)GetValue(StyleProperty);
+            set => SetValue(StyleProperty, value);
+        }
+
+    }
+
 }

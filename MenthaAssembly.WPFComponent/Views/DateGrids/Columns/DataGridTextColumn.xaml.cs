@@ -120,7 +120,7 @@ namespace MenthaAssembly.Views
         private void ApplyColumnProperties(bool IsEditing, DataGridCell Cell, FrameworkElement Element)
         {
             // Text
-            Element.ApplyBinding(IsEditing ? Binding : Binding?.Clone(BindingMode.TwoWay), IsEditing ? TextBox.TextProperty : TextBlock.TextProperty);
+            Element.ApplyBinding(IsEditing ? Binding : Binding?.Clone(IsReadOnly ? BindingMode.OneWay : BindingMode.TwoWay), IsEditing ? TextBox.TextProperty : TextBlock.TextProperty);
 
             // Style
             Element.Style = IsEditing ? EditingElementStyle ?? DefaultEditingElementStyle :
