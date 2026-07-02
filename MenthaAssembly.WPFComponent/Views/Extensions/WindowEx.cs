@@ -58,18 +58,22 @@ namespace MenthaAssembly.MarkupExtensions
             switch ((Win32Messages)msg)
             {
                 case Win32Messages.WM_GetMinMaxInfo:
-                    // Fix Window Size
-                    if (Screen.Current is ScreenInfo Info)
                     {
-                        WindowMinMaxInfo* pInfo = (WindowMinMaxInfo*)lParam;
-                        pInfo->ptMaxPosition = new Point<int>(Info.WorkArea.Left - Info.Bound.Left,
-                                                              Info.WorkArea.Top - Info.Bound.Top);
+                        ScreenInfo Info = Screen.GetScreenByWindow(hwnd) ?? Screen.Current;
+                        if (Info is not null)
+                        {
+                            int Width = Info.WorkArea.Right - Info.WorkArea.Left,
+                                Height = Info.WorkArea.Bottom - Info.WorkArea.Top;
 
-                        pInfo->ptMaxSize = new Size<int>(Info.WorkArea.Right - Info.WorkArea.Left,
-                                                         Info.WorkArea.Bottom - Info.WorkArea.Top);
-                        pInfo->ptMaxTrackSize = pInfo->ptMaxSize;
+                            WindowMinMaxInfo* pInfo = (WindowMinMaxInfo*)lParam;
+                            pInfo->ptMaxPosition = new Point<int>(Info.WorkArea.Left - Info.Bound.Left,
+                                                                  Info.WorkArea.Top - Info.Bound.Top);
+
+                            pInfo->ptMaxSize = new Size<int>(Width, Height);
+                            pInfo->ptMaxTrackSize = pInfo->ptMaxSize;
+                        }
+                        break;
                     }
-                    break;
             }
 
             return IntPtr.Zero;
@@ -77,6 +81,119 @@ namespace MenthaAssembly.MarkupExtensions
 
         public static void FixSize(this Window This)
             => SetFixSize(This, true);
+
+        #endregion
+
+        #region DisableMaximize
+        private const int SC_Maximize = 0xF030;
+
+        public static readonly DependencyProperty DisableMaximizeProperty =
+            DependencyProperty.RegisterAttached("DisableMaximize", typeof(bool), typeof(WindowEx), new PropertyMetadata(false,
+                (d, e) =>
+                {
+                    if (d is Window This)
+                    {
+                        WindowInteropHelper InteropHelper = new(This);
+                        if (InteropHelper.Handle == IntPtr.Zero)
+                            InteropHelper.EnsureHandle();
+
+                        if (e.NewValue is true)
+                        {
+                            long Style = Desktop.GetWindowLong(InteropHelper.Handle, WindowLongType.Style);
+                            Desktop.SetWindowLong(InteropHelper.Handle, WindowLongType.Style, Style & ~(long)WindowStyles.MaximizeBox);
+                            Desktop.SetWindowPos(InteropHelper.Handle, IntPtr.Zero, 0, 0, 0, 0,
+                                                 WindowPosFlags.NoMove | WindowPosFlags.NoSize | WindowPosFlags.NoZOrder | WindowPosFlags.NoActivate | WindowPosFlags.FrameChanged);
+                            HwndSource.FromHwnd(InteropHelper.Handle).AddHook(DisableMaximizeWindowProc);
+                        }
+                        else
+                        {
+                            HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(DisableMaximizeWindowProc);
+                        }
+                    }
+                }));
+        public static bool GetDisableMaximize(Window obj)
+            => (bool)obj.GetValue(DisableMaximizeProperty);
+        public static void SetDisableMaximize(Window obj, bool value)
+            => obj.SetValue(DisableMaximizeProperty, value);
+
+        private static IntPtr DisableMaximizeWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch ((Win32Messages)msg)
+            {
+                case Win32Messages.WM_SysCommand:
+                    {
+                        if ((wParam.ToInt32() & 0xFFF0) == SC_Maximize)
+                        {
+                            handled = true;
+                            return IntPtr.Zero;
+                        }
+                        break;
+                    }
+                case Win32Messages.WM_NCLButtonDoubldClick:
+                    {
+                        if ((WindowHitTests)wParam.ToInt32() == WindowHitTests.Caption)
+                        {
+                            handled = true;
+                            return IntPtr.Zero;
+                        }
+                        break;
+                    }
+            }
+
+            return IntPtr.Zero;
+        }
+
+        #endregion
+
+        #region DisableMinimize
+        private const int SC_Minimize = 0xF020;
+
+        public static readonly DependencyProperty DisableMinimizeProperty =
+            DependencyProperty.RegisterAttached("DisableMinimize", typeof(bool), typeof(WindowEx), new PropertyMetadata(false,
+                (d, e) =>
+                {
+                    if (d is Window This)
+                    {
+                        WindowInteropHelper InteropHelper = new(This);
+                        if (InteropHelper.Handle == IntPtr.Zero)
+                            InteropHelper.EnsureHandle();
+
+                        if (e.NewValue is true)
+                        {
+                            long Style = Desktop.GetWindowLong(InteropHelper.Handle, WindowLongType.Style);
+                            Desktop.SetWindowLong(InteropHelper.Handle, WindowLongType.Style, Style & ~(long)WindowStyles.MinimizeBox);
+                            Desktop.SetWindowPos(InteropHelper.Handle, IntPtr.Zero, 0, 0, 0, 0,
+                                                 WindowPosFlags.NoMove | WindowPosFlags.NoSize | WindowPosFlags.NoZOrder | WindowPosFlags.NoActivate | WindowPosFlags.FrameChanged);
+                            HwndSource.FromHwnd(InteropHelper.Handle).AddHook(DisableMinimizeWindowProc);
+                        }
+                        else
+                        {
+                            HwndSource.FromHwnd(InteropHelper.Handle).RemoveHook(DisableMinimizeWindowProc);
+                        }
+                    }
+                }));
+        public static bool GetDisableMinimize(Window obj)
+            => (bool)obj.GetValue(DisableMinimizeProperty);
+        public static void SetDisableMinimize(Window obj, bool value)
+            => obj.SetValue(DisableMinimizeProperty, value);
+
+        private static IntPtr DisableMinimizeWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch ((Win32Messages)msg)
+            {
+                case Win32Messages.WM_SysCommand:
+                    {
+                        if ((wParam.ToInt32() & 0xFFF0) == SC_Minimize)
+                        {
+                            handled = true;
+                            return IntPtr.Zero;
+                        }
+                        break;
+                    }
+            }
+
+            return IntPtr.Zero;
+        }
 
         #endregion
 
@@ -217,8 +334,7 @@ namespace MenthaAssembly.MarkupExtensions
                             else
                             {
                                 Accent.AccentState = AccentState.Enable_BlurBehind;
-                            };
-
+                            }
                         }
                         else
                         {
