@@ -115,6 +115,8 @@ namespace MenthaAssembly.MarkupExtensions
                         SetIsScrolledToEnd(This, Math.Round(This.VerticalOffset, 3) == Math.Round(This.ScrollableHeight, 3));
                     else if (IsScrolledToEnd)
                         This.ScrollToEnd();
+                    else
+                        SetIsScrolledToEnd(This, Math.Round(This.VerticalOffset, 3) == Math.Round(This.ScrollableHeight, 3));
                 }
                 else if (IsScrolledToEnd)
                 {
