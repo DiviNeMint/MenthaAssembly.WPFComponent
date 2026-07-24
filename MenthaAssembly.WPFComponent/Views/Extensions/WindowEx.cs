@@ -197,6 +197,56 @@ namespace MenthaAssembly.MarkupExtensions
 
         #endregion
 
+        #region Windows 11 Rounded Corners
+        public static readonly DependencyProperty EnableWindows11RoundedCornersProperty =
+            DependencyProperty.RegisterAttached("EnableWindows11RoundedCorners", typeof(bool), typeof(WindowEx),
+                new PropertyMetadata(false, OnEnableWindows11RoundedCornersChanged));
+        public static bool GetEnableWindows11RoundedCorners(Window Window)
+            => (bool)Window.GetValue(EnableWindows11RoundedCornersProperty);
+        public static void SetEnableWindows11RoundedCorners(Window Window, bool Value)
+            => Window.SetValue(EnableWindows11RoundedCornersProperty, Value);
+
+        private static void OnEnableWindows11RoundedCornersChanged(DependencyObject Object, DependencyPropertyChangedEventArgs e)
+        {
+            if (Object is not Window Window)
+                return;
+
+            Window.SourceInitialized -= OnEnableWindows11RoundedCornersSourceInitialized;
+            if (!(bool)e.NewValue)
+                return;
+
+            if (new WindowInteropHelper(Window).Handle == IntPtr.Zero)
+            {
+                Window.SourceInitialized += OnEnableWindows11RoundedCornersSourceInitialized;
+                return;
+            }
+
+            EnableWindows11RoundedCorners(Window);
+        }
+
+        private static void OnEnableWindows11RoundedCornersSourceInitialized(object sender, EventArgs e)
+        {
+            if (sender is not Window Window)
+                return;
+
+            Window.SourceInitialized -= OnEnableWindows11RoundedCornersSourceInitialized;
+            EnableWindows11RoundedCorners(Window);
+        }
+
+        private static unsafe void EnableWindows11RoundedCorners(Window Window)
+        {
+            if (!TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber", out object BuildNumberValue) ||
+                !int.TryParse(BuildNumberValue?.ToString(), out int BuildNumber) ||
+                BuildNumber < 22000)
+                return;
+
+            IntPtr Handle = new WindowInteropHelper(Window).Handle;
+            DwmWindowCornerPreference Preference = DwmWindowCornerPreference.Round;
+            _ = Desktop.DwmSetWindowAttribute(Handle, DwmWindowAttribute.WindowCornerPreference, &Preference, sizeof(DwmWindowCornerPreference));
+        }
+
+        #endregion
+
         #region WindowState
         /// <summary>
         /// Because of the binding delay bug at WindowState, we create this property.
