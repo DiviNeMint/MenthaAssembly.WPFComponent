@@ -579,8 +579,9 @@ namespace MenthaAssembly.Views
             // Prefer the source collection type before inspecting realized items.
             Type ItemType = null;
             IEnumerable<object> Sources = [ItemsSource, Items.SourceCollection];
-            foreach (object Source in Sources)
+            foreach (object RawSource in Sources)
             {
+                object Source = RawSource is ICollectionView View ? View.SourceCollection : RawSource;
                 if (Source is null)
                     continue;
 
