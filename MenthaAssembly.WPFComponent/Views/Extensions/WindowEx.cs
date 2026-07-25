@@ -194,24 +194,19 @@ namespace MenthaAssembly.MarkupExtensions
 
             Window.ClearValue(Windows11RoundedCornersRegistrationProperty);
             if ((bool)e.NewValue &&
-                IsWindows11RoundedCornersSupported())
+                IsWindowsVersionOrGreater(10, 0, 22000))
                 Window.SetValue(Windows11RoundedCornersRegistrationProperty, new Windows11RoundedCornersRegistration(Window));
         }
 
         private static unsafe bool TrySetWindows11CornerPreference(Window Window, DwmWindowCornerPreference Preference)
         {
-            if (!IsWindows11RoundedCornersSupported())
+            if (!IsWindowsVersionOrGreater(10, 0, 22000))
                 return false;
 
             IntPtr Handle = new WindowInteropHelper(Window).Handle;
             return Handle != IntPtr.Zero &&
                    Desktop.DwmSetWindowAttribute(Handle, DwmWindowAttribute.WindowCornerPreference, &Preference, sizeof(DwmWindowCornerPreference)) == 0;
         }
-
-        private static bool IsWindows11RoundedCornersSupported()
-            => TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber", out object BuildNumberValue) &&
-               int.TryParse(BuildNumberValue?.ToString(), out int BuildNumber) &&
-               BuildNumber >= 22000;
 
         #endregion
 
@@ -258,9 +253,7 @@ namespace MenthaAssembly.MarkupExtensions
         private static void AttachSnapLayout(Button Button)
         {
             DetachSnapLayout(Button);
-            if (!TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber", out object BuildNumberValue) ||
-                !int.TryParse(BuildNumberValue?.ToString(), out int BuildNumber) ||
-                BuildNumber < 22000 ||
+            if (!IsWindowsVersionOrGreater(10, 0, 22000) ||
                 Window.GetWindow(Button) is not Window Owner)
                 return;
 
@@ -447,6 +440,25 @@ namespace MenthaAssembly.MarkupExtensions
             {
                 return false;
             }
+        }
+
+        private static bool IsWindowsVersionOrGreater(int MajorVersion, int MinorVersion, int BuildNumber)
+        {
+#if NET6_0_OR_GREATER
+            return OperatingSystem.IsWindowsVersionAtLeast(MajorVersion, MinorVersion, BuildNumber);
+#else
+            const string CurrentVersionPath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion";
+            if (!TryGetRegistryKey(CurrentVersionPath, "CurrentMajorVersionNumber", out object MajorVersionValue) ||
+                !int.TryParse(MajorVersionValue?.ToString(), out int CurrentMajorVersion) ||
+                !TryGetRegistryKey(CurrentVersionPath, "CurrentMinorVersionNumber", out object MinorVersionValue) ||
+                !int.TryParse(MinorVersionValue?.ToString(), out int CurrentMinorVersion) ||
+                !TryGetRegistryKey(CurrentVersionPath, "CurrentBuildNumber", out object BuildNumberValue) ||
+                !int.TryParse(BuildNumberValue?.ToString(), out int CurrentBuildNumber))
+                return false;
+
+            Version CurrentVersion = new(CurrentMajorVersion, CurrentMinorVersion, CurrentBuildNumber);
+            return CurrentVersion.CompareTo(new Version(MajorVersion, MinorVersion, BuildNumber)) >= 0;
+#endif
         }
 
     }
@@ -796,9 +808,7 @@ namespace MenthaAssembly.MarkupExtensions
 
             private void Prepare(Window Window)
             {
-                if (TryGetRegistryKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseID", out object BuildNumberValue) &&
-                    int.TryParse(BuildNumberValue?.ToString(), out int BuildNumber) &&
-                    BuildNumber >= 1803)
+                if (IsWindowsVersionOrGreater(10, 0, 17134))
                 {
                     State = AccentState.Enable_AcrylicBlurBehind;
                     Color BackgroundColor = Window.Background is SolidColorBrush Brush ? Brush.Color :
