@@ -68,19 +68,9 @@ namespace MenthaAssembly.Views
         {
             base.OnApplyTemplate();
 
-            if (GetTemplateChild("PART_Header") is DockPanel PART_Header)
-                this.PART_Header = PART_Header;
-
-            if (GetTemplateChild("PART_HeaderContent") is ContentControl PART_HeaderContent)
-                this.PART_HeaderContent = PART_HeaderContent;
-
-            Loaded += OnLoaded;
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            if (IsVisualIndentInvalid)
-                UpdateVisualIndent();
+            PART_Header = GetTemplateChild("PART_Header") as DockPanel;
+            PART_HeaderContent = GetTemplateChild("PART_HeaderContent") as ContentControl;
+            InvalidateVisualIndent();
         }
 
         protected virtual void OnDepthChanged(ChangedEventArgs<int> e)
@@ -94,15 +84,19 @@ namespace MenthaAssembly.Views
 
         protected void InvalidateVisualIndent()
         {
-            if (!IsLoaded)
-                IsVisualIndentInvalid = true;
-            else
-                UpdateVisualIndent();
+            if (PART_Header is null ||
+                PART_HeaderContent is null)
+                return;
+
+            UpdateVisualIndent();
         }
 
-        private bool IsVisualIndentInvalid = false;
         protected virtual void UpdateVisualIndent()
         {
+            if (PART_Header is null ||
+                PART_HeaderContent is null)
+                return;
+
             Thickness Padding = new Thickness(Indent * Depth, 0, 0, 0);
 
             if (IndentExpandButton)
