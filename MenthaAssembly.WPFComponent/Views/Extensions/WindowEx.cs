@@ -26,6 +26,24 @@ namespace MenthaAssembly.MarkupExtensions
             return Registration.Acquire();
         }
 
+        #region AppUserModelID
+        /// <summary>
+        /// Sets the explicit application user model ID for the specified window.
+        /// </summary>
+        public static void SetAppUserModelID(this Window Window, string AppUserModelID, bool PreventPinning)
+        {
+            if (Window is null)
+                throw new ArgumentNullException(nameof(Window));
+
+            if (string.IsNullOrWhiteSpace(AppUserModelID))
+                throw new ArgumentException("The application user model ID cannot be null or whitespace.", nameof(AppUserModelID));
+
+            IntPtr Handle = new WindowInteropHelper(Window).EnsureHandle();
+            Marshal.ThrowExceptionForHR(Desktop.SetAppUserModelID(Handle, AppUserModelID, PreventPinning));
+        }
+
+        #endregion
+
         #region FixSize
         public static readonly DependencyProperty FixSizeProperty =
             DependencyProperty.RegisterAttached("FixSize", typeof(bool), typeof(WindowEx), new PropertyMetadata(false, OnFixSizeChanged));
