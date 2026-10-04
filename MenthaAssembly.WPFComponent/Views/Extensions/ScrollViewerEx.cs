@@ -17,8 +17,9 @@ namespace MenthaAssembly.MarkupExtensions
                     {
                         if (e.NewValue is true)
                         {
-                            Viewer.ScrollToEnd();
+                            SetIsScrolledToEnd(Viewer, true);
                             Viewer.ScrollChanged += OnScrollChanged;
+                            Viewer.ScrollToEnd();
                         }
                         else
                         {
@@ -30,7 +31,7 @@ namespace MenthaAssembly.MarkupExtensions
                         if (Element.IsLoaded)
                         {
                             if (d.FindVisualChildren<ScrollViewer>().FirstOrDefault() is ScrollViewer Child)
-                                SetAutoScrollToEnd(Child, true);
+                                SetAutoScrollToEnd(Child, GetAutoScrollToEnd(Element));
                         }
                         else
                         {
@@ -41,7 +42,7 @@ namespace MenthaAssembly.MarkupExtensions
                                 {
                                     Element.Loaded -= OnElementLoaded;
                                     if (Element.FindVisualChildren<ScrollViewer>().FirstOrDefault() is ScrollViewer Child)
-                                        SetAutoScrollToEnd(Child, true);
+                                        SetAutoScrollToEnd(Child, GetAutoScrollToEnd(Element));
                                 }
                             }
                         }
@@ -111,12 +112,19 @@ namespace MenthaAssembly.MarkupExtensions
                 bool IsScrolledToEnd = GetIsScrolledToEnd(This);
                 if (This.IsLoaded)
                 {
-                    if (e.ExtentHeightChange == 0)
+                    if (e.ExtentHeightChange == 0 &&
+                        e.ViewportHeightChange == 0)
+                    {
                         SetIsScrolledToEnd(This, Math.Round(This.VerticalOffset, 3) == Math.Round(This.ScrollableHeight, 3));
+                    }
                     else if (IsScrolledToEnd)
+                    {
                         This.ScrollToEnd();
+                    }
                     else
+                    {
                         SetIsScrolledToEnd(This, Math.Round(This.VerticalOffset, 3) == Math.Round(This.ScrollableHeight, 3));
+                    }
                 }
                 else if (IsScrolledToEnd)
                 {
